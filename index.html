@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#eef6f6">
+<title>온라인팀 회의</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  /* 베이프렌드 관리자 웹 틀(10/26)을 그대로 두고 색만 민트로. 숫자카드, 표, 오른쪽 상세는 흰색 유지 */
+  :root{--bg:#eef6f6;--card:#fff;--ink:#191f28;--ink2:#4e5968;--sub:#8b95a1;--line:#eef3f3;--line2:#dde8e8;
+    --ac:#0f8a8c;--ac-soft:#e0fcfc;--m2:#c8f0f2;--m3:#a4e4ea;--m4:#74cbcd;
+    --green:#03b26c;--green-soft:#e5f8ef;--red:#f04452;--red-soft:#fdecee;--amber:#b77700;--amber-soft:#fff4dc;--press:#f5fafa;color-scheme:light}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15191a;--card:#1e2426;--ink:#f9fafb;--ink2:#c3c9d1;--sub:#8b95a1;--line:#283032;--line2:#303a3c;
+    --ac:#5fd3d3;--ac-soft:#173638;--m2:#1d4547;--m3:#245658;--m4:#2f6a6c;
+    --green:#15c47e;--green-soft:#183027;--red:#ff5b68;--red-soft:#3a2023;--amber:#ffb331;--amber-soft:#3a3020;--press:#242c2e;color-scheme:dark}}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--ink);font-family:"Pretendard Variable",Pretendard,-apple-system,"Malgun Gothic",sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:-.2px}
+  button,input,select,textarea{font:inherit;color:inherit} button{border:0;background:none;cursor:pointer}
+  .wrap{max-width:560px;margin:0 auto;padding:12px 16px calc(96px + env(safe-area-inset-bottom))}
+  .top{display:flex;align-items:center;padding:8px 4px 18px}
+  .top .logo{font-weight:800;font-size:17px} .top .logo b{color:var(--ac)}
+  .top .r{margin-left:auto;display:flex;gap:4px}
+  .ic{height:34px;padding:0 12px;border-radius:10px;font-size:13px;font-weight:600;color:var(--ink2)} .ic:active{background:var(--line2)}
+  .card{background:var(--card);border-radius:22px;padding:22px 20px;margin-bottom:12px}
+  .eyebrow{font-size:14px;font-weight:600;color:var(--sub);margin-bottom:8px}
+  .headline{font-size:24px;font-weight:700;line-height:1.38;letter-spacing:-.6px} .headline em{font-style:normal;color:var(--ac)} .headline em.r{color:var(--red)}
+  .caption{font-size:14px;color:var(--sub);margin-top:8px;line-height:1.5}
+  .sec{font-size:18px;font-weight:700;margin:26px 4px 10px;display:flex;align-items:baseline;gap:6px} .sec small{font-size:14px;color:var(--sub);font-weight:600} .sec .rt{margin-left:auto;font-size:13px;font-weight:600;color:var(--sub)}
+  .list{background:var(--card);border-radius:22px;padding:6px 0;margin-bottom:12px}
+  .item{display:flex;align-items:center;gap:14px;padding:14px 20px;width:100%;text-align:left} .item:active{background:var(--press)}
+  .av{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-weight:800;font-size:15px;flex:none;background:var(--line);color:var(--ink2)}
+  .av.good{background:var(--green-soft);color:var(--green)} .av.warn{background:var(--amber-soft);color:var(--amber)} .av.bad{background:var(--red-soft);color:var(--red)} .av.ac{background:var(--ac-soft);color:var(--ac)}
+  .item .tx{flex:1;min-width:0} .item .tx b{display:block;font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .item .tx span{display:block;font-size:13px;color:var(--sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item .val{text-align:right;flex:none} .item .val b{display:block;font-size:15px;font-weight:700} .item .val span{font-size:12px;font-weight:600;color:var(--sub)}
+  .t-good{color:var(--green)} .t-warn{color:var(--amber)} .t-bad{color:var(--red)} .t-sub{color:var(--sub)} .t-ac{color:var(--ac)}
+  .chev{color:var(--line2);font-size:18px;flex:none;margin-left:-4px}
+  .empty{padding:18px 20px;color:var(--sub);font-size:14px}
+  .btn{height:56px;border-radius:16px;font-weight:700;font-size:17px;background:var(--ac);color:#fff;width:100%}
+  .btn.sec2{background:var(--ac-soft);color:var(--ac)} .btn.gray{background:var(--line2);color:var(--ink2)} .btn.red{background:var(--red-soft);color:var(--red)} .btn:disabled{opacity:.4}
+  .btns{display:flex;gap:8px;margin-top:20px}
+  .nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line2);display:flex;justify-content:center;padding:6px 0 calc(6px + env(safe-area-inset-bottom));z-index:20}
+  .nav div{display:flex;width:100%;max-width:560px}
+  .nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;font-size:11px;font-weight:600;color:var(--sub)} .nav button svg{width:24px;height:24px} .nav button.on{color:var(--ac)}
+  .dim{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:50} .dim.on{display:flex}
+  .sheet{background:var(--card);width:min(560px,100%);border-radius:26px 26px 0 0;padding:26px 22px calc(22px + env(safe-area-inset-bottom));max-height:90vh;overflow:auto;animation:up .22s ease}
+  @keyframes up{from{transform:translateY(40px);opacity:.6}to{transform:none;opacity:1}}
+  .sheet h3{font-size:22px;font-weight:700;letter-spacing:-.5px;line-height:1.35} .sheet .caption{margin-top:6px}
+  .sheet .list{background:none;padding:0;margin:14px -22px 0} .sheet .item{padding:13px 22px}
+  .lbl{font-size:14px;font-weight:600;color:var(--sub);margin:22px 0 10px} .lbl small{font-weight:500}
+  .in{width:100%;height:54px;border-radius:14px;border:0;background:var(--line);padding:0 16px;font-size:17px;outline:none} .in:focus{box-shadow:inset 0 0 0 2px var(--ac)}
+  textarea.in{height:auto;min-height:96px;padding:14px 16px;line-height:1.5;resize:vertical}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{height:40px;padding:0 15px;border-radius:12px;background:var(--line);font-size:15px;font-weight:600;color:var(--ink2)} .chip.on{background:var(--ac);color:#fff}
+  .chip.sm{height:34px;padding:0 12px;font-size:13px;border-radius:10px}
+  .seg{display:flex;background:var(--line);border-radius:12px;padding:4px;gap:4px} .seg button{flex:1;height:38px;border-radius:9px;font-weight:600;font-size:14px;color:var(--sub)} .seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 8px;border-radius:8px;background:var(--ac-soft);color:var(--ac);margin:0 4px 0 0;vertical-align:middle} .tag.gray{background:var(--line);color:var(--sub)}
+  /* 상태 배지: 글자와 색 같이 */
+  .st{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;vertical-align:middle}
+  .st.후보{background:var(--line);color:var(--ink2)} .st.확인필요{background:var(--amber-soft);color:var(--amber)} .st.시도{background:var(--m2);color:var(--ac)}
+  .st.확정{background:var(--ac);color:#fff} .st.완료{background:var(--green-soft);color:var(--green)} .st.보류{background:none;color:var(--sub);box-shadow:inset 0 0 0 1px var(--line2)} .st.제외{background:var(--red-soft);color:var(--red)}
+  .tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--card);font-size:12px;font-weight:600;padding:6px 9px;border-radius:8px;opacity:0;z-index:60;white-space:nowrap}
+  .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);background:#191f28;color:#fff;padding:14px 20px;border-radius:14px;font-weight:600;opacity:0;transition:.25s;z-index:70;max-width:90vw;text-align:center} .toast.on{opacity:1;transform:translateX(-50%)}
+  .login{padding-top:14vh} .login .headline{margin-bottom:28px}
+  .warn{color:var(--red);font-weight:600;background:var(--red-soft);border-radius:12px;padding:10px 14px;margin-top:8px;font-size:14px;line-height:1.5}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--red);flex:none;margin:0 4px} .dot.ok{background:var(--green)} .dot.warn{background:var(--amber)}
+  .item.iss{min-height:52px}
+  /* 표 (담당자 한눈에, 할 일) */
+  .opsw{background:var(--card);border-radius:20px;padding:6px 0;overflow-x:auto;margin-bottom:12px}
+  .ops{width:100%;border-collapse:collapse;font-size:14px}
+  .ops th{font-size:12px;color:var(--sub);font-weight:600;text-align:right;padding:10px 12px;border-bottom:1px solid var(--line2);white-space:nowrap}
+  .ops th:first-child,.ops td:first-child{text-align:left}
+  .ops td{padding:11px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .ops tr:last-child td{border-bottom:0} .ops td b{font-weight:700} .ops tr.cl{cursor:pointer} .ops tr.cl:hover td{background:var(--press)}
+  .ops .g{color:var(--green);font-weight:700} .ops .r{color:var(--red);font-weight:700} .ops .n{color:var(--sub)}
+  .ops small{display:block;font-size:11px;color:var(--sub);font-weight:500}
+  .ops tr.tot td{border-top:1px solid var(--line2);background:var(--press)}
+  .log{padding:10px 0;border-bottom:1px solid var(--line);font-size:14px;line-height:1.5} .log:last-child{border-bottom:0} .log small{display:block;font-size:12px;color:var(--sub);margin-bottom:2px}
+  .mline{display:flex;gap:8px;align-items:center;margin-top:10px} .mline .in{height:46px;font-size:15px} .mline .btn{width:auto;height:46px;padding:0 16px;font-size:15px;border-radius:12px;flex:none}
+  .num{font-size:36px;font-weight:800;letter-spacing:-1.2px;line-height:1} .num small{font-size:15px;font-weight:600;color:var(--sub);margin-left:5px;letter-spacing:0}
+  .kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+  .kpi{background:var(--card);border-radius:22px;padding:20px 20px 18px;min-height:110px;text-align:left;display:block;width:100%}
+  .kpi .eyebrow{margin-bottom:10px} .kpi .caption{margin-top:9px}
+  .gwrap{display:grid;gap:12px} .gside,.gmain{min-width:0}
+  .mhead{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap} .mhead .tx{flex:1;min-width:0} .mhead .ic{flex:none;background:var(--line);height:38px;border-radius:12px}
+  .bulk{font-size:13px;color:var(--sub);margin-top:6px;line-height:1.5}
+  /* PC (900px 이상): 왼쪽 메뉴 236, 본문 38/44, 숫자카드 4칸, 홈은 본문 + 오른쪽 상세 320 */
+  @media (min-width:900px){
+    .wrap{max-width:none;padding:0} .nav{display:none!important}
+    .login{max-width:420px;margin:0 auto;padding-top:22vh}
+    .shell{display:grid;grid-template-columns:236px minmax(0,1fr);min-height:100vh}
+    .side{position:sticky;top:0;height:100vh;padding:30px 16px 24px;background:var(--card);border-right:1px solid var(--line2);display:flex;flex-direction:column;gap:4px}
+    .side .logo{font-size:19px;font-weight:800;padding:0 12px 26px;letter-spacing:-.4px} .side .logo b{color:var(--ac)}
+    .navb{display:flex;align-items:center;gap:12px;height:48px;padding:0 14px;border-radius:14px;font-size:15px;font-weight:600;color:var(--ink2);width:100%;text-align:left;transition:background .15s}
+    .navb svg{width:22px;height:22px;flex:none} .navb:hover{background:var(--press)} .navb.on{background:var(--ac-soft);color:var(--ac)}
+    .side .foot{margin-top:auto;display:flex;flex-direction:column;gap:4px} .side .foot .navb{font-size:14px;height:42px}
+    .main{padding:38px 44px 80px;max-width:1320px;width:100%} .narrow{max-width:760px}
+    .pchead{display:flex;align-items:baseline;gap:14px;margin-bottom:22px;flex-wrap:wrap} .pchead h1{font-size:30px;font-weight:800;letter-spacing:-.9px} .pchead .caption{margin:0} .pchead .rt{margin-left:auto}
+    .kpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:24px}
+    .kpi{padding:22px 24px 20px;min-height:122px;transition:transform .15s,box-shadow .15s} button.kpi:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,0,0,.07)}
+    .cols{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:22px;align-items:start}
+    .panel{position:sticky;top:28px;background:var(--card);border-radius:26px;padding:28px 28px 24px;min-height:460px;max-height:calc(100vh - 56px);overflow:auto;animation:none}
+    .panel .list{background:none;padding:0;margin:14px -28px 0} .panel .item{padding:13px 28px} .panel .btns .btn{height:50px;font-size:16px}
+    .item{cursor:pointer} .item:hover{background:var(--press)} .sec{margin-top:22px}
+    .dim{align-items:center} .sheet{border-radius:26px;max-height:86vh;width:min(640px,100%);padding-bottom:26px}
+    .toast{bottom:40px}
+    .gwrap{grid-template-columns:360px minmax(0,1fr);align-items:start;gap:20px} .gside{position:sticky;top:20px;display:grid;gap:12px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<nav class="nav" id="nav" style="display:none"><div>
+  <button data-tab="home">홈</button><button data-tab="meet">회의</button><button data-tab="fix">확정</button><button data-tab="todo">할 일</button>
+</div></nav>
+<div class="dim" id="dim"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+<script>
+// 온라인팀 회의 보드 — 데이터는 구글시트(회의, 안건, 기록 탭), Apps Script(비밀번호)로 읽고 씀. 비밀번호는 이 기기에만 저장
+const APPS_URL = "";
+const BRANDS = ["VF", "액상덕후", "VUFF", "공통"];
+const STATUS = ["후보", "확인필요", "시도", "확정", "완료", "보류", "제외"];
+const ACTIVE = ["확인필요", "시도", "확정"]; // 할 일로 치는 상태
+const FIELDS0 = ["마케팅-바이럴", "제품 디자인", "매장", "CRM", "콘텐츠", "기타"];
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const ls = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} } };
+const WD = "일월화수목금토";
+function toast(m) { const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("on"), 2600); }
+const uid = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+const pad = (n) => String(n).padStart(2, "0");
+const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const today = () => ymd(new Date());
+const md = (s) => (s ? s.slice(5).replace("-", "/") : "");
+const days = (s) => (s ? Math.round((new Date(s + "T00:00:00") - new Date(today() + "T00:00:00")) / 864e5) : null);
+const ddayTxt = (s) => { const d = days(s); return d == null ? "" : d === 0 ? "오늘" : d > 0 ? `D-${d}` : `${-d}일 지남`; };
+const weekRange = () => { const t = new Date(today() + "T00:00:00"), dow = (t.getDay() + 6) % 7, a = new Date(t); a.setDate(t.getDate() - dow); const b = new Date(a); b.setDate(a.getDate() + 6); return [ymd(a), ymd(b)]; };
+
+let D = null, KEY = ls.get("ot-key") || "", tab = ls.get("ot-tab") || "home", brandF = ls.get("ot-brand") || "", who = ls.get("ot-who") || "", meetSel = ls.get("ot-meet") || "", todoF = ls.get("ot-todof") || "", edit = null, panelKeep = "", DEMO = /[?&]demo=1/.test(location.search);
+
+// ── 시트 ──
+async function load(key) {
+  if (DEMO) return demoData();
+  if (!APPS_URL) throw Object.assign(new Error("setup"), { code: "setup" });
+  const r = await (await fetch(`${APPS_URL}?k=${encodeURIComponent(key)}&t=${Date.now()}`, { cache: "no-store" })).json();
+  if (!r.ok) throw Object.assign(new Error(r.error), { code: r.error });
+  return r;
+}
+async function post(body) {
+  if (DEMO) return { ok: true };
+  const r = await (await fetch(APPS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ k: KEY, ...body }) })).json();
+  if (!r.ok) throw new Error(r.error || "fail");
+  return r;
+}
+async function save(kind, data) { // 화면 먼저 바꾸고 시트에 씀, 실패하면 다시 불러옴
+  const list = { meeting: D.meetings, item: D.items, log: D.logs }[kind];
+  const i = list.findIndex((x) => x.id === data.id);
+  const now = new Date(), stamp = `${ymd(now)} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  if (kind === "item") data.고친시각 = stamp; if (kind === "log" && !data.시각) data.시각 = stamp; if (kind === "meeting" && !data.만든시각) data.만든시각 = stamp;
+  if (i >= 0) list[i] = { ...list[i], ...data }; else list.push(data);
+  render();
+  try { await post({ type: "save", kind, data }); } catch (e) { toast("저장하지 못했어요. 다시 불러올게요"); reload(true); }
+}
+async function del(kind, id) {
+  if (kind === "meeting") { const ids = D.items.filter((x) => x.회의id === id).map((x) => x.id); D.items = D.items.filter((x) => x.회의id !== id); D.logs = D.logs.filter((l) => !ids.includes(l.안건id)); D.meetings = D.meetings.filter((m) => m.id !== id); if (meetSel === id) meetSel = ""; }
+  if (kind === "item") { D.items = D.items.filter((x) => x.id !== id); D.logs = D.logs.filter((l) => l.안건id !== id); }
+  if (kind === "log") D.logs = D.logs.filter((l) => l.id !== id);
+  render();
+  try { await post({ type: "del", kind, id }); } catch (e) { toast("지우지 못했어요. 다시 불러올게요"); reload(true); }
+}
+async function reload(quiet) {
+  try { D = await load(KEY); if (!$("#dim").classList.contains("on")) render(); if (!quiet) toast("새로 불러왔어요"); }
+  catch (e) { if (!quiet) toast("불러오지 못했어요"); }
+}
+
+// ── 로그인 ──
+function renderLogin(msg) {
+  $("#nav").style.display = "none";
+  $("#app").innerHTML = `<div class="login"><div class="headline">온라인팀 회의<br><span style="color:var(--sub);font-size:18px;font-weight:600">${msg || "비밀번호를 넣어 주세요"}</span></div>
+    <input class="in" id="pw" type="password" autocomplete="current-password" placeholder="비밀번호">
+    <label style="display:flex;gap:8px;align-items:center;margin:16px 4px;font-size:15px;color:var(--ink2)"><input type="checkbox" id="remember" checked style="width:18px;height:18px;accent-color:var(--ac)"> 이 기기에서 기억하기</label>
+    <button class="btn" id="go">열기</button></div>`;
+  $("#pw").focus();
+}
+async function tryLogin() {
+  const pw = $("#pw").value.trim(); if (!pw && !DEMO) return;
+  $("#go").disabled = true; $("#go").textContent = "여는 중…";
+  try { D = await load(pw); KEY = pw; if ($("#remember").checked) ls.set("ot-key", pw); render(); }
+  catch (e) { renderLogin({ key: "비밀번호가 맞지 않아요", setup: "시트 연결 준비 중이에요 (Apps Script 배포 후 열려요)" }[e.code] || "불러오지 못했어요. 인터넷을 확인해 주세요"); }
+}
+
+// ── 공통 조각 ──
+const ICON = {
+  home: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 3 10.4V20a1 1 0 0 0 1 1h5.5v-6h5v6H20a1 1 0 0 0 1-1v-9.6z"/></svg>',
+  meet: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm3 4v2h10V8zm0 4v2h7v-2z"/></svg>',
+  fix: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5zm-1.2 13.6-3.6-3.6 1.4-1.4 2.2 2.2 4.8-4.8 1.4 1.4z"/></svg>',
+  todo: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 3h8v2h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h3zm2 0v3h4V3zm5.3 7.3-4.3 4.3-2.3-2.3-1.4 1.4 3.7 3.7 5.7-5.7z"/></svg>',
+};
+const TABS = [["home", "홈"], ["meet", "회의"], ["fix", "확정"], ["todo", "할 일"]];
+const meetOf = (id) => D.meetings.find((m) => m.id === id);
+const byBrand = (list) => (brandF ? list.filter((x) => x.브랜드 === brandF || (!x.브랜드 && brandF === "공통")) : list);
+const st = (s) => `<span class="st ${esc(s)}">${esc(s)}</span>`;
+const brandChips = () => `<div class="chips" style="margin-bottom:14px"><button class="chip sm ${!brandF ? "on" : ""}" data-brand="">전체</button>${BRANDS.map((b) => `<button class="chip sm ${brandF === b ? "on" : ""}" data-brand="${b}">${b}</button>`).join("")}</div>`;
+const owners = () => [...new Set(D.items.map((x) => x.담당자).filter(Boolean))];
+const fields = () => [...new Set([...FIELDS0, ...D.items.map((x) => x.분야).filter(Boolean)])];
+const sortDue = (a, b) => (a.마감 || "9999") < (b.마감 || "9999") ? -1 : (a.마감 || "9999") > (b.마감 || "9999") ? 1 : 0;
+const isPC = () => matchMedia("(min-width:900px)").matches;
+const usePanel = () => isPC() && tab === "home" && $("#panel");
+const openSheet = (h) => { if (usePanel()) { panelKeep = h; $("#panel").innerHTML = h; $("#panel").scrollTop = 0; return; } $("#sheet").innerHTML = h; $("#dim").classList.add("on"); };
+const closeSheet = () => { edit = null; $("#dim").classList.remove("on"); if (usePanel()) { panelKeep = ""; $("#panel").innerHTML = panelDefault(); } };
+function itemRow(x, sub) {
+  const m = meetOf(x.회의id), late = ACTIVE.includes(x.상태) && x.마감 && days(x.마감) < 0;
+  return `<button class="item" data-item="${x.id}"><div class="tx"><b>${esc(x.제목)}</b><span>${esc(sub ?? [m ? m.제목 : "", x.담당자, x.분야].filter(Boolean).join(", "))}</span></div>
+    <div class="val">${st(x.상태)}${x.마감 ? `<span class="${late ? "t-bad" : days(x.마감) <= 3 ? "t-warn" : ""}" style="display:block;margin-top:4px">${md(x.마감)} ${ddayTxt(x.마감)}</span>` : ""}</div><span class="chev">›</span></button>`;
+}
+
+// ── 홈 ──
+function issues() {
+  const out = [], [wa, wb] = weekRange();
+  for (const x of D.items) {
+    if (!ACTIVE.includes(x.상태)) continue;
+    if (x.마감 && days(x.마감) < 0) out.push({ k: "bad", t: `${x.제목}, 마감이 ${-days(x.마감)}일 지났어요`, s: x.담당자 || "담당자 없음", id: x.id });
+    else if (x.마감 && days(x.마감) <= 3) out.push({ k: "warn", t: `${x.제목}, ${ddayTxt(x.마감)}`, s: x.담당자 || "담당자 없음", id: x.id });
+    if (x.상태 === "확정" && !x.담당자) out.push({ k: "warn", t: `${x.제목}, 확정인데 담당자가 없어요`, s: meetOf(x.회의id)?.제목 || "", id: x.id });
+    if (x.상태 === "확인필요" && x.고친시각 && days(x.고친시각.slice(0, 10)) <= -7) out.push({ k: "warn", t: `${x.제목}, 확인필요로 ${-days(x.고친시각.slice(0, 10))}일째예요`, s: x.담당자 || "담당자 없음", id: x.id });
+  }
+  return out;
+}
+function statHtml() {
+  const [wa, wb] = weekRange(), act = D.items.filter((x) => ACTIVE.includes(x.상태));
+  const due = act.filter((x) => x.마감 && x.마감 >= wa && x.마감 <= wb).length, late = act.filter((x) => x.마감 && days(x.마감) < 0).length;
+  const fixed = D.items.filter((x) => x.상태 === "확정").length, chk = D.items.filter((x) => x.상태 === "확인필요").length;
+  const last = [...D.meetings].sort((a, b) => (a.날짜 < b.날짜 ? 1 : -1))[0];
+  return `<div class="kpis">
+    <button class="kpi" data-tab="todo"><div class="eyebrow">이번 주 마감</div><div class="num">${due}<small>개</small></div><div class="caption ${late ? "t-bad" : ""}">${late ? `늦은 것 ${late}개` : "늦은 것 없음"}</div></button>
+    <button class="kpi" data-tab="fix"><div class="eyebrow">확정, 진행 중</div><div class="num">${fixed}<small>개</small></div><div class="caption">완료 ${D.items.filter((x) => x.상태 === "완료").length}개</div></button>
+    <button class="kpi" data-tab="todo" data-todof="확인필요"><div class="eyebrow">확인 필요</div><div class="num">${chk}<small>개</small></div><div class="caption">시도 중 ${D.items.filter((x) => x.상태 === "시도").length}개</div></button>
+    <button class="kpi" data-tab="meet" data-meet="${last ? last.id : ""}"><div class="eyebrow">최근 회의</div><div class="num" style="font-size:24px;line-height:1.25;letter-spacing:-.6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${last ? esc(last.제목) : "없음"}</div><div class="caption">${last ? `${last.날짜}, 안건 ${D.items.filter((x) => x.회의id === last.id).length}개` : "회의에서 첫 회의를 만들어요"}</div></button></div>`;
+}
+function issuesHtml() {
+  const list = issues();
+  return `<div class="sec">확인할 것 <small>${list.length ? list.length + "건" : ""}</small></div><div class="list">${list.length ? list.map((i) => `<button class="item iss" data-item="${i.id}"><span class="dot ${i.k === "bad" ? "" : "warn"}"></span><div class="tx"><b>${esc(i.t)}</b><span>${esc(i.s)}</span></div><span class="chev">›</span></button>`).join("") : '<div class="item iss"><span class="dot ok"></span><div class="tx"><b>오늘은 확인할 게 없어요</b></div></div>'}</div>`;
+}
+function ownersHtml() {
+  const [wa, wb] = weekRange(), names = [...owners(), ...(D.items.some((x) => !x.담당자 && ACTIVE.includes(x.상태)) ? ["담당자 없음"] : [])];
+  if (!names.length) return "";
+  const row = (n) => { const mine = D.items.filter((x) => (n === "담당자 없음" ? !x.담당자 : x.담당자 === n)), act = mine.filter((x) => ACTIVE.includes(x.상태)); const late = act.filter((x) => x.마감 && days(x.마감) < 0).length, due = act.filter((x) => x.마감 && x.마감 >= wa && x.마감 <= wb).length, done = mine.filter((x) => x.상태 === "완료").length; return `<tr class="cl" data-owner="${esc(n)}"><td><b>${esc(n)}</b></td><td>${act.length}</td><td>${due || '<span class="n">-</span>'}</td><td class="${late ? "r" : "n"}">${late || "-"}</td><td>${done || '<span class="n">-</span>'}</td></tr>`; };
+  return `<div class="sec">담당자 한눈에 <small>줄을 누르면 그 사람 할 일</small></div><div class="opsw"><table class="ops"><thead><tr><th>담당자</th><th>진행 중</th><th>이번 주 마감</th><th>늦음</th><th>완료</th></tr></thead><tbody>${names.map(row).join("")}</tbody></table></div>`;
+}
+function recentHtml() {
+  const list = [...D.logs].sort((a, b) => (a.시각 < b.시각 ? 1 : -1)).slice(0, 6);
+  if (!list.length) return "";
+  return `<div class="sec">최근 기록</div><div class="list">${list.map((l) => { const x = D.items.find((i) => i.id === l.안건id); return `<button class="item" data-item="${l.안건id}"><div class="tx"><b>${esc(l.내용)}</b><span>${esc([x ? x.제목 : "", l.작성자, l.시각].filter(Boolean).join(", "))}</span></div><span class="chev">›</span></button>`; }).join("")}</div>`;
+}
+const homeHead = () => `<div class="pchead"><h1>이번 주 한눈에</h1><div class="caption">${esc(D.at || "")} 기준</div></div>`;
+const homeHtml = () => `<div style="padding-top:6px">${statHtml()}${issuesHtml()}${ownersHtml()}${recentHtml()}</div>`;
+const homePC = () => `${homeHead()}<div class="cols"><div>${statHtml()}${issuesHtml()}${ownersHtml()}${recentHtml()}</div><div class="sheet panel" id="panel"></div></div>`;
+const panelDefault = () => `<div class="eyebrow">상세</div><h3>왼쪽에서 안건이나<br>담당자를 누르세요</h3><div class="caption">상태, 담당자, 기간을 여기서 바로 고쳐요</div>`;
+
+// ── 회의 ──
+function meetHtml() {
+  const ms = byBrand([...D.meetings]).sort((a, b) => (a.날짜 < b.날짜 ? 1 : a.날짜 > b.날짜 ? -1 : 0));
+  if (meetSel && !D.meetings.some((m) => m.id === meetSel)) meetSel = "";
+  const sel = meetSel ? meetOf(meetSel) : null;
+  const side = `<div class="card"><div class="eyebrow">회의</div><div class="headline">회의마다 안건을 적고<br>상태를 정해요</div><div class="caption">확정한 안건은 확정 탭, 담당자나 마감이 있는 건 할 일 탭에 모여요</div>
+      <div class="btns" style="margin-top:16px"><button class="btn" data-act="mnew" style="height:50px;font-size:16px">＋ 새 회의</button></div></div>
+    ${brandChips()}<div class="list">${ms.length ? ms.map((m) => { const its = D.items.filter((x) => x.회의id === m.id); return `<button class="item" data-msel="${m.id}" style="${m.id === meetSel ? "background:var(--ac-soft)" : ""}"><div class="av ${m.id === meetSel ? "ac" : ""}" style="font-size:13px;line-height:1.1">${md(m.날짜)}</div><div class="tx"><b>${esc(m.제목)}</b><span>${esc(m.브랜드 || "공통")}, 안건 ${its.length}개, 확정 ${its.filter((x) => x.상태 === "확정" || x.상태 === "완료").length}개</span></div><span class="chev">›</span></button>`; }).join("") : '<div class="empty">아직 회의가 없어요</div>'}</div>`;
+  if (!sel) return `<div class="gwrap"><div class="gside">${side}</div><div class="gmain">${isPC() ? '<div class="card"><div class="caption" style="margin:0">왼쪽에서 회의를 고르거나 새 회의를 만들어요</div></div>' : ""}</div></div>`;
+  const its = D.items.filter((x) => x.회의id === sel.id).sort((a, b) => (+a.순서 || 0) - (+b.순서 || 0));
+  const cnt = STATUS.map((s) => [s, its.filter((x) => x.상태 === s).length]).filter(([, n]) => n);
+  const main = `<div class="card"><div class="mhead"><div class="tx"><div class="eyebrow">${esc(sel.날짜)}${sel.참석 ? `, ${esc(sel.참석)}` : ""}</div><div class="headline">${esc(sel.제목)}</div>
+      <div class="caption">${sel.브랜드 ? `<span class="tag">${esc(sel.브랜드)}</span>` : ""}${sel.메모 ? esc(sel.메모) : "메모 없음"}</div>
+      <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${cnt.map(([s, n]) => `<span class="st ${s}">${s} ${n}</span>`).join("")}</div></div>
+      <button class="ic" data-act="medit">회의 고치기</button></div></div>
+    <div class="sec">안건 <small>${its.length}개</small><span class="rt"></span></div>
+    <div class="list">${its.length ? its.map((x, i) => `<button class="item" data-item="${x.id}"><div class="av" style="font-size:14px">${i + 1}</div><div class="tx"><b>${esc(x.제목)}</b><span>${esc([x.분야, x.담당자, x.마감 ? "마감 " + md(x.마감) : "", x.확인할것 ? "확인: " + x.확인할것 : ""].filter(Boolean).join(", ")) || "&nbsp;"}</span></div><div class="val">${st(x.상태)}</div><span class="chev">›</span></button>`).join("") : '<div class="empty">안건이 없어요. 아래에서 넣어요</div>'}</div>
+    <div class="card"><div class="eyebrow">안건 넣기</div>
+      <div class="btns" style="margin-top:0"><button class="btn sec2" data-act="inew" style="height:50px;font-size:16px">＋ 안건 하나</button><button class="btn gray" data-act="ibulk" style="height:50px;font-size:16px">여러 줄 한번에</button></div></div>`;
+  return `<div class="gwrap"><div class="gside">${side}</div><div class="gmain">${main}</div></div>`;
+}
+function sheetMeeting() {
+  const m = edit, isNew = !D.meetings.some((x) => x.id === m.id);
+  openSheet(`<h3>${isNew ? "새 회의" : "회의 고치기"}</h3>
+    <div class="lbl">제목</div><input class="in" id="mTitle" maxlength="60" placeholder="예) 버프 광고 채널 선정" value="${esc(m.제목)}">
+    <div class="row2"><div><div class="lbl">날짜</div><input class="in" type="date" id="mDate" value="${esc(m.날짜)}"></div><div><div class="lbl">참석 <small>(선택)</small></div><input class="in" id="mWho" maxlength="60" placeholder="이름, 이름" value="${esc(m.참석)}"></div></div>
+    <div class="lbl">브랜드</div><div class="chips">${BRANDS.map((b) => `<button class="chip ${m.브랜드 === b ? "on" : ""}" data-mbrand="${b}">${b}</button>`).join("")}</div>
+    <div class="lbl">메모 <small>(선택)</small></div><textarea class="in" id="mMemo" maxlength="500" placeholder="회의 배경이나 결론 한 줄">${esc(m.메모)}</textarea>
+    <div class="btns">${isNew ? '<button class="btn gray" data-x style="flex:0 0 96px">닫기</button>' : '<button class="btn red" data-act="mdel" style="flex:0 0 96px">삭제</button>'}<button class="btn" data-act="msave">저장</button></div>`);
+}
+function sheetItem() {
+  const x = edit, isNew = !D.items.some((i) => i.id === x.id), m = meetOf(x.회의id), logs = D.logs.filter((l) => l.안건id === x.id).sort((a, b) => (a.시각 < b.시각 ? 1 : -1));
+  openSheet(`<div class="eyebrow">${m ? esc(m.날짜 + " " + m.제목) : "회의 없음"}</div><h3>${isNew ? "새 안건" : esc(x.제목)}</h3>
+    <div class="lbl">안건</div><input class="in" id="iTitle" maxlength="80" placeholder="예) 네이버 블로그 체험단" value="${esc(x.제목)}">
+    <div class="lbl">상태</div><div class="chips">${STATUS.map((s) => `<button class="chip ${x.상태 === s ? "on" : ""}" data-ist="${s}">${s}</button>`).join("")}</div>
+    <div class="row2"><div><div class="lbl">브랜드</div><select class="in" id="iBrand">${["", ...BRANDS].map((b) => `<option value="${b}" ${x.브랜드 === b ? "selected" : ""}>${b || "(회의와 같음)"}</option>`).join("")}</select></div>
+      <div><div class="lbl">분야</div><input class="in" id="iField" list="fieldList" maxlength="30" placeholder="예) 마케팅-바이럴" value="${esc(x.분야)}"><datalist id="fieldList">${fields().map((f) => `<option value="${esc(f)}">`).join("")}</datalist></div></div>
+    <div class="row2"><div><div class="lbl">담당자</div><input class="in" id="iOwner" list="ownerList" maxlength="20" placeholder="이름" value="${esc(x.담당자)}"><datalist id="ownerList">${owners().map((o) => `<option value="${esc(o)}">`).join("")}</datalist></div>
+      <div><div class="lbl">마감</div><input class="in" type="date" id="iDue" value="${esc(x.마감)}"></div></div>
+    <div class="lbl">시작 <small>(선택)</small></div><input class="in" type="date" id="iStart" value="${esc(x.시작)}">
+    <div class="lbl">확인할 것 <small>(선택)</small></div><input class="in" id="iChk" maxlength="120" placeholder="예) 광고 심의 되는지, 단가" value="${esc(x.확인할것)}">
+    <div class="lbl">메모 <small>(선택)</small></div><textarea class="in" id="iMemo" maxlength="1000" placeholder="회의에서 나온 얘기">${esc(x.메모)}</textarea>
+    ${isNew ? "" : `<div class="lbl">기록 <small>회의 때마다 덧붙여요</small></div>
+      <div class="mline"><input class="in" id="lText" maxlength="300" placeholder="${who ? who + ": 새 기록" : "이름을 먼저 정해요"}"><button class="btn" data-act="ladd">남기기</button></div>
+      <div style="margin-top:8px">${logs.length ? logs.map((l) => `<div class="log"><small>${esc(l.시각)}${l.작성자 ? ", " + esc(l.작성자) : ""} <button data-ldel="${l.id}" style="color:var(--sub);margin-left:6px">지우기</button></small>${esc(l.내용)}</div>`).join("") : '<div class="caption" style="margin:0">아직 기록이 없어요</div>'}</div>`}
+    <div class="btns">${isNew ? '<button class="btn gray" data-x style="flex:0 0 96px">닫기</button>' : '<button class="btn red" data-act="idel" style="flex:0 0 96px">삭제</button>'}<button class="btn" data-act="isave">저장</button></div>`);
+}
+function sheetBulk() {
+  openSheet(`<h3>여러 줄 한번에</h3><div class="caption">한 줄이 안건 하나예요. 앞의 번호는 빼고 넣어요. 줄 끝에 확실, 확인필요, 시도, X 라고 적혀 있으면 상태로 읽어요</div>
+    <textarea class="in" id="bulkText" style="min-height:220px;margin-top:14px" placeholder="1 네이버 블로그(체험단) 확실&#10;2 네이버 파워링크 확인필요&#10;3 틱톡 X"></textarea>
+    <div class="btns"><button class="btn gray" data-x style="flex:0 0 96px">닫기</button><button class="btn" data-act="bulksave">넣기</button></div>`);
+}
+const parseStatus = (line) => { let s = "후보", t = line.trim().replace(/^\d+[\s.)]+/, "").trim(); const tail = t.match(/[\s,]+(확실|확정|확인필요|확인 필요|시도|가능|보류|제외|X|x)\s*$/); if (tail) { const k = tail[1].replace(/\s/g, ""); s = { 확실: "확정", 확정: "확정", 확인필요: "확인필요", 시도: "시도", 가능: "후보", 보류: "보류", 제외: "제외", X: "제외", x: "제외" }[k] || "후보"; t = t.slice(0, tail.index).trim(); } return { t, s }; };
+
+// ── 확정 ──
+function fixHtml() {
+  const all = byBrand(D.items), fixed = all.filter((x) => x.상태 === "확정"), done = all.filter((x) => x.상태 === "완료");
+  const groups = fields().map((f) => [f, fixed.filter((x) => (x.분야 || "기타") === f)]).filter(([, l]) => l.length);
+  const noF = fixed.filter((x) => x.분야 && !fields().includes(x.분야));
+  return `${brandChips()}<div class="card"><div class="eyebrow">확정</div><div class="headline">하기로 정한 것 <em>${fixed.length}개</em></div><div class="caption">끝난 것은 상태를 완료로 바꾸면 아래로 내려가요</div></div>
+    ${groups.length ? groups.map(([f, l]) => `<div class="sec">${esc(f)} <small>${l.length}개</small></div><div class="list">${l.sort(sortDue).map((x) => itemRow(x)).join("")}</div>`).join("") : '<div class="list"><div class="empty">아직 확정된 안건이 없어요</div></div>'}
+    ${noF.length ? `<div class="sec">그 밖에</div><div class="list">${noF.map((x) => itemRow(x)).join("")}</div>` : ""}
+    ${done.length ? `<div class="sec">완료 <small>${done.length}개</small></div><div class="list">${done.map((x) => itemRow(x)).join("")}</div>` : ""}`;
+}
+
+// ── 할 일 ──
+function todoHtml() {
+  const names = owners(), act = byBrand(D.items).filter((x) => ACTIVE.includes(x.상태));
+  const list = act.filter((x) => (todoF === "확인필요" ? x.상태 === "확인필요" : todoF === "미정" ? !x.담당자 : todoF ? x.담당자 === todoF : true)).sort(sortDue);
+  const late = list.filter((x) => x.마감 && days(x.마감) < 0), soon = list.filter((x) => x.마감 && days(x.마감) >= 0), none = list.filter((x) => !x.마감);
+  const blk = (t, l) => (l.length ? `<div class="sec">${t} <small>${l.length}개</small></div><div class="list">${l.map((x) => itemRow(x)).join("")}</div>` : "");
+  return `${brandChips()}<div class="chips" style="margin-bottom:14px"><button class="chip ${!todoF ? "on" : ""}" data-todof="">모두</button>${names.map((n) => `<button class="chip ${todoF === n ? "on" : ""}" data-todof="${esc(n)}">${esc(n)}</button>`).join("")}<button class="chip ${todoF === "미정" ? "on" : ""}" data-todof="미정">담당자 없음</button><button class="chip ${todoF === "확인필요" ? "on" : ""}" data-todof="확인필요">확인필요만</button></div>
+    ${list.length ? blk("늦음", late) + blk("마감 있음", soon) + blk("마감 없음", none) : '<div class="list"><div class="empty">할 일이 없어요. 확인필요, 시도, 확정 상태의 안건이 여기에 모여요</div></div>'}`;
+}
+
+// ── 그리기 ──
+function render() {
+  if (!D) return;
+  const pc = isPC();
+  $("#nav").style.display = pc ? "none" : "";
+  document.querySelectorAll("#nav button").forEach((b) => { b.classList.toggle("on", b.dataset.tab === tab); if (!b.dataset.ic) { b.dataset.ic = 1; b.innerHTML = ICON[b.dataset.tab] + b.textContent; } });
+  const at = D.at ? D.at.slice(11) : "";
+  const body = tab === "home" ? (pc ? homePC() : homeHtml()) : tab === "meet" ? meetHtml() : tab === "fix" ? fixHtml() : todoHtml();
+  if (!pc) { $("#app").innerHTML = `<div class="top"><div class="logo">온라인팀 <b>회의</b></div><div class="r"><button class="ic" data-act="reload">${at ? at + " 기준 ↻" : "새로고침"}</button><button class="ic" data-act="logout">잠그기</button></div></div>${body}`; return; }
+  const title = { meet: "회의", fix: "확정", todo: "할 일" }[tab];
+  $("#app").innerHTML = `<div class="shell"><aside class="side"><div class="logo">온라인팀 <b>회의</b></div>
+      ${TABS.map(([k, n]) => `<button class="navb ${tab === k ? "on" : ""}" data-tab="${k}">${ICON[k]}${n}</button>`).join("")}
+      <div class="foot"><button class="navb" data-act="reload">↻ ${at ? at + " 기준" : "새로고침"}</button><button class="navb" data-act="logout">🔒 잠그기</button></div></aside>
+    <main class="main">${tab === "home" ? body : `${title ? `<div class="pchead"><h1>${title}</h1></div>` : ""}<div class="${tab === "meet" ? "" : "narrow"}">${body}</div>`}</main></div>`;
+  if (tab === "home") $("#panel").innerHTML = panelKeep || panelDefault();
+}
+function openItem(id) { const x = D.items.find((i) => i.id === id); if (!x) return; edit = { ...x }; sheetItem(); }
+function panelOwner(n) {
+  const mine = D.items.filter((x) => (n === "담당자 없음" ? !x.담당자 : x.담당자 === n) && ACTIVE.includes(x.상태)).sort(sortDue);
+  openSheet(`<div class="eyebrow">담당자</div><h3>${esc(n)}</h3><div class="caption">진행 중 ${mine.length}개</div><div class="list">${mine.map((x) => itemRow(x, [meetOf(x.회의id)?.제목, x.분야].filter(Boolean).join(", "))).join("") || '<div class="empty">진행 중인 게 없어요</div>'}</div>
+    <div class="btns"><button class="btn gray" data-x>닫기</button></div>`);
+}
+const val = (id) => ($(id) ? $(id).value.trim() : "");
+function askWho(then) {
+  openSheet(`<h3>이름을 정해요</h3><div class="caption">기록을 남길 때 누가 썼는지 붙여요. 이 기기에만 저장돼요</div><input class="in" id="whoIn" maxlength="20" placeholder="이름" style="margin-top:14px" value="${esc(who)}">
+    <div class="btns"><button class="btn gray" data-x style="flex:0 0 96px">닫기</button><button class="btn" id="whoOk">저장</button></div>`);
+  $("#whoOk").onclick = () => { who = val("#whoIn"); if (!who) return; ls.set("ot-who", who); then && then(); };
+}
+
+document.addEventListener("click", async (e) => {
+  const t = e.target.closest("[data-tab],[data-act],[data-item],[data-msel],[data-brand],[data-todof],[data-owner],[data-mbrand],[data-ist],[data-ldel],[data-x]");
+  if (e.target.id === "go") return tryLogin();
+  if (e.target === $("#dim")) return closeSheet();
+  if (!t) return;
+  const d = t.dataset;
+  if ("x" in d) return closeSheet();
+  if (d.tab) { tab = d.tab; ls.set("ot-tab", tab); if (d.todof != null) { todoF = d.todof; ls.set("ot-todof", todoF); } if (d.meet != null) { meetSel = d.meet; ls.set("ot-meet", meetSel); } closeSheet(); return render(); }
+  if (d.brand != null) { brandF = d.brand; ls.set("ot-brand", brandF); return render(); }
+  if (d.todof != null) { todoF = d.todof; ls.set("ot-todof", todoF); return render(); }
+  if (d.owner) return panelOwner(d.owner);
+  if (d.item) return openItem(d.item);
+  if (d.msel) { meetSel = d.msel; ls.set("ot-meet", meetSel); return render(); }
+  if (d.mbrand) { edit.브랜드 = edit.브랜드 === d.mbrand ? "" : d.mbrand; edit.제목 = val("#mTitle"); edit.날짜 = val("#mDate"); edit.참석 = val("#mWho"); edit.메모 = val("#mMemo"); return sheetMeeting(); }
+  if (d.ist) { Object.assign(edit, grabItem()); edit.상태 = d.ist; return sheetItem(); }
+  if (d.ldel) { if (confirm("이 기록을 지울까요?")) { await del("log", d.ldel); sheetItem(); } return; }
+  switch (d.act) {
+    case "reload": return reload();
+    case "logout": ls.set("ot-key", null); KEY = ""; D = null; return renderLogin();
+    case "mnew": edit = { id: uid("m_"), 날짜: today(), 제목: "", 브랜드: brandF || "", 참석: "", 메모: "" }; return sheetMeeting();
+    case "medit": edit = { ...meetOf(meetSel) }; return sheetMeeting();
+    case "msave": { edit.제목 = val("#mTitle"); edit.날짜 = val("#mDate"); edit.참석 = val("#mWho"); edit.메모 = val("#mMemo"); if (!edit.제목) return toast("제목을 적어요"); if (!edit.날짜) return toast("날짜를 골라요"); const m = { ...edit }; meetSel = m.id; ls.set("ot-meet", meetSel); tab = "meet"; ls.set("ot-tab", tab); closeSheet(); await save("meeting", m); return toast("저장했어요"); }
+    case "mdel": { if (!confirm("이 회의와 안건을 모두 지울까요?")) return; const id = edit.id; closeSheet(); return del("meeting", id); }
+    case "inew": { const its = D.items.filter((x) => x.회의id === meetSel); edit = { id: uid("i_"), 회의id: meetSel, 순서: its.length + 1, 제목: "", 상태: "후보", 브랜드: "", 분야: "", 담당자: "", 시작: "", 마감: "", 메모: "", 확인할것: "" }; return sheetItem(); }
+    case "isave": { Object.assign(edit, grabItem()); if (!edit.제목) return toast("안건을 적어요"); const x = { ...edit }; closeSheet(); await save("item", x); return toast("저장했어요"); }
+    case "idel": { if (!confirm("이 안건을 지울까요?")) return; const id = edit.id; closeSheet(); return del("item", id); }
+    case "ladd": { const txt = val("#lText"); if (!txt) return; if (!who) return askWho(() => { sheetItem(); $("#lText").value = txt; }); Object.assign(edit, grabItem()); const l = { id: uid("l_"), 안건id: edit.id, 시각: "", 작성자: who, 내용: txt }; await save("log", l); return sheetItem(); }
+    case "ibulk": return sheetBulk();
+    case "bulksave": { const lines = val("#bulkText").split(/\n/).map((s) => s.trim()).filter(Boolean); if (!lines.length) return; let n = D.items.filter((x) => x.회의id === meetSel).length; closeSheet(); for (const line of lines) { const { t, s } = parseStatus(line); if (!t) continue; n++; await save("item", { id: uid("i_"), 회의id: meetSel, 순서: n, 제목: t, 상태: s, 브랜드: "", 분야: "", 담당자: "", 시작: "", 마감: "", 메모: "", 확인할것: "" }); } return toast(`${lines.length}개 넣었어요`); }
+  }
+});
+const grabItem = () => ({ 제목: val("#iTitle"), 브랜드: val("#iBrand"), 분야: val("#iField"), 담당자: val("#iOwner"), 마감: val("#iDue"), 시작: val("#iStart"), 확인할것: val("#iChk"), 메모: val("#iMemo") });
+document.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.id === "pw") tryLogin(); if (e.key === "Enter" && e.target.id === "lText") document.querySelector('[data-act="ladd"]')?.click(); if (e.key === "Escape") closeSheet(); });
+let wasPC = isPC(); addEventListener("resize", () => { if (isPC() !== wasPC) { wasPC = isPC(); if (D) render(); } });
+setInterval(() => { if (D && !$("#dim").classList.contains("on") && !edit) reload(true); }, 5 * 60 * 1000);
+
+// 시험용 데이터 (?demo=1): 시트 없이 화면만 볼 때
+function demoData() {
+  const t = today(), d = (n) => { const x = new Date(t + "T00:00:00"); x.setDate(x.getDate() + n); return ymd(x); };
+  const items = [["네이버 블로그(체험단)", "확정", "마케팅-바이럴", "보혜", d(5)], ["네이버 파워링크", "확인필요", "마케팅-바이럴", "", ""], ["쓰레드 (쓰레드봇, 대표, 직원 댓글)", "후보", "마케팅-바이럴", "", ""], ["틱톡", "제외", "마케팅-바이럴", "", ""], ["메타광고", "시도", "마케팅-바이럴", "민제", d(-2)], ["광고 랜딩페이지, 소구점 정리", "확정", "콘텐츠", "", d(10)], ["슬로건, 포지셔닝 (레딜 타격감, 버프 멘솔, 오븐스 단맛)", "확정", "브랜딩", "보혜", d(2)]];
+  return { at: `${t} ${pad(new Date().getHours())}:${pad(new Date().getMinutes())}`, meetings: [{ id: "m_demo", 날짜: t, 제목: "버프 광고 채널 선정", 브랜드: "액상덕후", 참석: "", 메모: "시험 데이터" }],
+    items: items.map(([제목, 상태, 분야, 담당자, 마감], i) => ({ id: "i_" + i, 회의id: "m_demo", 순서: i + 1, 제목, 상태, 브랜드: "", 분야, 담당자, 시작: "", 마감, 메모: "", 확인할것: i === 1 ? "광고 심의 가능한지" : "", 고친시각: `${t} 10:00` })),
+    logs: [{ id: "l_1", 안건id: "i_0", 시각: `${t} 10:12`, 작성자: "보혜", 내용: "체험단 업체 두 곳 견적 받는 중" }] };
+}
+(async () => {
+  if (DEMO) { D = demoData(); KEY = "demo"; return render(); }
+  if (!KEY) return renderLogin();
+  try { D = await load(KEY); render(); } catch (e) { KEY = ""; ls.set("ot-key", null); renderLogin(e.code === "key" ? "비밀번호가 바뀌었어요. 다시 넣어 주세요" : e.code === "setup" ? "시트 연결 준비 중이에요" : "불러오지 못했어요. 인터넷을 확인해 주세요"); }
+})();
+</script>
+</body>
+</html>
