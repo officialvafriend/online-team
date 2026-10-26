@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>온라인팀 회의 QR</title>
+<style>body{margin:0;background:#fff;font-family:Pretendard,"Malgun Gothic",sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:18px;color:#191f28}
+#q{padding:16px;background:#fff}h1{font-size:28px;margin:0}p{font-size:16px;color:#4e5968;margin:0;word-break:break-all;max-width:520px;text-align:center}</style>
+<script src="qrcode.js"></script></head>
+<body><h1>온라인팀 회의</h1><div id="q"></div><p id="u"></p>
+<script>
+const u = new URLSearchParams(location.search).get("u") || location.origin + "/index.html";
+document.getElementById("u").textContent = u;
+const qr = qrcode(0, "M"); qr.addData(u); qr.make(); document.getElementById("q").innerHTML = qr.createImgTag(9, 8);
+</script></body></html>
