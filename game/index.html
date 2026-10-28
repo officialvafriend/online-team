@@ -19,7 +19,7 @@
 <body>
 <div class="wrap">
   <canvas id="c" width="900" height="420"></canvas>
-  <div class="foot">탭하거나 스페이스를 누르면 점프, 길게 누르면 더 높이 뛰어요. 시험판 v10.28-7</div>
+  <div class="foot">탭하거나 스페이스를 누르면 점프, 길게 누르면 더 높이 뛰어요. 시험판 v10.28-8</div>
 </div>
 <script>
 // 하치와레 달리기 (10/28 사장님: 쉬는 시간용, 거위 달리기처럼. 몸통은 귀여운데 다리는 아주 긴 하치와레)
@@ -29,6 +29,15 @@ const cv = document.getElementById("c"), ctx = cv.getContext("2d");
 const IMG = {}; const load = (k, src) => new Promise((r) => { const i = new Image(); i.onload = () => r((IMG[k] = i)); i.onerror = () => r(null); i.src = src; });
 const ls = { get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
 
+
+// 10/28 사장님: 하루 5판만. 이 기기 기준, 날짜는 새벽 5시에 바뀜(야간 근무자). 주소 뒤에 ?free=1 붙이면 제한 없음(우리 시험용)
+const DAILY_MAX = 5, FREE = /[?&]free=1/.test(location.search);
+const dayKey = () => { const d = new Date(Date.now() - 5 * 3600e3); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); };
+const playsOf = (k) => { const p = ls.get(k, null); return p && p.d === dayKey() ? p.n : 0; };
+const canPlay = (k) => FREE || playsOf(k) < DAILY_MAX;
+const usePlay = (k) => { if (FREE) return; ls.set(k, { d: dayKey(), n: playsOf(k) + 1 }); };
+const leftTxt = (k) => FREE ? "" : `오늘 ${DAILY_MAX - playsOf(k)}판 남음`;
+const PK = "vf-run-plays";
 // ── 수치 ──
 const BODY_H = 92;                 // 몸통 그림 높이(px)
 const THIGH = 60, SHIN = 62;       // 다리 길이: 허벅지, 정강이 (사장님: 다리는 길게)
@@ -59,8 +68,13 @@ function reset() { t = 0; speed = SPEED0; dist = 0; score = 0; py = 0; vy = 0; o
 
 // ── 입력 ──
 function press() {
-  if (state === "ready") { reset(); state = "run"; }
-  else if (state === "dead") { if (performance.now() - deadT > 500) { reset(); state = "run"; } return; }
+  if (state === "limit") return;
+  if (state === "ready" || state === "dead") {
+    if (state === "dead" && performance.now() - deadT < 500) return;
+    if (!canPlay(PK)) { state = "limit"; return; }
+    usePlay(PK); reset(); state = "run";
+    if (state === "dead") return;
+  }
   if (onGround) { vy = JUMP_V * (0.92 + legMul * 0.08); onGround = false; holding = true; holdLeft = HOLD_MAX; face = "peace"; snd(520, 0.12, "triangle"); if (Math.random() < 0.5) say(pick(SAY_JUMP), 600); }
 }
 function release() { holding = false; }
@@ -211,10 +225,11 @@ function drawUI() {
   ctx.fillStyle = "#8b95a1"; ctx.font = "700 14px 'Pretendard Variable', Pretendard, sans-serif";
   ctx.fillText("최고 " + String(best).padStart(5, "0") + (legLvl ? "   다리 " + Math.round(legMul * 100) + "%" : ""), W - 24, 62);
   ctx.textAlign = "left";
+  if (state === "limit") { panel("오늘은 여기까지", `하루 ${DAILY_MAX}판이에요`, "내일 새벽 5시 지나면 다시 할 수 있어요"); return; }
   if (state === "ready") {
-    panel("하치와레 달리기", "탭하거나 스페이스를 눌러 시작", "아슬아슬하게 넘으면 콤보 점수, 300점마다 다리가 자라요");
+    panel("하치와레 달리기", "탭하거나 스페이스를 눌러 시작", (leftTxt(PK) ? leftTxt(PK) + ". " : "") + "아슬아슬하게 넘으면 콤보 점수, 300점마다 다리가 자라요");
   } else if (state === "dead") {
-    panel("으악", `${score}점${score >= best && score > 0 ? ", 최고 기록!" : `, 최고 ${best}점`}`, performance.now() - deadT > 500 ? "탭하면 다시 달려요" : "");
+    panel("으악", `${score}점${score >= best && score > 0 ? ", 최고 기록!" : `, 최고 ${best}점`}`, performance.now() - deadT > 500 ? (canPlay(PK) ? "탭하면 다시 달려요" + (leftTxt(PK) ? ", " + leftTxt(PK) : "") : "오늘 판은 다 썼어요") : "");
   }
 }
 function panel(h1, h2, h3) {
