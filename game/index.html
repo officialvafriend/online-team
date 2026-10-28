@@ -19,7 +19,7 @@
 <body>
 <div class="wrap">
   <canvas id="c" width="900" height="420"></canvas>
-  <div class="foot">탭하거나 스페이스를 누르면 점프, 길게 누르면 더 높이 뛰어요. 시험판 v10.28-2</div>
+  <div class="foot">탭하거나 스페이스를 누르면 점프, 길게 누르면 더 높이 뛰어요. 시험판 v10.28-3</div>
 </div>
 <script>
 // 하치와레 달리기 (10/28 사장님: 쉬는 시간용, 거위 달리기처럼. 몸통은 귀여운데 다리는 아주 긴 하치와레)
@@ -37,7 +37,7 @@ const GRAV = 0.82, JUMP_V = -16.5, JUMP_HOLD = 0.5, HOLD_MAX = 8; // 점프: 처
 const SPEED0 = 7.5, SPEED_MAX = 19, SPEED_UP = 0.0028; // 10/28 사장님 "너무 쉬움": 처음부터 빠르고 금방 빨라짐 // 땅 속도(px/프레임)
 const OBS = [ // 장애물 종류: 폭, 높이, 그리는 법
   { k: "box", w: 48, h: 50 }, { k: "bottle", w: 30, h: 72 }, { k: "bigbox", w: 70, h: 92 }, { k: "box2", w: 100, h: 50 },
-  { k: "box3", w: 150, h: 56 }, { k: "tall", w: 34, h: 108 }, { k: "bird", w: 58, h: 34, fly: 118 }, { k: "bird", w: 58, h: 34, fly: 150 }, // 날아오는 건 점프하다 맞음. 안 뛰고 지나가야 함
+  { k: "box3", w: 150, h: 56 }, { k: "tall", w: 34, h: 108 }, { k: "bird", w: 58, h: 34, fly: 232 }, { k: "bird", w: 58, h: 34, fly: 270 }, // 서 있는 키(다리 122 + 몸통 92 = 214)보다 위로 날아와서 점프하면 맞음. 안 뛰고 지나가야 함
 ];
 
 let state = "ready"; // ready | run | dead
