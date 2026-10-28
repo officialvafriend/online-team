@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="robots" content="noindex">
+<title>연기 피하기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;background:#1b1f2a;font-family:"Pretendard Variable",Pretendard,"Malgun Gothic",sans-serif;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+  .wrap{height:100%;display:flex;align-items:center;justify-content:center}
+  canvas{height:min(100vh, calc(100vw * 800 / 480));aspect-ratio:480/800;display:block;background:#f2f4f6}
+  @media (min-width:700px){ canvas{border-radius:22px;height:min(96vh, 900px)} }
+</style>
+</head>
+<body>
+<div class="wrap"><canvas id="c" width="480" height="800"></canvas></div>
+<script>
+// 연기 피하기 (10/28 사장님: 쉬는 시간 게임 중 "그나마 제일 괜찮은" 안) — 똥 피하기 방식. 위에서 연기 구름이 떨어지고, 긴 다리 하치와레를 좌우로 움직여 피함. 버틴 시간이 점수.
+// 그림은 우리 하치와레(관리자 사무실), 연기와 아이템은 여기서 그림. 하루 5판(기기별, 새벽 5시 기준), ?free=1 이면 제한 없음(우리 시험용)
+const W = 480, H = 800, FLOOR = 720;
+const cv = document.getElementById("c"), ctx = cv.getContext("2d");
+const IMG = {}; const load = (k, src) => new Promise((r) => { const i = new Image(); i.onload = () => r((IMG[k] = i)); i.onerror = () => r(null); i.src = src; });
+const ls = { get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), rnd = (a, b) => a + Math.random() * (b - a), pick = (a) => a[Math.floor(Math.random() * a.length)];
+let AC = null; const snd = (f, d = 0.08, type = "square", g = 0.03) => { try { AC ||= new (window.AudioContext || window.webkitAudioContext)(); const o = AC.createOscillator(), v = AC.createGain(); o.type = type; o.frequency.value = f; v.gain.value = g; o.connect(v); v.connect(AC.destination); o.start(); o.frequency.exponentialRampToValueAtTime(Math.max(40, f * 0.5), AC.currentTime + d); v.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime + d); o.stop(AC.currentTime + d); } catch {} };
+const DAILY_MAX = 5, FREE = /[?&]free=1/.test(location.search), PK = "vf-smoke-plays";
+const dayKey = () => { const d = new Date(Date.now() - 5 * 3600e3); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); };
+const playsOf = () => { const p = ls.get(PK, null); return p && p.d === dayKey() ? p.n : 0; };
+const canPlay = () => FREE || playsOf() < DAILY_MAX, usePlay = () => { if (!FREE) ls.set(PK, { d: dayKey(), n: playsOf() + 1 }); };
+const leftTxt = () => (FREE ? "" : `오늘 ${DAILY_MAX - playsOf()}판 남음`);
+
+// ── 수치 ──
+const BODY_H = 70, LEG = 80;                  // 하치와레 몸통 높이, 다리 길이(긴 다리)
+const HIT_W = 30;                             // 몸 판정 폭(절반)
+const SPEED_X = 7;                            // 키보드 이동 속도
+const FALL0 = 3.2, FALL_UP = 0.045;           // 연기 낙하 속도: 처음, 초당 증가
+const SPAWN0 = 46, SPAWN_MIN = 14;            // 몇 프레임마다 연기 하나(점점 짧아짐)
+const DUR_BIG = 5 * 60;                       // 큰 연기 구름은 5초마다 한 번 섞임
+
+let state = "ready", t = 0, px = W / 2, score = 0, best = ls.get("vf-smoke-best", 0), smokes = [], items = [], pops = [], deadT = 0, shake = 0, drag = null, face = "base", lean = 0, shield = 0, slow = 0, bubble = "", bubbleT = 0;
+const SAY_HIT = ["콜록", "켁", "으악 연기", "눈 매워"], SAY_ITEM = ["사탕이다", "달다", "힘난다"], SAY_START = ["연기 싫어", "다리 믿어", "간다"];
+function say(s, ms = 900) { bubble = s; bubbleT = performance.now() + ms; }
+function pop(text, x, y, c) { pops.push({ text, x, y, c, t: 0 }); }
+function reset() { t = 0; px = W / 2; score = 0; smokes = []; items = []; pops = []; shake = 0; face = "base"; lean = 0; shield = 0; slow = 0; state = "run"; say(pick(SAY_START), 1000); }
+
+// ── 입력: 누른 자리로 따라감(끌기), 키보드 ←→ ──
+const toX = (e) => { const r = cv.getBoundingClientRect(); return (e.clientX - r.left) * (W / r.width); };
+function start() { if (state === "limit") return; if (state === "dead" && performance.now() - deadT < 600) return; if (!canPlay()) { state = "limit"; return; } usePlay(); reset(); snd(600, 0.1, "triangle"); }
+cv.addEventListener("pointerdown", (e) => { e.preventDefault(); if (state !== "run") return start(); drag = { x0: toX(e), px0: px }; });
+addEventListener("pointermove", (e) => { if (drag && state === "run") px = clamp(drag.px0 + (toX(e) - drag.x0) * 1.2, 30, W - 30); });
+addEventListener("pointerup", () => (drag = null)); addEventListener("pointercancel", () => (drag = null));
+const keys = {}; addEventListener("keydown", (e) => { keys[e.code] = true; if ((e.code === "Space" || e.code === "Enter") && state !== "run") start(); }); addEventListener("keyup", (e) => (keys[e.code] = false));
+
+// ── 진행 ──
+function step() {
+  if (state !== "run") return;
+  t++; score = Math.floor(t / 6); // 10점 = 1초
+  const sec = t / 60, fall = (FALL0 + sec * FALL_UP) * (slow > 0 ? 0.5 : 1), every = Math.max(SPAWN_MIN, Math.round(SPAWN0 - sec * 0.6));
+  const before = px;
+  if (keys.ArrowLeft || keys.KeyA) px = clamp(px - SPEED_X, 30, W - 30);
+  if (keys.ArrowRight || keys.KeyD) px = clamp(px + SPEED_X, 30, W - 30);
+  lean = lean * 0.8 + (px - before) * 0.06;
+  if (shield > 0) shield--; if (slow > 0) slow--;
+  // 연기 생성: 보통 구름, 가끔 큰 구름, 가끔 비스듬히 날아오는 것
+  if (t % every === 0) {
+    const big = t % DUR_BIG < every;
+    smokes.push({ x: rnd(30, W - 30), y: -60, r: big ? 46 : rnd(20, 30), vx: Math.random() < 0.25 ? rnd(-1.2, 1.2) : 0, vy: fall * (big ? 0.8 : rnd(0.9, 1.25)), wob: Math.random() * 7, big });
+  }
+  // 아이템: 12초쯤마다 사탕(방패 3초) 또는 시계(느리게 4초)
+  if (t % 720 === 400) items.push({ x: rnd(40, W - 40), y: -40, vy: 2.6, k: Math.random() < 0.5 ? "candy" : "clock" });
+  for (const s of smokes) { s.y += s.vy; s.x += s.vx; if (s.x < 10 || s.x > W - 10) s.vx *= -1; }
+  for (const it of items) it.y += it.vy;
+  smokes = smokes.filter((s) => s.y < H + 60); items = items.filter((it) => it.y < H + 40);
+  // 충돌: 하치와레 몸(몸통 + 다리 기둥)을 세로 긴 상자로
+  const top = FLOOR - LEG - BODY_H + 12, bottom = FLOOR;
+  for (const s of smokes) {
+    if (s.hit) continue;
+    const cx = clamp(s.x, px - HIT_W, px + HIT_W), cy = clamp(s.y, top, bottom);
+    if (Math.hypot(s.x - cx, s.y - cy) < s.r - 4) {
+      s.hit = true;
+      if (shield > 0) { shield = 0; pop("사탕이 막아줌", px, top - 20, "#3182f6"); snd(500, 0.12, "triangle"); s.y = H + 99; continue; }
+      state = "dead"; deadT = performance.now(); face = "error"; shake = 14; say(pick(SAY_HIT), 2500); snd(140, 0.5, "sawtooth", 0.06);
+      if (score > best) { best = score; ls.set("vf-smoke-best", best); }
+      break;
+    }
+  }
+  for (const it of items) {
+    if (Math.abs(it.x - px) < HIT_W + 14 && it.y > top - 10 && it.y < bottom) { it.y = H + 99; if (it.k === "candy") { shield = 180; pop("방패 3초", px, top - 20, "#3182f6"); } else { slow = 240; pop("연기 느려짐 4초", px, top - 20, "#3182f6"); } say(pick(SAY_ITEM), 800); snd(1000, 0.2, "sine", 0.05); face = "peace"; setTimeout(() => { if (state === "run") face = "base"; }, 600); }
+  }
+  for (const p of pops) p.t++; pops = pops.filter((p) => p.t < 45);
+}
+
+// ── 그리기 ──
+const F = (w, s) => `${w} ${s}px "Pretendard Variable", Pretendard, sans-serif`;
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function drawBg() {
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#dfe9f3"); g.addColorStop(1, "#f6f7f9"); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // 매장 바닥, 진열장 느낌의 띠
+  ctx.fillStyle = "#e8dccb"; ctx.fillRect(0, FLOOR, W, H - FLOOR); ctx.fillStyle = "#d9cbb6"; ctx.fillRect(0, FLOOR, W, 5);
+  ctx.fillStyle = "rgba(0,0,0,.04)"; for (let i = 0; i < 5; i++) ctx.fillRect(0, 120 + i * 120, W, 2);
+}
+function drawSmoke(s) {
+  const wob = Math.sin(t * 0.08 + s.wob) * 3, r = s.r;
+  ctx.fillStyle = s.big ? "rgba(120,128,140,.85)" : "rgba(160,168,180,.8)"; ctx.strokeStyle = "rgba(60,66,78,.6)"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(s.x - r * 0.5, s.y + r * 0.2, r * 0.6, 0, 7); ctx.arc(s.x + r * 0.1, s.y - r * 0.25 + wob * 0.2, r * 0.72, 0, 7); ctx.arc(s.x + r * 0.55, s.y + r * 0.25, r * 0.55, 0, 7); ctx.arc(s.x, s.y + r * 0.35, r * 0.6, 0, 7); ctx.fill(); ctx.stroke();
+  if (s.big) { ctx.fillStyle = "#222"; ctx.beginPath(); ctx.arc(s.x - 10, s.y - 2, 3, 0, 7); ctx.arc(s.x + 10, s.y - 2, 3, 0, 7); ctx.fill(); ctx.strokeStyle = "#222"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(s.x, s.y + 10, 8, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke(); }
+}
+function drawItem(it) {
+  if (it.k === "candy") { ctx.fillStyle = "#ff8fb1"; ctx.strokeStyle = "#222"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(it.x, it.y, 13, 0, 7); ctx.fill(); ctx.stroke(); ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(it.x - 4, it.y - 4, 4, 0, 7); ctx.fill(); ctx.strokeStyle = "#222"; ctx.beginPath(); ctx.moveTo(it.x - 20, it.y - 8); ctx.lineTo(it.x - 12, it.y); ctx.lineTo(it.x - 20, it.y + 8); ctx.moveTo(it.x + 20, it.y - 8); ctx.lineTo(it.x + 12, it.y); ctx.lineTo(it.x + 20, it.y + 8); ctx.stroke(); }
+  else { ctx.fillStyle = "#fff"; ctx.strokeStyle = "#222"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(it.x, it.y, 14, 0, 7); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(it.x, it.y); ctx.lineTo(it.x, it.y - 9); ctx.moveTo(it.x, it.y); ctx.lineTo(it.x + 6, it.y + 3); ctx.stroke(); }
+}
+function drawHachi() {
+  const x = px, hipY = FLOOR - LEG, bodyTop = hipY - BODY_H + 10, run = state === "run";
+  const ph = t * 0.25, sw = run && Math.abs(lean) > 0.3 ? Math.sin(ph) * 14 : Math.sin(ph) * 2;
+  // 그림자
+  ctx.fillStyle = "rgba(0,0,0,.12)"; ctx.beginPath(); ctx.ellipse(x, FLOOR + 4, 34, 7, 0, 0, 7); ctx.fill();
+  // 다리 2개(긴 막대, 걸을 때 벌어짐)
+  for (const [dx, s] of [[-8, 1], [8, -1]]) { const fx = x + dx + sw * s * 0.6; ctx.strokeStyle = "#222"; ctx.lineWidth = 12; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(x + dx, hipY); ctx.lineTo(fx, FLOOR - 4); ctx.stroke(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(x + dx, hipY); ctx.lineTo(fx, FLOOR - 4); ctx.stroke(); ctx.fillStyle = "#fff"; ctx.strokeStyle = "#222"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.ellipse(fx + 3 * s, FLOOR - 3, 12, 6, 0, 0, 7); ctx.fill(); ctx.stroke(); }
+  // 몸통 (기울임)
+  const im = IMG[face] || IMG.base;
+  ctx.save(); ctx.translate(x, hipY); ctx.rotate(clamp(lean, -0.35, 0.35));
+  if (im) { const h = BODY_H, w = im.width * (h / im.height); ctx.drawImage(im, -w / 2, -h + 10, w, h); }
+  ctx.restore();
+  if (shield > 0) { ctx.strokeStyle = `rgba(49,130,246,${0.4 + 0.3 * Math.sin(t * 0.3)})`; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(x, hipY - 10, 60, 100, 0, 0, 7); ctx.stroke(); }
+  if (bubble && performance.now() < bubbleT) {
+    ctx.font = F(800, 15); const tw = ctx.measureText(bubble).width + 22, bx = x + 36, by = bodyTop - 26;
+    ctx.fillStyle = "#fff"; ctx.strokeStyle = "#222"; ctx.lineWidth = 2.5; rr(bx, by - 16, tw, 32, 14); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#191f28"; ctx.textAlign = "left"; ctx.fillText(bubble, bx + 11, by + 5);
+  }
+}
+function drawUI() {
+  ctx.fillStyle = "#191f28"; ctx.font = F(800, 30); ctx.textAlign = "center"; ctx.fillText(String(score), W / 2, 50);
+  ctx.fillStyle = "#8b95a1"; ctx.font = F(700, 13); ctx.fillText(`최고 ${best}${slow > 0 ? "   느려짐 " + Math.ceil(slow / 60) + "초" : ""}${shield > 0 ? "   방패 " + Math.ceil(shield / 60) + "초" : ""}`, W / 2, 72);
+  for (const p of pops) { ctx.globalAlpha = Math.max(0, 1 - p.t / 45); ctx.font = F(800, 18); ctx.textAlign = "center"; ctx.fillStyle = p.c; ctx.fillText(p.text, p.x, p.y - p.t); ctx.globalAlpha = 1; }
+  if (state === "limit") panel("오늘은 여기까지", `하루 ${DAILY_MAX}판이에요`, "내일 새벽 5시 지나면 다시 할 수 있어요", "");
+  if (state === "ready") panel("연기 피하기", leftTxt() || "시험판", "누른 채 좌우로 움직여요. 위에서 떨어지는 연기를 피하고, 사탕은 먹어요. 10점이 1초", "탭해서 시작");
+  if (state === "dead") panel("콜록콜록", `${score}점${score >= best && score > 0 ? ", 최고 기록!" : `, 최고 ${best}점`}`, Math.floor(score / 10) + "초 버텼어요" + (leftTxt() ? ", " + leftTxt() : ""), performance.now() - deadT > 600 ? (canPlay() ? "탭하면 다시" : "오늘 판은 다 썼어요") : "");
+  ctx.textAlign = "left";
+}
+function panel(h1, h2, h3, h4) {
+  ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "rgba(255,255,255,.96)"; rr(40, 280, W - 80, 220, 24); ctx.fill();
+  ctx.textAlign = "center"; ctx.fillStyle = "#191f28"; ctx.font = F(800, 30); ctx.fillText(h1, W / 2, 335);
+  ctx.fillStyle = "#3182f6"; ctx.font = F(700, 18); ctx.fillText(h2, W / 2, 372);
+  ctx.fillStyle = "#8b95a1"; ctx.font = F(500, 14); wrap(h3, W / 2, 404, W - 130, 20);
+  ctx.fillStyle = "#191f28"; ctx.font = F(800, 16); ctx.fillText(h4, W / 2, 470);
+}
+function wrap(txt, x, y, maxW, lh) { const words = txt.split(" "); let line = ""; for (const w of words) { const test = line ? line + " " + w : w; if (ctx.measureText(test).width > maxW && line) { ctx.fillText(line, x, y); y += lh; line = w; } else line = test; } if (line) ctx.fillText(line, x, y); }
+function frame() {
+  step();
+  ctx.save();
+  if (shake > 0) { ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake); shake *= 0.85; if (shake < 0.5) shake = 0; }
+  drawBg(); for (const it of items) drawItem(it); drawHachi(); for (const s of smokes) drawSmoke(s);
+  ctx.restore(); drawUI();
+  requestAnimationFrame(frame);
+}
+Promise.all([load("base", "img/hachi_base.png"), load("peace", "img/hachi_peace.png"), load("error", "img/hachi_error.png")]).then(() => frame());
+</script>
+</body>
+</html>
