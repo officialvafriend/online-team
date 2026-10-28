@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="robots" content="noindex">
+<title>하치와레 부대</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  :root{--bg:#1b1f2a;--ink:#191f28;--sub:#8b95a1}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;background:var(--bg);font-family:"Pretendard Variable",Pretendard,"Malgun Gothic",sans-serif;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+  .wrap{height:100%;display:flex;align-items:center;justify-content:center}
+  canvas{height:min(100vh, calc(100vw * 800 / 480));aspect-ratio:480/800;display:block;background:#8fc77a;border-radius:0}
+  @media (min-width:700px){ canvas{border-radius:22px;height:min(96vh, 900px)} }
+</style>
+</head>
+<body>
+<div class="wrap"><canvas id="c" width="480" height="800"></canvas></div>
+<script>
+// 하치와레 부대 (10/28 사장님: 'Real War: Not Fake' 같은 방식) — 부대가 알아서 앞으로 달리며 쏘고, 손가락으로 좌우만 옮김.
+// 파란 문(+, ×2)은 부대가 늘고 빨간 문(−, ÷2)은 줄어듦. 먼지 떼가 몰려오고, 길 끝에 보스(대형 택배). 그림은 우리 것(하치와레), 적과 문은 여기서 그림.
+const W = 480, H = 800, ROAD_L = 48, ROAD_R = 432, PY = 640; // 길 좌우, 부대 화면 높이
+const cv = document.getElementById("c"), ctx = cv.getContext("2d");
+const IMG = {}; const load = (k, src) => new Promise((r) => { const i = new Image(); i.onload = () => r((IMG[k] = i)); i.onerror = () => r(null); i.src = src; });
+const ls = { get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), rnd = (a, b) => a + Math.random() * (b - a), ri = (a, b) => Math.floor(rnd(a, b + 1)), pick = (a) => a[Math.floor(Math.random() * a.length)];
+
+// 10/28 사장님: 하루 5판만. 이 기기 기준, 날짜는 새벽 5시에 바뀜(야간 근무자). 주소 뒤에 ?free=1 붙이면 제한 없음(우리 시험용)
+const DAILY_MAX = 5, FREE = /[?&]free=1/.test(location.search);
+const dayKey = () => { const d = new Date(Date.now() - 5 * 3600e3); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); };
+const playsOf = (k) => { const p = ls.get(k, null); return p && p.d === dayKey() ? p.n : 0; };
+const canPlay = (k) => FREE || playsOf(k) < DAILY_MAX;
+const usePlay = (k) => { if (FREE) return; ls.set(k, { d: dayKey(), n: playsOf(k) + 1 }); };
+const leftTxt = (k) => FREE ? "" : `오늘 ${DAILY_MAX - playsOf(k)}판 남음`;
+const PK = "vf-army-plays";
+let AC = null; const snd = (f, d = 0.08, type = "square", g = 0.03) => { try { AC ||= new (window.AudioContext || window.webkitAudioContext)(); const o = AC.createOscillator(), v = AC.createGain(); o.type = type; o.frequency.value = f; v.gain.value = g; o.connect(v); v.connect(AC.destination); o.start(); o.frequency.exponentialRampToValueAtTime(Math.max(40, f * 0.5), AC.currentTime + d); v.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime + d); o.stop(AC.currentTime + d); } catch {} };
+
+// ── 수치 ──
+const SPEED = (lv) => 3.2 + lv * 0.25;          // 길이 내려오는 속도(px/프레임)
+const LEVEL_LEN = (lv) => 2600 + lv * 400;       // 보스까지 거리
+const START_N = 5;                                 // 시작 부대원
+const UNIT_R = 11;                                 // 부대원 반지름(그림)
+const BULLET_V = 11, FIRE_EVERY = 9;               // 총알 속도, 몇 프레임마다 발사
+const SHOTS = (n) => clamp(Math.ceil(n / 6), 1, 8); // 한 번에 나가는 총알 수
+const ENEMY_V = 1.4;                               // 먼지가 부대 쪽으로 내려오는 추가 속도
+
+let state = "ready"; // ready | run | boss | dead | clear
+let lv = ls.get("vf-army-lv", 1), bestLv = ls.get("vf-army-best", 1), coins = ls.get("vf-army-coins", 0);
+let t = 0, scroll = 0, px = W / 2, n = START_N, weapon = 1, gates = [], enemies = [], bullets = [], boxes = [], crates = [], pops = [], boss = null, deadT = 0, shake = 0, nextSpawn = 0, drag = null, lastGateY = 0;
+let best = ls.get("vf-army-bestn", 0);
+
+function reset(keepLv) {
+  if (!keepLv) lv = 1;
+  t = 0; scroll = 0; px = W / 2; n = START_N; weapon = 1; gates = []; enemies = []; bullets = []; boxes = []; crates = []; pops = []; boss = null; shake = 0; nextSpawn = 400; lastGateY = 0;
+  state = "run";
+}
+// ── 입력: 누른 채 좌우로 끌기, 키보드 ←→ ──
+const toX = (e) => { const r = cv.getBoundingClientRect(); return (e.clientX - r.left) * (W / r.width); };
+cv.addEventListener("pointerdown", (e) => { e.preventDefault(); if (state === "limit") return;
+  if (state === "ready" || state === "dead" || state === "clear") { if (state === "dead" && performance.now() - deadT < 600) return; if (state !== "clear") { if (!canPlay(PK)) { state = "limit"; return; } usePlay(PK); reset(state === "dead"); } else { lv++; ls.set("vf-army-lv", lv); reset(true); } snd(600, 0.1, "triangle"); } drag = { x0: toX(e), px0: px }; });
+addEventListener("pointermove", (e) => { if (drag) px = clamp(drag.px0 + (toX(e) - drag.x0) * 1.15, ROAD_L + 20, ROAD_R - 20); });
+addEventListener("pointerup", () => (drag = null)); addEventListener("pointercancel", () => (drag = null));
+const keys = {}; addEventListener("keydown", (e) => { keys[e.code] = true; if ((e.code === "Space" || e.code === "Enter") && state !== "run" && state !== "boss") cv.dispatchEvent(new PointerEvent("pointerdown", { clientX: 0, clientY: 0 })); }); addEventListener("keyup", (e) => (keys[e.code] = false));
+
+// ── 생성 ──
+function spawnChunk() {
+  // 문 한 쌍(왼쪽, 오른쪽): 좋은 문 하나는 꼭 있게. 값은 레벨과 부대 수에 맞춤
+  const y = scroll - 60 - H;
+  const good = () => (Math.random() < 0.7 ? { op: "+", v: ri(2 + lv, 6 + lv * 2) } : { op: "x", v: 2 });
+  const bad = () => (Math.random() < 0.6 ? { op: "-", v: ri(2 + lv, 5 + lv * 2) } : { op: "/", v: 2 });
+  const a = good(), b = Math.random() < 0.55 ? bad() : good();
+  const left = Math.random() < 0.5;
+  gates.push({ y, x: left ? (ROAD_L + W / 2) / 2 : (W / 2 + ROAD_R) / 2, ...a, used: false }, { y, x: left ? (W / 2 + ROAD_R) / 2 : (ROAD_L + W / 2) / 2, ...b, used: false });
+  // 먼지 떼: 문 조금 위에
+  const k = ri(3 + lv, 6 + lv * 2), cx = rnd(ROAD_L + 60, ROAD_R - 60);
+  for (let i = 0; i < k; i++) enemies.push({ x: clamp(cx + rnd(-70, 70), ROAD_L + 14, ROAD_R - 14), y: y - rnd(260, 420), hp: Math.random() < 0.15 + lv * 0.03 ? 3 : 1, r: 13, wob: Math.random() * 7 });
+  // 가끔 택배탑(숫자만큼 맞혀야 부서짐, 부딪히면 그 숫자만큼 부대가 줄어듦)
+  if (Math.random() < 0.45) boxes.push({ x: rnd(ROAD_L + 50, ROAD_R - 50), y: y - rnd(520, 640), hp: ri(6 + lv * 2, 14 + lv * 3), w: 70 });
+  // 가끔 액상병 상자(숫자를 0으로 만들면 총알이 세짐)
+  if (weapon < 3 && Math.random() < 0.3) crates.push({ x: rnd(ROAD_L + 50, ROAD_R - 50), y: y - rnd(700, 760), hp: ri(10 + lv * 3, 20 + lv * 4), w: 56 });
+  nextSpawn = scroll - 760 - rnd(0, 120);
+}
+function spawnBoss() { boss = { x: W / 2, y: scroll - H - 200, hp: 60 + lv * 45, max: 60 + lv * 45, w: 170, h: 150, dir: 1, hitT: 0 }; state = "boss"; }
+
+// ── 진행 ──
+function step() {
+  if (state !== "run" && state !== "boss") return;
+  t++;
+  if (keys.ArrowLeft || keys.KeyA) px = clamp(px - 6, ROAD_L + 20, ROAD_R - 20);
+  if (keys.ArrowRight || keys.KeyD) px = clamp(px + 6, ROAD_L + 20, ROAD_R - 20);
+  const v = SPEED(lv);
+  if (state === "run") { scroll -= v; if (scroll < nextSpawn && -scroll < LEVEL_LEN(lv)) spawnChunk(); if (-scroll >= LEVEL_LEN(lv) && !boss && enemies.every((e) => e.y - scroll > PY + 50)) spawnBoss(); }
+  // 발사
+  if (t % FIRE_EVERY === 0) { const k = SHOTS(n); for (let i = 0; i < k; i++) bullets.push({ x: px + (i - (k - 1) / 2) * 9, y: PY - 20, dmg: weapon }); snd(900, 0.03, "square", 0.012); }
+  for (const b of bullets) b.y -= BULLET_V;
+  bullets = bullets.filter((b) => b.y > -20);
+  const sy = (wy) => wy - scroll; // 세계 y → 화면 y
+  // 먼지: 내려오면서 부대 쪽으로 살짝 붙음
+  for (const e of enemies) { e.y += ENEMY_V; if (sy(e.y) > PY - 220) e.x += Math.sign(px - e.x) * 0.9; }
+  // 총알 명중
+  for (const b of bullets) {
+    for (const e of enemies) if (e.hp > 0 && Math.abs(e.x - b.x) < e.r + 4 && Math.abs(sy(e.y) - b.y) < e.r + 6) { e.hp -= b.dmg; b.y = -99; if (e.hp <= 0) { coins++; pop("+1", e.x, sy(e.y), "#ffd83d"); } break; }
+    if (b.y < 0) continue;
+    for (const o of boxes) if (o.hp > 0 && Math.abs(o.x - b.x) < o.w / 2 && Math.abs(sy(o.y) - b.y) < 30) { o.hp -= b.dmg; b.y = -99; if (o.hp <= 0) { coins += 5; pop("+5", o.x, sy(o.y), "#ffd83d"); snd(300, 0.12, "sawtooth"); } break; }
+    if (b.y < 0) continue;
+    for (const c of crates) if (c.hp > 0 && Math.abs(c.x - b.x) < c.w / 2 && Math.abs(sy(c.y) - b.y) < 26) { c.hp -= b.dmg; b.y = -99; if (c.hp <= 0) { weapon = Math.min(3, weapon + 1); pop(weapon === 3 ? "총알 최강!" : "총알 세짐!", c.x, sy(c.y), "#3182f6"); snd(1200, 0.25, "sine", 0.05); } break; }
+    if (b.y < 0) continue;
+    if (boss && Math.abs(boss.x - b.x) < boss.w / 2 && Math.abs(sy(boss.y) - b.y) < boss.h / 2) { boss.hp -= b.dmg; boss.hitT = 4; b.y = -99; }
+  }
+  bullets = bullets.filter((b) => b.y > 0);
+  enemies = enemies.filter((e) => e.hp > 0 && sy(e.y) < H + 40);
+  boxes = boxes.filter((o) => o.hp > 0 && sy(o.y) < H + 60); crates = crates.filter((c) => c.hp > 0 && sy(c.y) < H + 60);
+  // 부대 반지름(인원수에 따라)
+  const R = squadR();
+  // 문 통과
+  for (const g of gates) if (!g.used && sy(g.y) > PY - 10 && sy(g.y) < PY + 30 && Math.abs(px - g.x) < (ROAD_R - ROAD_L) / 4) { g.used = true; applyGate(g); }
+  gates = gates.filter((g) => sy(g.y) < H + 80);
+  // 먼지와 부대 충돌: 먼지는 사라지고 부대는 그 체력만큼 줄어듦
+  for (const e of enemies) if (Math.hypot(e.x - px, sy(e.y) - PY) < R + e.r) { lose(e.hp); e.hp = 0; }
+  // 택배탑과 부딪힘
+  for (const o of boxes) if (o.hp > 0 && Math.abs(o.x - px) < o.w / 2 + R * 0.6 && Math.abs(sy(o.y) - PY) < 30) { lose(o.hp); o.hp = 0; shake = 10; }
+  // 보스
+  if (boss) {
+    if (sy(boss.y) < PY - 230) boss.y += v * 0.9; // 부대 앞까지 내려와서 멈춤
+    boss.x += boss.dir * (1.2 + lv * 0.15); if (boss.x < ROAD_L + boss.w / 2 || boss.x > ROAD_R - boss.w / 2) boss.dir *= -1;
+    if (boss.hitT > 0) boss.hitT--;
+    if (sy(boss.y) >= PY - 232 && t % 40 === 0) { // 보스가 부대 앞에 닿으면 1초마다 부대원 깎음
+      const k = 1 + Math.floor(lv / 2); lose(k); pop("-" + k, px, PY - 40, "#e23d3d"); shake = 6;
+    }
+    if (boss.hp <= 0) { state = "clear"; coins += 30; if (lv >= bestLv) { bestLv = lv + 1; ls.set("vf-army-best", bestLv); } ls.set("vf-army-coins", coins); snd(1000, 0.4, "triangle", 0.05); }
+  }
+  if (n > best) { best = n; ls.set("vf-army-bestn", best); }
+  if (n <= 0) { n = 0; state = "dead"; deadT = performance.now(); shake = 14; ls.set("vf-army-coins", coins); snd(150, 0.5, "sawtooth", 0.06); }
+  for (const p of pops) p.t++; pops = pops.filter((p) => p.t < 45);
+}
+const squadR = () => 14 + Math.sqrt(Math.min(n, 300)) * 5.2;
+function lose(k) { if (k <= 0) return; n -= k; pop("-" + k, px + rnd(-20, 20), PY - 30, "#e23d3d"); snd(220, 0.08, "square", 0.04); shake = Math.max(shake, 4); }
+function applyGate(g) {
+  const before = n;
+  if (g.op === "+") n += g.v; else if (g.op === "-") n -= g.v; else if (g.op === "x") n *= g.v; else n = Math.ceil(n / g.v);
+  n = Math.max(0, Math.min(999, n));
+  const d = n - before; pop((d >= 0 ? "+" : "") + d, px, PY - 60, d >= 0 ? "#3182f6" : "#e23d3d"); snd(d >= 0 ? 740 : 260, 0.15, d >= 0 ? "triangle" : "square", 0.05);
+}
+function pop(text, x, y, c) { pops.push({ text, x, y, c, t: 0 }); }
+
+// ── 그리기 ──
+const F = (w, s) => `${w} ${s}px "Pretendard Variable", Pretendard, sans-serif`;
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function drawRoad() {
+  ctx.fillStyle = "#8fc77a"; ctx.fillRect(0, 0, W, H);
+  // 길
+  ctx.fillStyle = "#d9d2c3"; ctx.fillRect(ROAD_L, 0, ROAD_R - ROAD_L, H);
+  ctx.fillStyle = "#c9c1b0"; ctx.fillRect(ROAD_L, 0, 6, H); ctx.fillRect(ROAD_R - 6, 0, 6, H);
+  ctx.strokeStyle = "rgba(255,255,255,.55)"; ctx.lineWidth = 4; ctx.setLineDash([26, 26]); ctx.lineDashOffset = scroll % 52; ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke(); ctx.setLineDash([]);
+  // 길가 풀 점
+  ctx.fillStyle = "rgba(0,0,0,.08)"; for (let i = 0; i < 12; i++) { const y = ((i * 97 - scroll * 0.6) % (H + 40) + H + 40) % (H + 40) - 20; ctx.fillRect(14 + (i % 2) * 10, y, 10, 4); ctx.fillRect(W - 30 - (i % 3) * 8, (y + 50) % H, 10, 4); }
+}
+function drawGate(g) {
+  const y = g.y - scroll; if (y < -80 || y > H + 20) return;
+  const good = g.op === "+" || g.op === "x", w = (ROAD_R - ROAD_L) / 2 - 10, x = g.x - w / 2;
+  ctx.fillStyle = g.used ? "rgba(150,150,150,.35)" : good ? "rgba(49,130,246,.55)" : "rgba(226,61,61,.55)"; rr(x, y - 34, w, 68, 10); ctx.fill();
+  ctx.strokeStyle = g.used ? "#999" : good ? "#1d6fe0" : "#c22"; ctx.lineWidth = 3; ctx.stroke();
+  ctx.fillStyle = "#fff"; ctx.font = F(800, 30); ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText(g.op === "x" ? "×" + g.v : g.op === "/" ? "÷" + g.v : g.op + g.v, g.x, y); ctx.textBaseline = "alphabetic";
+}
+function drawEnemy(e) {
+  const y = e.y - scroll; if (y < -30 || y > H + 30) return;
+  const big = e.hp >= 2, r = e.r + (big ? 5 : 0), wob = Math.sin(t * 0.2 + e.wob) * 2;
+  ctx.fillStyle = big ? "#6b6f7a" : "#8e93a0"; ctx.strokeStyle = "#2a2d35"; ctx.lineWidth = 2.5;
+  ctx.beginPath(); for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2, rr2 = r + (i % 2 ? 3 : -1) + wob * (i % 3 ? 1 : -1) * 0.3; ctx.lineTo(e.x + Math.cos(a) * rr2, y + Math.sin(a) * rr2); } ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(e.x - 5, y - 2, 4, 0, 7); ctx.arc(e.x + 5, y - 2, 4, 0, 7); ctx.fill();
+  ctx.fillStyle = "#222"; ctx.beginPath(); ctx.arc(e.x - 4, y - 1, 2, 0, 7); ctx.arc(e.x + 6, y - 1, 2, 0, 7); ctx.fill();
+  ctx.strokeStyle = "#222"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(e.x - 9, y - 9); ctx.lineTo(e.x - 2, y - 6); ctx.moveTo(e.x + 9, y - 9); ctx.lineTo(e.x + 2, y - 6); ctx.stroke();
+}
+function drawBox(o, crate) {
+  const y = o.y - scroll; if (y < -60 || y > H + 60) return;
+  const h = crate ? 50 : 56;
+  if (crate) { ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.strokeStyle = "#1d6fe0"; } else { ctx.fillStyle = "#d8a877"; ctx.strokeStyle = "#333"; }
+  ctx.lineWidth = 3; rr(o.x - o.w / 2, y - h / 2, o.w, h, 8); ctx.fill(); ctx.stroke();
+  if (crate) { // 액상병 그림
+    ctx.fillStyle = "#f7c8c8"; rr(o.x - 8, y - 14, 16, 30, 4); ctx.fill(); ctx.strokeStyle = "#333"; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = "#e23d3d"; ctx.fillRect(o.x - 6, y - 20, 12, 7);
+  } else { ctx.fillStyle = "#f3e2b8"; ctx.fillRect(o.x - 6, y - h / 2, 12, h); }
+  ctx.fillStyle = crate ? "#1d6fe0" : "#fff"; ctx.strokeStyle = "#222"; ctx.lineWidth = 3; ctx.font = F(800, 22); ctx.textAlign = "center";
+  const tx = String(o.hp); ctx.strokeText(tx, o.x + (crate ? 20 : 0), y - h / 2 - 8); ctx.fillText(tx, o.x + (crate ? 20 : 0), y - h / 2 - 8);
+}
+function drawBoss() {
+  const y = boss.y - scroll; if (y < -200) return;
+  const x = boss.x, w = boss.w, h = boss.h, j = boss.hitT ? 3 : 0;
+  ctx.fillStyle = boss.hitT ? "#f0b48a" : "#c9956a"; ctx.strokeStyle = "#333"; ctx.lineWidth = 4; rr(x - w / 2 + j, y - h / 2, w, h, 14); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#f3e2b8"; ctx.fillRect(x - 14 + j, y - h / 2, 28, h);
+  ctx.fillStyle = "#fff"; ctx.strokeStyle = "#222"; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(x - 38 + j, y - 10, 22, 26, 0, 0, 7); ctx.ellipse(x + 38 + j, y - 10, 22, 26, 0, 0, 7); ctx.fill(); ctx.stroke();
+  const lx = clamp((px - x) * 0.08, -8, 8); ctx.fillStyle = "#e23d3d"; ctx.beginPath(); ctx.arc(x - 38 + j + lx, y - 6, 9, 0, 7); ctx.arc(x + 38 + j + lx, y - 6, 9, 0, 7); ctx.fill();
+  ctx.strokeStyle = "#222"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x - 60, y - 44); ctx.lineTo(x - 20, y - 30); ctx.moveTo(x + 60, y - 44); ctx.lineTo(x + 20, y - 30); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x + j, y + 38, 22, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+  ctx.fillStyle = "#fff"; ctx.font = F(800, 18); ctx.textAlign = "center"; ctx.strokeStyle = "#222"; ctx.lineWidth = 3; ctx.strokeText("대형 택배", x, y - h / 2 - 34); ctx.fillText("대형 택배", x, y - h / 2 - 34);
+  // 체력 막대
+  ctx.fillStyle = "rgba(0,0,0,.35)"; rr(x - 90, y - h / 2 - 26, 180, 12, 6); ctx.fill(); ctx.fillStyle = "#e23d3d"; rr(x - 90, y - h / 2 - 26, 180 * Math.max(0, boss.hp / boss.max), 12, 6); ctx.fill();
+}
+// 부대: 가운데부터 동심원으로 배치, 많으면 60명까지만 그리고 숫자로
+function drawSquad() {
+  const im = IMG[state === "dead" ? "error" : "base"], shown = Math.min(n, 60), pts = [];
+  for (let i = 0; i < shown; i++) { if (i === 0) { pts.push([0, 0]); continue; } const ring = Math.ceil((Math.sqrt(i + 1) - 1) / 1) || 1; const perRing = ring * 6, idx = i - (3 * (ring - 1) * ring + 1); const a = (idx / perRing) * Math.PI * 2 + ring * 0.4; pts.push([Math.cos(a) * ring * 24, Math.sin(a) * ring * 14]); }
+  pts.sort((a, b) => a[1] - b[1]);
+  for (const [dx, dy] of pts) {
+    const x = px + dx, y = PY + dy, bob = Math.sin(t * 0.3 + dx) * 1.5;
+    // 긴 다리(작게) + 몸통 그림
+    ctx.strokeStyle = "#222"; ctx.lineWidth = 4; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(x - 4, y + 4); ctx.lineTo(x - 5, y + 22 + bob); ctx.moveTo(x + 4, y + 4); ctx.lineTo(x + 5, y + 22 - bob); ctx.stroke();
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 4, y + 4); ctx.lineTo(x - 5, y + 22 + bob); ctx.moveTo(x + 4, y + 4); ctx.lineTo(x + 5, y + 22 - bob); ctx.stroke();
+    if (im) { const h = UNIT_R * 2.4, w = im.width * (h / im.height); ctx.drawImage(im, x - w / 2, y - h + 6, w, h); }
+    else { ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(x, y - 6, UNIT_R, 0, 7); ctx.fill(); }
+  }
+  // 인원수
+  ctx.font = F(800, 22); ctx.textAlign = "center"; ctx.strokeStyle = "#222"; ctx.lineWidth = 4; ctx.fillStyle = "#fff";
+  const ty = PY - 40 - Math.sqrt(Math.min(n, 60)) * 10; ctx.strokeText(String(n), px, ty); ctx.fillText(String(n), px, ty);
+}
+function drawUI() {
+  // 위: 레벨, 진행 막대, 코인
+  ctx.fillStyle = "rgba(0,0,0,.35)"; rr(16, 14, W - 32, 44, 14); ctx.fill();
+  ctx.fillStyle = "#fff"; ctx.font = F(800, 16); ctx.textAlign = "left"; ctx.fillText(`${lv}판`, 30, 42);
+  const prog = boss ? 1 : clamp(-scroll / LEVEL_LEN(lv), 0, 1);
+  ctx.fillStyle = "rgba(255,255,255,.3)"; rr(80, 28, W - 190, 16, 8); ctx.fill(); ctx.fillStyle = prog >= 1 ? "#e23d3d" : "#3182f6"; rr(80, 28, (W - 190) * prog, 16, 8); ctx.fill();
+  ctx.fillStyle = "#ffd83d"; ctx.beginPath(); ctx.arc(W - 86, 36, 8, 0, 7); ctx.fill(); ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.fillText(String(coins), W - 72, 42);
+  ctx.font = F(600, 12); ctx.fillStyle = "rgba(255,255,255,.8)"; ctx.textAlign = "right"; ctx.fillText(`무기 ${weapon}단  최고 ${bestLv}판 ${best}명`, W - 22, 76);
+  for (const p of pops) { ctx.globalAlpha = Math.max(0, 1 - p.t / 45); ctx.font = F(800, 20); ctx.textAlign = "center"; ctx.strokeStyle = "#222"; ctx.lineWidth = 3; ctx.fillStyle = p.c; ctx.strokeText(p.text, p.x, p.y - p.t); ctx.fillText(p.text, p.x, p.y - p.t); ctx.globalAlpha = 1; }
+  if (state === "limit") panel("오늘은 여기까지", `하루 ${DAILY_MAX}번이에요`, "전멸하면 한 번 쓴 거예요. 내일 새벽 5시 지나면 다시", "");
+  if (state === "ready") panel("하치와레 부대", `${lv}판부터` + (leftTxt(PK) ? ", " + leftTxt(PK).replace("판", "번") : ""), "누른 채 좌우로 끌어요. 파란 문은 늘고 빨간 문은 줄어요. 전멸하면 한 번 쓴 거예요", "탭해서 시작");
+  if (state === "dead") panel("전멸", `${lv}판에서 쓰러짐`, `코인 ${coins}` + (leftTxt(PK) ? ", " + leftTxt(PK).replace("판", "번") : ""), performance.now() - deadT > 600 ? (canPlay(PK) ? "탭하면 이 판부터 다시" : "오늘 횟수를 다 썼어요") : "");
+  if (state === "clear") panel("대형 택배 격파!", `${lv}판 끝, 남은 부대 ${n}명`, `코인 +30, 지금 ${coins}`, "탭하면 다음 판");
+}
+function panel(h1, h2, h3, h4) {
+  ctx.fillStyle = "rgba(0,0,0,.45)"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "rgba(255,255,255,.95)"; rr(40, 280, W - 80, 220, 24); ctx.fill();
+  ctx.textAlign = "center"; ctx.fillStyle = "#191f28"; ctx.font = F(800, 30); ctx.fillText(h1, W / 2, 335);
+  ctx.fillStyle = "#3182f6"; ctx.font = F(700, 18); ctx.fillText(h2, W / 2, 372);
+  ctx.fillStyle = "#8b95a1"; ctx.font = F(500, 14); wrap(h3, W / 2, 404, W - 130, 20);
+  ctx.fillStyle = "#191f28"; ctx.font = F(800, 16); ctx.fillText(h4, W / 2, 470); ctx.textAlign = "left";
+}
+function wrap(txt, x, y, maxW, lh) { const words = txt.split(" "); let line = ""; for (const w of words) { const test = line ? line + " " + w : w; if (ctx.measureText(test).width > maxW && line) { ctx.fillText(line, x, y); y += lh; line = w; } else line = test; } if (line) ctx.fillText(line, x, y); }
+function frame() {
+  step();
+  ctx.save();
+  if (shake > 0) { ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake); shake *= 0.85; if (shake < 0.5) shake = 0; }
+  drawRoad();
+  for (const g of gates) drawGate(g);
+  for (const o of boxes) drawBox(o, false); for (const c of crates) drawBox(c, true);
+  for (const e of enemies) drawEnemy(e);
+  if (boss) drawBoss();
+  ctx.fillStyle = "#fff"; for (const b of bullets) { ctx.beginPath(); ctx.arc(b.x, b.y, weapon >= 3 ? 5 : 3.5, 0, 7); ctx.fill(); }
+  drawSquad();
+  ctx.restore();
+  drawUI();
+  requestAnimationFrame(frame);
+}
+Promise.all([load("base", "img/hachi_base.png"), load("error", "img/hachi_error.png")]).then(() => frame());
+</script>
+</body>
+</html>
