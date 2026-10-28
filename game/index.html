@@ -19,7 +19,7 @@
 <body>
 <div class="wrap">
   <canvas id="c" width="900" height="420"></canvas>
-  <div class="foot">탭하거나 스페이스를 누르면 점프, 길게 누르면 더 높이 뛰어요. 시험판 v10.28-4</div>
+  <div class="foot">탭하거나 스페이스를 누르면 점프, 길게 누르면 더 높이 뛰어요. 시험판 v10.28-5</div>
 </div>
 <script>
 // 하치와레 달리기 (10/28 사장님: 쉬는 시간용, 거위 달리기처럼. 몸통은 귀여운데 다리는 아주 긴 하치와레)
@@ -45,14 +45,23 @@ let t = 0, speed = SPEED0, dist = 0, score = 0, best = ls.get("vf-run-best", 0);
 let py = 0, vy = 0, onGround = true, holding = false, holdLeft = 0; // py = 발바닥 기준 높이(0 = 땅)
 let obs = [], nextGap = 0, bgx = 0, cloudx = 0, runPhase = 0, deadT = 0, shake = 0;
 let face = "base"; // base | peace | error
+// 10/28 사장님 "좀 재밌게": ① 점수 300마다 다리가 자람(최대 2배, 더 높이 뛰지만 몸이 커져 더 잘 맞음) ② 장애물을 아슬아슬하게 넘으면 콤보 점수 ③ 하치와레 말풍선 ④ 소리
+let legMul = 1, legLvl = 0, combo = 0, comboT = 0, bubble = "", bubbleT = 0, pops = [], passed = new Set();
+const LEG = () => (THIGH + SHIN) * legMul;
+const SAY_JUMP = ["야호", "흐익", "하앗", "다리 믿어", "슝"], SAY_CLOSE = ["아슬!", "휴우", "간당간당", "흐으윽"], SAY_DEAD = ["으악", "우와아앙", "아 다리…", "억울해", "한 번만 더"], SAY_GROW = ["다리가 자랐다!", "더 길어졌어", "이제 더 높이!", "다리 뭐야"];
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+function say(t, ms = 900) { bubble = t; bubbleT = performance.now() + ms; }
+function pop(text, x, y, c = "#3182f6") { pops.push({ text, x, y, c, t: 0 }); }
+// 소리: 웹오디오 짧은 삑 (첫 터치 뒤에만 남)
+let AC = null; const snd = (f, d = 0.08, type = "square", g = 0.04) => { try { AC ||= new (window.AudioContext || window.webkitAudioContext)(); const o = AC.createOscillator(), v = AC.createGain(); o.type = type; o.frequency.value = f; v.gain.value = g; o.connect(v); v.connect(AC.destination); o.start(); o.frequency.exponentialRampToValueAtTime(Math.max(40, f * 0.6), AC.currentTime + d); v.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime + d); o.stop(AC.currentTime + d); } catch {} };
 
-function reset() { t = 0; speed = SPEED0; dist = 0; score = 0; py = 0; vy = 0; onGround = true; obs = []; nextGap = 60; bgx = 0; runPhase = 0; face = "base"; deadT = 0; shake = 0; }
+function reset() { t = 0; speed = SPEED0; dist = 0; score = 0; py = 0; vy = 0; onGround = true; obs = []; nextGap = 60; bgx = 0; runPhase = 0; face = "base"; deadT = 0; shake = 0; legMul = 1; legLvl = 0; combo = 0; comboT = 0; bubble = ""; pops = []; passed = new Set(); }
 
 // ── 입력 ──
 function press() {
   if (state === "ready") { reset(); state = "run"; }
   else if (state === "dead") { if (performance.now() - deadT > 500) { reset(); state = "run"; } return; }
-  if (onGround) { vy = JUMP_V; onGround = false; holding = true; holdLeft = HOLD_MAX; face = "peace"; }
+  if (onGround) { vy = JUMP_V * (0.92 + legMul * 0.08); onGround = false; holding = true; holdLeft = HOLD_MAX; face = "peace"; snd(520, 0.12, "triangle"); if (Math.random() < 0.5) say(pick(SAY_JUMP), 600); }
 }
 function release() { holding = false; }
 addEventListener("keydown", (e) => { if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW") { e.preventDefault(); if (!e.repeat) press(); } });
@@ -63,7 +72,7 @@ addEventListener("pointerup", release); addEventListener("pointercancel", releas
 // ── 진행 ──
 function spawn() {
   const o = OBS[Math.floor(Math.random() * OBS.length)];
-  obs.push({ ...o, x: W + 40 });
+  obs.push({ ...o, x: W + 40, id: Math.random() });
   // 다음 장애물까지 거리: 속도 빠를수록 멀게, 가끔 가깝게(두 번 연속 점프)
   nextGap = (Math.random() < 0.18 && o.k !== "bird" ? 34 : 56 + Math.random() * 60) * (speed / SPEED0) * 10; // 새 다음엔 바로 안 붙임
 }
@@ -80,16 +89,28 @@ function step() {
     vy += GRAV; py -= vy;
     if (py <= 0) { py = 0; vy = 0; onGround = true; face = "base"; }
   }
+  // 다리 성장: 300점마다 10%씩, 최대 2배
+  const lvl = Math.min(10, Math.floor(score / 300));
+  if (lvl > legLvl) { legLvl = lvl; legMul = 1 + lvl * 0.1; say(pick(SAY_GROW), 1200); pop("다리 +10%", 150, GROUND - LEG() - BODY_H - 30, "#e23d3d"); snd(880, 0.2, "sine", 0.05); }
   // 장애물
   nextGap -= speed; if (nextGap <= 0) spawn();
   for (const o of obs) o.x -= speed;
+  // 넘었는지: 장애물 오른쪽 끝이 하치와레를 지나면 통과. 뛰는 중이고 발과 장애물 사이가 가까웠으면 아슬아슬 콤보
+  for (const o of obs) {
+    if (!passed.has(o.id) && o.x + o.w < 150 - 14) {
+      passed.add(o.id);
+      if (!o.fly) { const gap = py - o.h; if (!onGround && gap >= 0 && gap < 26) { combo++; comboT = performance.now() + 2500; const bonus = 10 * combo; score += bonus; dist += bonus * 12; pop(`${pick(SAY_CLOSE)} +${bonus}`, 150, GROUND - py - LEG() - BODY_H - 10, "#e23d3d"); say(pick(SAY_CLOSE), 700); snd(760 + combo * 60, 0.1, "square", 0.05); } }
+      else if (onGround) { combo++; comboT = performance.now() + 2500; const bonus = 10 * combo; score += bonus; dist += bonus * 12; pop(`안 뛰었다 +${bonus}`, 150, GROUND - LEG() - BODY_H - 10, "#3182f6"); snd(700 + combo * 60, 0.1, "square", 0.05); }
+    }
+  }
+  if (combo && performance.now() > comboT) combo = 0;
   obs = obs.filter((o) => o.x + o.w > -20);
   // 충돌: 하치와레 몸(발 위 다리 전체 + 몸통)과 장애물 상자. 다리는 가늘어서 폭을 좁게
-  const legsBox = { x: 150 - 14, y: GROUND - py - THIGH - SHIN, w: 28, h: THIGH + SHIN };
-  const bodyBox = { x: 150 - 36, y: GROUND - py - THIGH - SHIN - BODY_H + 6, w: 72, h: BODY_H - 6 };
+  const legsBox = { x: 150 - 14, y: GROUND - py - LEG(), w: 28, h: LEG() };
+  const bodyBox = { x: 150 - 36, y: GROUND - py - LEG() - BODY_H + 6, w: 72, h: BODY_H - 6 };
   for (const o of obs) {
     const ob = { x: o.x + 4, y: GROUND - (o.fly || 0) - o.h + 4, w: o.w - 8, h: o.h - 4 };
-    if (hit(legsBox, ob) || hit(bodyBox, ob)) { state = "dead"; deadT = performance.now(); face = "error"; shake = 12; if (score > best) { best = score; ls.set("vf-run-best", best); } break; }
+    if (hit(legsBox, ob) || hit(bodyBox, ob)) { state = "dead"; deadT = performance.now(); face = "error"; shake = 12; say(pick(SAY_DEAD), 2500); snd(180, 0.35, "sawtooth", 0.06); if (score > best) { best = score; ls.set("vf-run-best", best); } break; }
   }
 }
 const hit = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
@@ -149,9 +170,9 @@ function leg(hx, hy, phase, front) {
   if (state === "dead") { hipA = front ? 0.9 : -0.6; kneeA = 1.4; }
   else if (!onGround) { hipA = front ? 0.95 : -0.35; kneeA = front ? 1.1 : 0.5; } // 점프: 앞다리 접고 뒷다리 뻗음
   else { const s = Math.sin(phase); hipA = s * 0.75; kneeA = Math.max(0, Math.cos(phase)) * 1.5 + 0.15; } // 달리기: 앞으로 나간 다리는 펴고 뒤로 간 다리는 무릎 접힘
-  const kx = hx + Math.sin(hipA) * THIGH, ky = hy + Math.cos(hipA) * THIGH;
+  const kx = hx + Math.sin(hipA) * THIGH * legMul, ky = hy + Math.cos(hipA) * THIGH * legMul;
   const sa = hipA - kneeA; // 정강이 각도(무릎에서 뒤로 접힘)
-  const fx = kx + Math.sin(sa) * SHIN, fy = ky + Math.cos(sa) * SHIN;
+  const fx = kx + Math.sin(sa) * SHIN * legMul, fy = ky + Math.cos(sa) * SHIN * legMul;
   const draw = (w, c) => { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(kx, ky); ctx.lineTo(fx, fy); ctx.stroke(); };
   draw(LEG_W + 6, "#222"); draw(LEG_W, front ? "#fff" : "#eef0f2");
   // 발: 작은 타원
@@ -160,7 +181,7 @@ function leg(hx, hy, phase, front) {
 function drawHachi() {
   const cx = 150, footY = GROUND - py; // 발바닥 높이
   const bob = onGround && state === "run" ? Math.abs(Math.sin(runPhase)) * 4 : 0;
-  const hipY = footY - THIGH - SHIN + 6 - bob, bodyTop = hipY - BODY_H + 10;
+  const hipY = footY - LEG() + 6 - bob, bodyTop = hipY - BODY_H + 10;
   // 그림자
   ctx.fillStyle = "rgba(0,0,0,.14)"; ctx.beginPath(); ctx.ellipse(cx, GROUND + 6, 34 - py * 0.05, 7, 0, 0, 7); ctx.fill();
   // 뒷다리 → 몸통 → 앞다리 순서로 겹침
@@ -169,15 +190,27 @@ function drawHachi() {
   if (im) { const h = BODY_H, w = im.width * (h / im.height); ctx.drawImage(im, cx - w / 2, bodyTop, w, h); }
   else { ctx.fillStyle = "#fff"; ctx.strokeStyle = "#222"; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(cx, bodyTop + BODY_H / 2, 44, BODY_H / 2, 0, 0, 7); ctx.fill(); ctx.stroke(); }
   leg(cx + 10, hipY, runPhase, true);
+  // 말풍선
+  if (bubble && performance.now() < bubbleT) {
+    ctx.font = "800 15px \"Pretendard Variable\", Pretendard, sans-serif"; const tw = ctx.measureText(bubble).width + 22, bx = cx + 40, by = bodyTop - 30;
+    ctx.fillStyle = "#fff"; ctx.strokeStyle = "#222"; ctx.lineWidth = 2.5; rr(bx, by - 16, tw, 32, 14, true, true);
+    ctx.beginPath(); ctx.moveTo(bx + 8, by + 14); ctx.lineTo(bx + 2, by + 26); ctx.lineTo(bx + 22, by + 14); ctx.fillStyle = "#fff"; ctx.fill(); ctx.strokeStyle = "#222"; ctx.beginPath(); ctx.moveTo(bx + 8, by + 15); ctx.lineTo(bx + 2, by + 26); ctx.lineTo(bx + 22, by + 15); ctx.stroke();
+    ctx.fillStyle = "#191f28"; ctx.textAlign = "left"; ctx.fillText(bubble, bx + 11, by + 5);
+  }
+}
+function drawPops() {
+  for (const p of pops) { p.t++; ctx.globalAlpha = Math.max(0, 1 - p.t / 50); ctx.fillStyle = p.c; ctx.font = "800 20px \"Pretendard Variable\", Pretendard, sans-serif"; ctx.textAlign = "center"; ctx.fillText(p.text, p.x + 60, p.y - p.t * 1.2); ctx.globalAlpha = 1; }
+  pops = pops.filter((p) => p.t < 50); ctx.textAlign = "left";
+  if (combo >= 2 && state === "run") { ctx.fillStyle = "#e23d3d"; ctx.font = "800 22px \"Pretendard Variable\", Pretendard, sans-serif"; ctx.textAlign = "center"; ctx.fillText(combo + " 콤보!", W / 2, 60); ctx.textAlign = "left"; }
 }
 function drawUI() {
   ctx.fillStyle = "#191f28"; ctx.font = "800 26px 'Pretendard Variable', Pretendard, sans-serif"; ctx.textAlign = "right";
   ctx.fillText(String(score).padStart(5, "0"), W - 24, 40);
   ctx.fillStyle = "#8b95a1"; ctx.font = "700 14px 'Pretendard Variable', Pretendard, sans-serif";
-  ctx.fillText("최고 " + String(best).padStart(5, "0"), W - 24, 62);
+  ctx.fillText("최고 " + String(best).padStart(5, "0") + (legLvl ? "   다리 " + Math.round(legMul * 100) + "%" : ""), W - 24, 62);
   ctx.textAlign = "left";
   if (state === "ready") {
-    panel("하치와레 달리기", "탭하거나 스페이스를 눌러 시작", "상자와 병은 뛰어넘고, 날아오는 새는 뛰지 말고 지나가요");
+    panel("하치와레 달리기", "탭하거나 스페이스를 눌러 시작", "아슬아슬하게 넘으면 콤보 점수, 300점마다 다리가 자라요");
   } else if (state === "dead") {
     panel("으악", `${score}점${score >= best && score > 0 ? ", 최고 기록!" : `, 최고 ${best}점`}`, performance.now() - deadT > 500 ? "탭하면 다시 달려요" : "");
   }
@@ -197,6 +230,7 @@ function frame() {
   drawBg();
   for (const o of obs) drawObs(o);
   drawHachi();
+  drawPops();
   ctx.restore();
   drawUI();
   requestAnimationFrame(frame);
