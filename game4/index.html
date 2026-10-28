@@ -41,7 +41,7 @@ const VX = 2.6;                                // 옆으로 흐르는 속도
 const RIM_W = 84, RIM_R = 5;                   // 림 안쪽 너비, 림 끝 두께
 const BOARD_H = 96, BOARD_W = 10;              // 백보드
 const TLIM0 = 9, TLIM_MIN = 5;                 // 골 하나당 시간(초), 점수 오르면 조금씩 짧아짐
-const BOUNCE = 0.55;                           // 백보드, 림에 맞을 때 튕김
+const BOUNCE = 0.62;                           // 백보드, 림에 맞을 때 튕김
 
 let cool = false; // 10/28 사장님 "공중에서 다시 시작하니 너무 쉬움": 골 넣으면 공이 바닥까지 떨어진 뒤에야 다음 골대가 나오고 탭이 먹음
 let state = "ready", t = 0, score = 0, best = ls.get("vf-hoop-best", 0), ball, hoop, timer = 0, tlim = TLIM0, combo = 0, pops = [], deadT = 0, shake = 0, netT = 0, why = "";
@@ -85,16 +85,20 @@ function step() {
   }
   // 10/28 사장님 "반대로 들어가면 안 되고": 아래에서 위로는 그물이 막음(림 선을 위로 못 지나감)
   if (!h.scored && b.vy < 0 && b.prevY - R >= h.y - 1 && b.y - R < h.y && b.x > h.x1 - 4 && b.x < h.x2 + 4) { b.y = h.y + R; b.vy = Math.abs(b.vy) * 0.3; h.touched = true; snd(260, 0.05, "square", 0.02); }
-  // 림 양 끝(점)과 공 충돌
-  for (const rx of [h.x1, h.x2]) {
-    const dx = b.x - rx, dy = b.y - h.y, d = Math.hypot(dx, dy), min = R + RIM_R;
-    if (d < min && d > 0) {
-      const nx = dx / d, ny = dy / d, dot = b.vx * nx + b.vy * ny;
-      b.x = rx + nx * min; b.y = h.y + ny * min;
-      if (dot < 0) { b.vx -= (1 + BOUNCE) * dot * nx; b.vy -= (1 + BOUNCE) * dot * ny; }
-      h.touched = true; snd(300, 0.04, "square", 0.02);
-    }
-  }
+  // 10/28 사장님 "골대 맞고 튕기는 게 필요": 림 양 끝(두툼한 링)과 백보드까지 이어진 받침대는 선분으로 충돌, 맞으면 튕김
+  const hitSeg = (ax, ay, bx, by, rad) => {
+    const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy || 1, u = clamp(((b.x - ax) * vx + (b.y - ay) * vy) / L2, 0, 1), px = ax + vx * u, py = ay + vy * u;
+    const dx = b.x - px, dy = b.y - py, d = Math.hypot(dx, dy), min = R + rad;
+    if (d >= min || d === 0) return false;
+    const nx = dx / d, ny = dy / d, dot = b.vx * nx + b.vy * ny;
+    b.x = px + nx * min; b.y = py + ny * min;
+    if (dot < 0) { b.vx -= (1 + BOUNCE) * dot * nx; b.vy -= (1 + BOUNCE) * dot * ny; b.vx += (Math.random() - 0.5) * 0.8; } // 링은 둥글어서 살짝 제멋대로 튕김
+    return true;
+  };
+  let rimHit = false;
+  for (const rx of [h.x1, h.x2]) if (hitSeg(rx, h.y, rx, h.y, RIM_R + 2)) rimHit = true; // 링 양 끝(두툼하게)
+  if (h.side === "L" ? hitSeg(h.bx + BOARD_W, h.y, h.x1, h.y, RIM_R) : hitSeg(h.x2, h.y, h.bx, h.y, RIM_R)) rimHit = true; // 받침대
+  if (rimHit) { h.touched = true; snd(300, 0.04, "square", 0.02); }
   // 득점: 위에서 아래로 림 선을 통과
   if (!h.scored && b.vy > 0 && b.prevY <= h.y && b.y > h.y && b.x > h.x1 + 8 && b.x < h.x2 - 8) {
     h.scored = true; const swish = !h.touched;
