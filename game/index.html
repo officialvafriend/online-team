@@ -19,7 +19,7 @@
 <body>
 <div class="wrap">
   <canvas id="c" width="900" height="420"></canvas>
-  <div class="foot">탭하거나 스페이스를 누르면 점프, 길게 누르면 더 높이 뛰어요. 시험판 v10.28-6</div>
+  <div class="foot">탭하거나 스페이스를 누르면 점프, 길게 누르면 더 높이 뛰어요. 시험판 v10.28-7</div>
 </div>
 <script>
 // 하치와레 달리기 (10/28 사장님: 쉬는 시간용, 거위 달리기처럼. 몸통은 귀여운데 다리는 아주 긴 하치와레)
@@ -71,7 +71,8 @@ addEventListener("pointerup", release); addEventListener("pointercancel", releas
 
 // ── 진행 ──
 function spawn() {
-  const o = OBS[Math.floor(Math.random() * OBS.length)];
+  let o = OBS[Math.floor(Math.random() * OBS.length)];
+  if (o.fly && LEG() + BODY_H + 26 + o.h > H - 50) o = OBS[0]; // 키가 커서 새가 화면 위로 나가면 상자로 바꿈
   // 새는 그때 서 있는 키(다리 + 몸통)보다 26px 위로. 다리가 자란 뒤에도 안 뛰면 안 맞게 (10/28 사장님 "다리 길어져서 죽는 거 뭐야")
   obs.push({ ...o, x: W + 40, id: Math.random(), ...(o.fly ? { fly: Math.round(LEG() + BODY_H + 26) } : {}) });
   // 다음 장애물까지 거리: 속도 빠를수록 멀게, 가끔 가깝게(두 번 연속 점프)
@@ -90,8 +91,8 @@ function step() {
     vy += GRAV; py -= vy;
     if (py <= 0) { py = 0; vy = 0; onGround = true; face = "base"; }
   }
-  // 다리 성장: 300점마다 10%씩, 최대 2배
-  const lvl = Math.min(10, Math.floor(score / 300));
+  // 다리 성장: 300점마다 10%씩, 최대 1.5배
+  const lvl = Math.min(5, Math.floor(score / 300)); // 최대 1.5배 (2배는 화면 꼭대기까지 닿아 새가 안 보였음)
   if (lvl > legLvl) { legLvl = lvl; legMul = 1 + lvl * 0.1; say(pick(SAY_GROW), 1200); pop("다리 +10%", 150, GROUND - LEG() - BODY_H - 30, "#e23d3d"); snd(880, 0.2, "sine", 0.05); }
   // 장애물
   nextGap -= speed; if (nextGap <= 0) spawn();
