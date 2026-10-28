@@ -19,7 +19,7 @@
 <body>
 <div class="wrap">
   <canvas id="c" width="900" height="420"></canvas>
-  <div class="foot">탭하거나 스페이스를 누르면 점프, 길게 누르면 더 높이 뛰어요. 시험판 v10.28-5</div>
+  <div class="foot">탭하거나 스페이스를 누르면 점프, 길게 누르면 더 높이 뛰어요. 시험판 v10.28-6</div>
 </div>
 <script>
 // 하치와레 달리기 (10/28 사장님: 쉬는 시간용, 거위 달리기처럼. 몸통은 귀여운데 다리는 아주 긴 하치와레)
@@ -72,7 +72,8 @@ addEventListener("pointerup", release); addEventListener("pointercancel", releas
 // ── 진행 ──
 function spawn() {
   const o = OBS[Math.floor(Math.random() * OBS.length)];
-  obs.push({ ...o, x: W + 40, id: Math.random() });
+  // 새는 그때 서 있는 키(다리 + 몸통)보다 26px 위로. 다리가 자란 뒤에도 안 뛰면 안 맞게 (10/28 사장님 "다리 길어져서 죽는 거 뭐야")
+  obs.push({ ...o, x: W + 40, id: Math.random(), ...(o.fly ? { fly: Math.round(LEG() + BODY_H + 26) } : {}) });
   // 다음 장애물까지 거리: 속도 빠를수록 멀게, 가끔 가깝게(두 번 연속 점프)
   nextGap = (Math.random() < 0.18 && o.k !== "bird" ? 34 : 56 + Math.random() * 60) * (speed / SPEED0) * 10; // 새 다음엔 바로 안 붙임
 }
