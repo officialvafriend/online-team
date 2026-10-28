@@ -19,7 +19,7 @@
 <body>
 <div class="wrap">
   <canvas id="c" width="900" height="420"></canvas>
-  <div class="foot">탭하거나 스페이스를 누르면 점프, 길게 누르면 더 높이 뛰어요. 시험판 v10.28-8</div>
+  <div class="foot">탭하거나 스페이스를 누르면 점프, 길게 누르면 더 높이 뛰어요. 시험판 v10.28-9</div>
 </div>
 <script>
 // 하치와레 달리기 (10/28 사장님: 쉬는 시간용, 거위 달리기처럼. 몸통은 귀여운데 다리는 아주 긴 하치와레)
@@ -106,7 +106,7 @@ function step() {
     if (py <= 0) { py = 0; vy = 0; onGround = true; face = "base"; }
   }
   // 다리 성장: 300점마다 10%씩, 최대 1.5배
-  const lvl = Math.min(5, Math.floor(score / 300)); // 최대 1.5배 (2배는 화면 꼭대기까지 닿아 새가 안 보였음)
+  const lvl = 0; // 10/28 사장님 "짜증나는 다리는 이제 그만 길어져도 됨" → 성장 끔(코드는 남김, 1로 바꾸면 다시 자람)
   if (lvl > legLvl) { legLvl = lvl; legMul = 1 + lvl * 0.1; say(pick(SAY_GROW), 1200); pop("다리 +10%", 150, GROUND - LEG() - BODY_H - 30, "#e23d3d"); snd(880, 0.2, "sine", 0.05); }
   // 장애물
   nextGap -= speed; if (nextGap <= 0) spawn();
@@ -227,7 +227,7 @@ function drawUI() {
   ctx.textAlign = "left";
   if (state === "limit") { panel("오늘은 여기까지", `하루 ${DAILY_MAX}판이에요`, "내일 새벽 5시 지나면 다시 할 수 있어요"); return; }
   if (state === "ready") {
-    panel("하치와레 달리기", "탭하거나 스페이스를 눌러 시작", (leftTxt(PK) ? leftTxt(PK) + ". " : "") + "아슬아슬하게 넘으면 콤보 점수, 300점마다 다리가 자라요");
+    panel("하치와레 달리기", "탭하거나 스페이스를 눌러 시작", (leftTxt(PK) ? leftTxt(PK) + ". " : "") + "아슬아슬하게 넘으면 콤보 점수, 새는 뛰지 말고 지나가요");
   } else if (state === "dead") {
     panel("으악", `${score}점${score >= best && score > 0 ? ", 최고 기록!" : `, 최고 ${best}점`}`, performance.now() - deadT > 500 ? (canPlay(PK) ? "탭하면 다시 달려요" + (leftTxt(PK) ? ", " + leftTxt(PK) : "") : "오늘 판은 다 썼어요") : "");
   }
