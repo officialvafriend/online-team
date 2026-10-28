@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="robots" content="noindex">
+<title>하치와레 달리기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  :root{--bg:#f2f4f6;--ink:#191f28;--sub:#8b95a1;--blue:#3182f6}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;background:var(--bg);color:var(--ink);font-family:"Pretendard Variable",Pretendard,"Malgun Gothic",sans-serif;overflow:hidden;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+  .wrap{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:10px}
+  canvas{width:min(100vw - 20px, 900px);aspect-ratio:900/420;border-radius:22px;background:#dff1fb;display:block;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+  .foot{font-size:13px;color:var(--sub);text-align:center;line-height:1.5}
+  @media (orientation:portrait) and (max-width:600px){ .foot{font-size:12px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="c" width="900" height="420"></canvas>
+  <div class="foot">탭하거나 스페이스를 누르면 점프, 길게 누르면 더 높이 뛰어요. 시험판 v10.28-1</div>
+</div>
+<script>
+// 하치와레 달리기 (10/28 사장님: 쉬는 시간용, 거위 달리기처럼. 몸통은 귀여운데 다리는 아주 긴 하치와레)
+// 몸통 = 관리자 사무실 하치와레 그림(기본, 브이, 우는 얼굴), 다리는 여기서 그림. 점수와 최고 기록은 이 기기에만
+const W = 900, H = 420, GROUND = 372;
+const cv = document.getElementById("c"), ctx = cv.getContext("2d");
+const IMG = {}; const load = (k, src) => new Promise((r) => { const i = new Image(); i.onload = () => r((IMG[k] = i)); i.onerror = () => r(null); i.src = src; });
+const ls = { get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+
+// ── 수치 ──
+const BODY_H = 92;                 // 몸통 그림 높이(px)
+const THIGH = 60, SHIN = 62;       // 다리 길이: 허벅지, 정강이 (사장님: 다리는 길게)
+const LEG_W = 9;                   // 다리 굵기
+const GRAV = 0.78, JUMP_V = -16.5, JUMP_HOLD = 0.55, HOLD_MAX = 11; // 점프: 처음 속도, 누르고 있으면 조금 더
+const SPEED0 = 6, SPEED_MAX = 14, SPEED_UP = 0.0012; // 땅 속도(px/프레임)
+const OBS = [ // 장애물 종류: 폭, 높이, 그리는 법
+  { k: "box", w: 48, h: 50 }, { k: "bottle", w: 30, h: 72 }, { k: "bigbox", w: 70, h: 92 }, { k: "box2", w: 100, h: 50 },
+];
+
+let state = "ready"; // ready | run | dead
+let t = 0, speed = SPEED0, dist = 0, score = 0, best = ls.get("vf-run-best", 0);
+let py = 0, vy = 0, onGround = true, holding = false, holdLeft = 0; // py = 발바닥 기준 높이(0 = 땅)
+let obs = [], nextGap = 0, bgx = 0, cloudx = 0, runPhase = 0, deadT = 0, shake = 0;
+let face = "base"; // base | peace | error
+
+function reset() { t = 0; speed = SPEED0; dist = 0; score = 0; py = 0; vy = 0; onGround = true; obs = []; nextGap = 60; bgx = 0; runPhase = 0; face = "base"; deadT = 0; shake = 0; }
+
+// ── 입력 ──
+function press() {
+  if (state === "ready") { reset(); state = "run"; }
+  else if (state === "dead") { if (performance.now() - deadT > 500) { reset(); state = "run"; } return; }
+  if (onGround) { vy = JUMP_V; onGround = false; holding = true; holdLeft = HOLD_MAX; face = "peace"; }
+}
+function release() { holding = false; }
+addEventListener("keydown", (e) => { if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW") { e.preventDefault(); if (!e.repeat) press(); } });
+addEventListener("keyup", (e) => { if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW") release(); });
+cv.addEventListener("pointerdown", (e) => { e.preventDefault(); press(); });
+addEventListener("pointerup", release); addEventListener("pointercancel", release);
+
+// ── 진행 ──
+function spawn() {
+  const o = OBS[Math.floor(Math.random() * OBS.length)];
+  obs.push({ ...o, x: W + 40 });
+  // 다음 장애물까지 거리: 속도 빠를수록 멀게, 가끔 가깝게(두 번 연속 점프)
+  nextGap = (Math.random() < 0.2 ? 36 : 60 + Math.random() * 70) * (speed / SPEED0) * 10;
+}
+function step() {
+  if (state !== "run") return;
+  t++;
+  speed = Math.min(SPEED_MAX, speed + SPEED_UP);
+  dist += speed; score = Math.floor(dist / 12);
+  bgx = (bgx + speed * 0.25) % W; cloudx = (cloudx + speed * 0.08) % W;
+  runPhase += speed * 0.11;
+  // 점프
+  if (!onGround) {
+    if (holding && holdLeft > 0 && vy < 0) { vy -= JUMP_HOLD; holdLeft--; }
+    vy += GRAV; py -= vy;
+    if (py <= 0) { py = 0; vy = 0; onGround = true; face = "base"; }
+  }
+  // 장애물
+  nextGap -= speed; if (nextGap <= 0) spawn();
+  for (const o of obs) o.x -= speed;
+  obs = obs.filter((o) => o.x + o.w > -20);
+  // 충돌: 하치와레 몸(발 위 다리 전체 + 몸통)과 장애물 상자. 다리는 가늘어서 폭을 좁게
+  const legsBox = { x: 150 - 14, y: GROUND - py - THIGH - SHIN, w: 28, h: THIGH + SHIN };
+  const bodyBox = { x: 150 - 36, y: GROUND - py - THIGH - SHIN - BODY_H + 6, w: 72, h: BODY_H - 6 };
+  for (const o of obs) {
+    const ob = { x: o.x + 4, y: GROUND - o.h + 4, w: o.w - 8, h: o.h - 4 };
+    if (hit(legsBox, ob) || hit(bodyBox, ob)) { state = "dead"; deadT = performance.now(); face = "error"; shake = 12; if (score > best) { best = score; ls.set("vf-run-best", best); } break; }
+  }
+}
+const hit = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+
+// ── 그리기 ──
+function drawBg() {
+  // 하늘
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#cfeafc"); g.addColorStop(1, "#eaf6fd"); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // 구름 (느리게)
+  ctx.fillStyle = "rgba(255,255,255,.85)";
+  for (let i = 0; i < 4; i++) { const x = ((i * 260 - cloudx) % (W + 200) + W + 200) % (W + 200) - 100, y = 50 + (i % 2) * 36; cloud(x, y, 1 + (i % 3) * 0.25); }
+  // 들판 그림(관리자 사무실 배경)을 땅 위에 두 장 이어서 흘림
+  const bg = IMG.field;
+  if (bg) { const sy = bg.height * 0.3, sh = bg.height - sy, h = 170, w = bg.width * (h / sh); for (let x = -bgx; x < W; x += w) ctx.drawImage(bg, 0, sy, bg.width, sh, x, GROUND - h + 12, w, h); } // 그림의 하늘 부분은 빼고 들판만
+  else { ctx.fillStyle = "#cfe8b8"; ctx.fillRect(0, GROUND - 60, W, 60); }
+  // 땅
+  ctx.fillStyle = "#b9d98f"; ctx.fillRect(0, GROUND, W, H - GROUND);
+  ctx.fillStyle = "#9cc46f"; ctx.fillRect(0, GROUND, W, 4);
+  ctx.strokeStyle = "rgba(0,0,0,.08)"; ctx.lineWidth = 2;
+  for (let x = -((dist * 1) % 40); x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, GROUND + 18); ctx.lineTo(x + 14, GROUND + 18); ctx.stroke(); }
+}
+function cloud(x, y, s) { ctx.beginPath(); ctx.arc(x, y, 18 * s, 0, 7); ctx.arc(x + 22 * s, y - 10 * s, 24 * s, 0, 7); ctx.arc(x + 50 * s, y, 18 * s, 0, 7); ctx.fill(); }
+function drawObs(o) {
+  const x = o.x, y = GROUND - o.h;
+  if (o.k === "bottle") { // 액상병: 투명한 병 + 뚜껑
+    ctx.fillStyle = "#fff"; ctx.strokeStyle = "#333"; ctx.lineWidth = 3;
+    rr(x, y + 14, o.w, o.h - 14, 8, true, true);
+    ctx.fillStyle = "#e23d3d"; rr(x + 6, y, o.w - 12, 16, 4, true, true);
+    ctx.fillStyle = "#f7c8c8"; rr(x + 6, y + 30, o.w - 12, o.h - 46, 4, true, false);
+    return;
+  }
+  // 택배 상자: 갈색 상자 + 테이프
+  ctx.fillStyle = o.k === "bigbox" ? "#c9956a" : "#d8a877"; ctx.strokeStyle = "#333"; ctx.lineWidth = 3;
+  rr(x, y, o.w, o.h, 6, true, true);
+  ctx.fillStyle = "#f3e2b8"; ctx.fillRect(x + o.w / 2 - 7, y, 14, o.h);
+  ctx.strokeStyle = "rgba(0,0,0,.25)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x + o.w / 2 - 7, y); ctx.lineTo(x + o.w / 2 - 7, y + o.h); ctx.moveTo(x + o.w / 2 + 7, y); ctx.lineTo(x + o.w / 2 + 7, y + o.h); ctx.stroke();
+  if (o.k === "box2") { ctx.fillStyle = "#333"; ctx.font = "bold 12px sans-serif"; ctx.fillText("VF", x + 8, y + 20); }
+}
+function rr(x, y, w, h, r, fill, stroke) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); if (fill) ctx.fill(); if (stroke) ctx.stroke(); }
+
+// 다리 한 짝: 엉덩이(hx,hy)에서 허벅지, 무릎, 정강이, 발. 각도는 달리기 위상으로
+function leg(hx, hy, phase, front) {
+  let hipA, kneeA;
+  if (state === "dead") { hipA = front ? 0.9 : -0.6; kneeA = 1.4; }
+  else if (!onGround) { hipA = front ? 0.95 : -0.35; kneeA = front ? 1.1 : 0.5; } // 점프: 앞다리 접고 뒷다리 뻗음
+  else { const s = Math.sin(phase); hipA = s * 0.75; kneeA = Math.max(0, Math.cos(phase)) * 1.5 + 0.15; } // 달리기: 앞으로 나간 다리는 펴고 뒤로 간 다리는 무릎 접힘
+  const kx = hx + Math.sin(hipA) * THIGH, ky = hy + Math.cos(hipA) * THIGH;
+  const sa = hipA - kneeA; // 정강이 각도(무릎에서 뒤로 접힘)
+  const fx = kx + Math.sin(sa) * SHIN, fy = ky + Math.cos(sa) * SHIN;
+  const draw = (w, c) => { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(kx, ky); ctx.lineTo(fx, fy); ctx.stroke(); };
+  draw(LEG_W + 6, "#222"); draw(LEG_W, front ? "#fff" : "#eef0f2");
+  // 발: 작은 타원
+  ctx.save(); ctx.translate(fx, fy); ctx.rotate(sa * 0.3); ctx.fillStyle = front ? "#fff" : "#eef0f2"; ctx.strokeStyle = "#222"; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(6, 2, 13, 7, 0, 0, 7); ctx.fill(); ctx.stroke(); ctx.restore();
+}
+function drawHachi() {
+  const cx = 150, footY = GROUND - py; // 발바닥 높이
+  const bob = onGround && state === "run" ? Math.abs(Math.sin(runPhase)) * 4 : 0;
+  const hipY = footY - THIGH - SHIN + 6 - bob, bodyTop = hipY - BODY_H + 10;
+  // 그림자
+  ctx.fillStyle = "rgba(0,0,0,.14)"; ctx.beginPath(); ctx.ellipse(cx, GROUND + 6, 34 - py * 0.05, 7, 0, 0, 7); ctx.fill();
+  // 뒷다리 → 몸통 → 앞다리 순서로 겹침
+  leg(cx - 10, hipY, runPhase + Math.PI, false);
+  const im = IMG[face] || IMG.base;
+  if (im) { const h = BODY_H, w = im.width * (h / im.height); ctx.drawImage(im, cx - w / 2, bodyTop, w, h); }
+  else { ctx.fillStyle = "#fff"; ctx.strokeStyle = "#222"; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(cx, bodyTop + BODY_H / 2, 44, BODY_H / 2, 0, 0, 7); ctx.fill(); ctx.stroke(); }
+  leg(cx + 10, hipY, runPhase, true);
+}
+function drawUI() {
+  ctx.fillStyle = "#191f28"; ctx.font = "800 26px 'Pretendard Variable', Pretendard, sans-serif"; ctx.textAlign = "right";
+  ctx.fillText(String(score).padStart(5, "0"), W - 24, 40);
+  ctx.fillStyle = "#8b95a1"; ctx.font = "700 14px 'Pretendard Variable', Pretendard, sans-serif";
+  ctx.fillText("최고 " + String(best).padStart(5, "0"), W - 24, 62);
+  ctx.textAlign = "left";
+  if (state === "ready") {
+    panel("하치와레 달리기", "탭하거나 스페이스를 눌러 시작", "다리가 길어서 잘 뛰어요. 택배 상자와 액상병을 넘으세요");
+  } else if (state === "dead") {
+    panel("으악", `${score}점${score >= best && score > 0 ? ", 최고 기록!" : `, 최고 ${best}점`}`, performance.now() - deadT > 500 ? "탭하면 다시 달려요" : "");
+  }
+}
+function panel(h1, h2, h3) {
+  ctx.fillStyle = "rgba(255,255,255,.9)"; rr(W / 2 - 220, 110, 440, 150, 22, true, false);
+  ctx.fillStyle = "#191f28"; ctx.textAlign = "center";
+  ctx.font = "800 32px 'Pretendard Variable', Pretendard, sans-serif"; ctx.fillText(h1, W / 2, 160);
+  ctx.font = "700 18px 'Pretendard Variable', Pretendard, sans-serif"; ctx.fillStyle = "#3182f6"; ctx.fillText(h2, W / 2, 196);
+  ctx.font = "500 14px 'Pretendard Variable', Pretendard, sans-serif"; ctx.fillStyle = "#8b95a1"; ctx.fillText(h3, W / 2, 228);
+  ctx.textAlign = "left";
+}
+function frame() {
+  step();
+  ctx.save();
+  if (shake > 0) { ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake); shake *= 0.85; if (shake < 0.5) shake = 0; }
+  drawBg();
+  for (const o of obs) drawObs(o);
+  drawHachi();
+  ctx.restore();
+  drawUI();
+  requestAnimationFrame(frame);
+}
+Promise.all([load("base", "img/hachi_base.png"), load("peace", "img/hachi_peace.png"), load("error", "img/hachi_error.png"), load("field", "img/들판배경.png")]).then(() => { reset(); frame(); });
+</script>
+</body>
+</html>
