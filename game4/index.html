@@ -110,7 +110,7 @@ function step() {
 // ── 그림 ──
 function drawBg() {
   const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#fbf4ea"); g.addColorStop(1, "#f0e2cc"); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  if (IMG.logo) { ctx.save(); ctx.globalAlpha = 0.10; ctx.globalCompositeOperation = "multiply"; ctx.drawImage(IMG.logo, W / 2 - 170, 300, 340, 340); ctx.restore(); } // 배경 워터마크 로고
+  if (IMG.logo) { ctx.save(); ctx.globalAlpha = 0.14; ctx.globalCompositeOperation = "multiply"; ctx.drawImage(IMG.logo, W / 2 - 190, 290, 380, 380); ctx.restore(); } // 배경 워터마크 로고
   ctx.strokeStyle = "rgba(160,120,80,.18)"; ctx.lineWidth = 2; for (let i = 1; i < 9; i++) { ctx.beginPath(); ctx.moveTo(0, i * 90); ctx.lineTo(W, i * 90); ctx.stroke(); }
   ctx.fillStyle = "#d9b98f"; ctx.fillRect(0, FLOOR, W, H - FLOOR); ctx.fillStyle = "#c4a176"; ctx.fillRect(0, FLOOR, W, 6);
   ctx.strokeStyle = "rgba(200,60,60,.35)"; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(W / 2, FLOOR, 120, Math.PI, 0); ctx.stroke();
@@ -139,8 +139,7 @@ function drawBall() {
   ctx.strokeStyle = "#3a2411"; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.arc(0, 0, R, 0, 7); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(-R, 0); ctx.lineTo(R, 0); ctx.moveTo(0, -R); ctx.lineTo(0, R); ctx.stroke();
   ctx.beginPath(); ctx.arc(-R * 1.15, 0, R * 0.95, -0.9, 0.9); ctx.stroke(); ctx.beginPath(); ctx.arc(R * 1.15, 0, R * 0.95, Math.PI - 0.9, Math.PI + 0.9); ctx.stroke();
-  // 로고: 흰색으로 바꾼 로고를 공 가운데 크게(사장님 "로고가 잘 안 보인다"). 빨강은 주황 위에서 묻혀서 흰색
-  if (IMG.logoW) { ctx.save(); ctx.beginPath(); ctx.arc(0, 0, R - 1, 0, 7); ctx.clip(); ctx.drawImage(IMG.logoW, -R * 1.25, -R * 1.25, R * 2.5, R * 2.5); ctx.restore(); }
+  // 10/28 사장님 "난 배경에만 있는 게 좋아" → 공에는 로고 없음(배경 워터마크만)
   ctx.restore();
 }
 function drawUI() {
