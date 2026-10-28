@@ -19,7 +19,7 @@
 <body>
 <div class="wrap">
   <canvas id="c" width="900" height="420"></canvas>
-  <div class="foot">탭하거나 스페이스를 누르면 점프, 길게 누르면 더 높이 뛰어요. 시험판 v10.28-1</div>
+  <div class="foot">탭하거나 스페이스를 누르면 점프, 길게 누르면 더 높이 뛰어요. 시험판 v10.28-2</div>
 </div>
 <script>
 // 하치와레 달리기 (10/28 사장님: 쉬는 시간용, 거위 달리기처럼. 몸통은 귀여운데 다리는 아주 긴 하치와레)
@@ -33,10 +33,11 @@ const ls = { get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?
 const BODY_H = 92;                 // 몸통 그림 높이(px)
 const THIGH = 60, SHIN = 62;       // 다리 길이: 허벅지, 정강이 (사장님: 다리는 길게)
 const LEG_W = 9;                   // 다리 굵기
-const GRAV = 0.78, JUMP_V = -16.5, JUMP_HOLD = 0.55, HOLD_MAX = 11; // 점프: 처음 속도, 누르고 있으면 조금 더
-const SPEED0 = 6, SPEED_MAX = 14, SPEED_UP = 0.0012; // 땅 속도(px/프레임)
+const GRAV = 0.82, JUMP_V = -16.5, JUMP_HOLD = 0.5, HOLD_MAX = 8; // 점프: 처음 속도, 누르고 있으면 조금 더
+const SPEED0 = 7.5, SPEED_MAX = 19, SPEED_UP = 0.0028; // 10/28 사장님 "너무 쉬움": 처음부터 빠르고 금방 빨라짐 // 땅 속도(px/프레임)
 const OBS = [ // 장애물 종류: 폭, 높이, 그리는 법
   { k: "box", w: 48, h: 50 }, { k: "bottle", w: 30, h: 72 }, { k: "bigbox", w: 70, h: 92 }, { k: "box2", w: 100, h: 50 },
+  { k: "box3", w: 150, h: 56 }, { k: "tall", w: 34, h: 108 }, { k: "bird", w: 58, h: 34, fly: 118 }, { k: "bird", w: 58, h: 34, fly: 150 }, // 날아오는 건 점프하다 맞음. 안 뛰고 지나가야 함
 ];
 
 let state = "ready"; // ready | run | dead
@@ -64,7 +65,7 @@ function spawn() {
   const o = OBS[Math.floor(Math.random() * OBS.length)];
   obs.push({ ...o, x: W + 40 });
   // 다음 장애물까지 거리: 속도 빠를수록 멀게, 가끔 가깝게(두 번 연속 점프)
-  nextGap = (Math.random() < 0.2 ? 36 : 60 + Math.random() * 70) * (speed / SPEED0) * 10;
+  nextGap = (Math.random() < 0.3 ? 30 : 44 + Math.random() * 56) * (speed / SPEED0) * 10;
 }
 function step() {
   if (state !== "run") return;
@@ -87,7 +88,7 @@ function step() {
   const legsBox = { x: 150 - 14, y: GROUND - py - THIGH - SHIN, w: 28, h: THIGH + SHIN };
   const bodyBox = { x: 150 - 36, y: GROUND - py - THIGH - SHIN - BODY_H + 6, w: 72, h: BODY_H - 6 };
   for (const o of obs) {
-    const ob = { x: o.x + 4, y: GROUND - o.h + 4, w: o.w - 8, h: o.h - 4 };
+    const ob = { x: o.x + 4, y: GROUND - (o.fly || 0) - o.h + 4, w: o.w - 8, h: o.h - 4 };
     if (hit(legsBox, ob) || hit(bodyBox, ob)) { state = "dead"; deadT = performance.now(); face = "error"; shake = 12; if (score > best) { best = score; ls.set("vf-run-best", best); } break; }
   }
 }
@@ -112,7 +113,20 @@ function drawBg() {
 }
 function cloud(x, y, s) { ctx.beginPath(); ctx.arc(x, y, 18 * s, 0, 7); ctx.arc(x + 22 * s, y - 10 * s, 24 * s, 0, 7); ctx.arc(x + 50 * s, y, 18 * s, 0, 7); ctx.fill(); }
 function drawObs(o) {
-  const x = o.x, y = GROUND - o.h;
+  const x = o.x, y = GROUND - (o.fly || 0) - o.h;
+  if (o.k === "bird") { // 날아오는 새: 흰 몸통, 날개는 펄럭
+    const f = Math.sin(t * 0.35) * 10;
+    ctx.fillStyle = "#fff"; ctx.strokeStyle = "#222"; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(x + 30, y + 20, 22, 13, 0, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + 22, y + 14); ctx.lineTo(x + 34, y + 2 - f); ctx.lineTo(x + 44, y + 14); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#f6a623"; ctx.beginPath(); ctx.moveTo(x + 8, y + 20); ctx.lineTo(x - 4, y + 24); ctx.lineTo(x + 8, y + 27); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#222"; ctx.beginPath(); ctx.arc(x + 16, y + 17, 2.5, 0, 7); ctx.fill();
+    return;
+  }
+  if (o.k === "tall") { // 세워 둔 긴 상자
+    ctx.fillStyle = "#c9956a"; ctx.strokeStyle = "#333"; ctx.lineWidth = 3; rr(x, y, o.w, o.h, 6, true, true);
+    ctx.fillStyle = "#f3e2b8"; ctx.fillRect(x, y + o.h / 2 - 7, o.w, 14); return;
+  }
   if (o.k === "bottle") { // 액상병: 투명한 병 + 뚜껑
     ctx.fillStyle = "#fff"; ctx.strokeStyle = "#333"; ctx.lineWidth = 3;
     rr(x, y + 14, o.w, o.h - 14, 8, true, true);
@@ -125,7 +139,7 @@ function drawObs(o) {
   rr(x, y, o.w, o.h, 6, true, true);
   ctx.fillStyle = "#f3e2b8"; ctx.fillRect(x + o.w / 2 - 7, y, 14, o.h);
   ctx.strokeStyle = "rgba(0,0,0,.25)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x + o.w / 2 - 7, y); ctx.lineTo(x + o.w / 2 - 7, y + o.h); ctx.moveTo(x + o.w / 2 + 7, y); ctx.lineTo(x + o.w / 2 + 7, y + o.h); ctx.stroke();
-  if (o.k === "box2") { ctx.fillStyle = "#333"; ctx.font = "bold 12px sans-serif"; ctx.fillText("VF", x + 8, y + 20); }
+  if (o.k === "box2" || o.k === "box3") { ctx.fillStyle = "#333"; ctx.font = "bold 12px sans-serif"; ctx.fillText("VF", x + 8, y + 20); }
 }
 function rr(x, y, w, h, r, fill, stroke) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); if (fill) ctx.fill(); if (stroke) ctx.stroke(); }
 
@@ -163,7 +177,7 @@ function drawUI() {
   ctx.fillText("최고 " + String(best).padStart(5, "0"), W - 24, 62);
   ctx.textAlign = "left";
   if (state === "ready") {
-    panel("하치와레 달리기", "탭하거나 스페이스를 눌러 시작", "다리가 길어서 잘 뛰어요. 택배 상자와 액상병을 넘으세요");
+    panel("하치와레 달리기", "탭하거나 스페이스를 눌러 시작", "상자와 병은 뛰어넘고, 날아오는 새는 뛰지 말고 지나가요");
   } else if (state === "dead") {
     panel("으악", `${score}점${score >= best && score > 0 ? ", 최고 기록!" : `, 최고 ${best}점`}`, performance.now() - deadT > 500 ? "탭하면 다시 달려요" : "");
   }
