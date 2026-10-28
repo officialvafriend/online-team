@@ -36,17 +36,17 @@ const leftTxt = () => (FREE ? "" : `오늘 ${DAILY_MAX - playsOf()}판 남음`);
 
 // ── 수치 ──
 const R = 26;                                  // 공 반지름
-const G = 0.42, JUMP = -9.8; // 10/28 "너무 어려워졌다" → 규칙(아래서 막힘, 바닥부터 다시)은 두고 속도, 시간만 다시 느슨하게                  // 중력, 탭 한 번에 튀어 오르는 힘
-const VX = 2.6;                                // 옆으로 흐르는 속도
-const RIM_W = 84, RIM_R = 5;                   // 림 안쪽 너비, 림 끝 두께
+const G = 0.47, JUMP = -10.2; // 10/28 "너무 어려워졌다" → 규칙(아래서 막힘, 바닥부터 다시)은 두고 속도, 시간만 다시 느슨하게                  // 중력, 탭 한 번에 튀어 오르는 힘
+const VX = 3.1; // 10/28 "너무 쉽잖아" → 한 단계 올림                                // 옆으로 흐르는 속도
+const RIM_W = 78, RIM_R = 5;                   // 림 안쪽 너비, 림 끝 두께
 const BOARD_H = 96, BOARD_W = 10;              // 백보드
-const TLIM0 = 9, TLIM_MIN = 5;                 // 골 하나당 시간(초), 점수 오르면 조금씩 짧아짐
+const TLIM0 = 6.5, TLIM_MIN = 3.5;                 // 골 하나당 시간(초), 점수 오르면 조금씩 짧아짐
 const BOUNCE = 0.62;                           // 백보드, 림에 맞을 때 튕김
 
 let cool = false; // 10/28 사장님 "공중에서 다시 시작하니 너무 쉬움": 골 넣으면 공이 바닥까지 떨어진 뒤에야 다음 골대가 나오고 탭이 먹음
 let state = "ready", t = 0, score = 0, best = ls.get("vf-hoop-best", 0), ball, hoop, timer = 0, tlim = TLIM0, combo = 0, pops = [], deadT = 0, shake = 0, netT = 0, why = "";
 function newHoop(side) {
-  const y = rnd(250, 480);
+  const y = rnd(200, 540);
   const x1 = side === "L" ? 62 : W - 62 - RIM_W, x2 = x1 + RIM_W;
   hoop = { side, y, x1, x2, bx: side === "L" ? x1 - BOARD_W - 2 : x2 + 2, touched: false, scored: false };
   ball.vx = side === "L" ? -VX : VX; // 공은 골대 쪽으로 흐름
@@ -106,7 +106,7 @@ function step() {
     const pts = swish ? (combo >= 3 ? 3 : 2) : 1; score += pts; netT = 20;
     pop(swish ? (combo >= 3 ? `스위시 x${combo} +${pts}` : `스위시 +${pts}`) : "+1", (h.x1 + h.x2) / 2, h.y - 40, swish ? "#e8262f" : "#191f28");
     snd(880, 0.08, "triangle", 0.03); setTimeout(() => snd(swish ? 1320 : 1100, 0.12, "triangle", 0.03), 70);
-    tlim = Math.max(TLIM_MIN, TLIM0 - score * 0.05); cool = true; // 바닥에 닿으면 다음 골대 + 시간 다시
+    tlim = Math.max(TLIM_MIN, TLIM0 - score * 0.08); cool = true; // 바닥에 닿으면 다음 골대 + 시간 다시
     b.vy = -7.5; b.vx = (h.side === "L" ? 1 : -1) * VX * 1.5; // 10/28 사장님 "포물선으로 떨어지게": 그물을 통과하며 살짝 튀어 올라 반대편으로 포물선 낙하
   }
   // 흐르는 방향이 튕겨서 바뀌었으면 천천히 골대 쪽으로 되돌림
