@@ -19,7 +19,7 @@
 <body>
 <div class="wrap">
   <canvas id="c" width="900" height="420"></canvas>
-  <div class="foot">탭하거나 스페이스를 누르면 점프, 길게 누르면 더 높이 뛰어요. 시험판 v10.28-3</div>
+  <div class="foot">탭하거나 스페이스를 누르면 점프, 길게 누르면 더 높이 뛰어요. 시험판 v10.28-4</div>
 </div>
 <script>
 // 하치와레 달리기 (10/28 사장님: 쉬는 시간용, 거위 달리기처럼. 몸통은 귀여운데 다리는 아주 긴 하치와레)
@@ -33,11 +33,11 @@ const ls = { get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?
 const BODY_H = 92;                 // 몸통 그림 높이(px)
 const THIGH = 60, SHIN = 62;       // 다리 길이: 허벅지, 정강이 (사장님: 다리는 길게)
 const LEG_W = 9;                   // 다리 굵기
-const GRAV = 0.82, JUMP_V = -16.5, JUMP_HOLD = 0.5, HOLD_MAX = 8; // 점프: 처음 속도, 누르고 있으면 조금 더
-const SPEED0 = 7.5, SPEED_MAX = 19, SPEED_UP = 0.0028; // 10/28 사장님 "너무 쉬움": 처음부터 빠르고 금방 빨라짐 // 땅 속도(px/프레임)
+const GRAV = 0.8, JUMP_V = -16.5, JUMP_HOLD = 0.5, HOLD_MAX = 10; // 점프: 처음 속도, 누르고 있으면 조금 더
+const SPEED0 = 6.5, SPEED_MAX = 15.5, SPEED_UP = 0.0017; // 10/28 사장님 "너무 쉬움" → 올렸다가 "못하는 정도" → 중간으로 // 땅 속도(px/프레임)
 const OBS = [ // 장애물 종류: 폭, 높이, 그리는 법
   { k: "box", w: 48, h: 50 }, { k: "bottle", w: 30, h: 72 }, { k: "bigbox", w: 70, h: 92 }, { k: "box2", w: 100, h: 50 },
-  { k: "box3", w: 150, h: 56 }, { k: "tall", w: 34, h: 108 }, { k: "bird", w: 58, h: 34, fly: 232 }, { k: "bird", w: 58, h: 34, fly: 270 }, // 서 있는 키(다리 122 + 몸통 92 = 214)보다 위로 날아와서 점프하면 맞음. 안 뛰고 지나가야 함
+  { k: "box3", w: 120, h: 56 }, { k: "tall", w: 34, h: 96 }, { k: "bird", w: 58, h: 34, fly: 240 }, // 서 있는 키(다리 122 + 몸통 92 = 214)보다 위로 날아와서 점프하면 맞음. 안 뛰고 지나가야 함
 ];
 
 let state = "ready"; // ready | run | dead
@@ -65,7 +65,7 @@ function spawn() {
   const o = OBS[Math.floor(Math.random() * OBS.length)];
   obs.push({ ...o, x: W + 40 });
   // 다음 장애물까지 거리: 속도 빠를수록 멀게, 가끔 가깝게(두 번 연속 점프)
-  nextGap = (Math.random() < 0.3 ? 30 : 44 + Math.random() * 56) * (speed / SPEED0) * 10;
+  nextGap = (Math.random() < 0.18 && o.k !== "bird" ? 34 : 56 + Math.random() * 60) * (speed / SPEED0) * 10; // 새 다음엔 바로 안 붙임
 }
 function step() {
   if (state !== "run") return;
