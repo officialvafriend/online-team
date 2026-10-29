@@ -149,6 +149,8 @@
   /* 클로드 답, 댓글: 줄바꿈 그대로, 줄 간격 넉넉하게 (읽기 쉽게) */
   .log{white-space:pre-wrap} .log.idea{font-size:15px;line-height:1.8;padding:12px 14px} .log.idea small{margin-bottom:6px}
   .opn p.idea{white-space:pre-wrap;line-height:1.8;display:block}
+  .askbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px} .askbtns .btn{height:auto;padding:12px 8px;font-size:16px;display:flex;flex-direction:column;align-items:center;gap:2px} .askbtns .btn small{font-size:12px;font-weight:600;opacity:.8}
+  .askmore{margin-top:10px} .askmore summary{font-size:13px;color:var(--sub);cursor:pointer;padding:4px 0}
   .recbtn{margin-top:16px;width:100%;height:50px;border-radius:14px;background:var(--red-soft);color:var(--red);font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px} .recbtn:disabled{opacity:.45}
   .rdot{width:12px;height:12px;border-radius:50%;background:var(--red);flex:none} .rdot.on{animation:blink 1s infinite} @keyframes blink{50%{opacity:.25}}
   .recbar{position:sticky;top:8px;z-index:30;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border-radius:16px;padding:12px 14px;margin-bottom:12px;box-shadow:0 0 0 2px var(--red),0 8px 24px rgba(0,0,0,.08)}
@@ -558,7 +560,9 @@ function ideaSheet() {
 const grabIdea = () => { const o = { 답: val("#xReply") }; if ($("#xTitle")) { o.제목 = val("#xTitle"); o.내용 = $("#xBody").value.replace(/\s+$/, ""); } return o; };
 
 // 클로드에게 물어보기: 시트 쪽(Apps Script)이 Claude API로 답을 받아 기록에 "클로드 제안"으로 남김
-const askBox = (target, id) => `<div class="askbox"><div class="lbl" style="margin-top:0">🤖 클로드에게 물어보기 <small>웹에서 찾아보고 답을 남겨요</small></div><div class="mline"><input class="in" id="askQ" maxlength="200" placeholder="궁금한 점 (비우면 전체 검토)"><button class="btn" data-act="ask" data-target="${target}" data-id="${id}">물어보기</button></div></div>`;
+const askBox = (target, id) => `<div class="askbox"><div class="lbl" style="margin-top:0">🤖 클로드에게 맡기기 <small>버튼 하나면 돼요, 1분쯤 걸려요</small></div>
+    <div class="askbtns"><button class="btn" data-act="ask" data-mode="check" data-target="${target}" data-id="${id}">🔍 검증하기<small>정한 게 괜찮은지</small></button><button class="btn sec2" data-act="ask" data-mode="idea" data-target="${target}" data-id="${id}">💡 클로드 제안<small>더 나은 방법, 사례</small></button></div>
+    <details class="askmore"><summary>직접 물어보기</summary><div class="mline"><input class="in" id="askQ" maxlength="200" placeholder="예) 비용은 얼마나 들까?"><button class="btn" data-act="ask" data-mode="q" data-target="${target}" data-id="${id}">묻기</button></div></details></div>`;
 const ASKERR = { nokey: "클로드 연결 키가 아직 안 들어갔어요", limit: "오늘 물어보기 횟수를 다 썼어요", refusal: "클로드가 이 질문에는 답하지 않았어요", notfound: "먼저 저장한 다음 물어봐요", empty: "답이 비어 있어요. 다시 물어봐요" };
 const moreSheet = () => openSheet(`<h3>더보기</h3><div class="list" style="margin-top:10px">${moreTabs().map((k) => [k, tabName(k)]).map(([k, n]) => `<button class="item" data-tab="${k}"><div class="av">${ICON[k]}</div><div class="tx"><b>${n}</b></div><span class="chev">›</span></button>`).join("")}</div><div class="btns"><button class="btn gray" data-x>닫기</button></div>`);
 
@@ -733,12 +737,13 @@ document.addEventListener("click", async (e) => {
     case "pfsave": { const old = profNote(who), n = { id: old ? old.id : uid("n_"), 종류: "프로필", 작성자: who, 받는사람: "", 상태: "", 좋아요: "", 브랜드: "", 제목: val("#pfS"), 내용: JSON.stringify({ e: edit.e, b: edit.b, c: edit.c, f: edit.f }), 답: "" }; closeSheet(); await save("note", n); return toast("프로필을 저장했어요"); }
     case "ask": {
       if (!who) return askWho(); if (t.disabled) return;
-      const target = d.target, id = d.id, q = val("#askQ");
+      const target = d.target, id = d.id, mode = d.mode || "q", q = mode === "q" ? val("#askQ") : "";
+      if (mode === "q" && !q) return toast("물어볼 내용을 적어요");
       Object.assign(edit, target === "note" ? grabIdea() : grabItem());
-      t.disabled = true; t.textContent = "찾아보는 중…"; toast("클로드가 찾아보는 중이에요. 1분쯤 걸려요");
+      document.querySelectorAll('[data-act="ask"]').forEach((b) => (b.disabled = true)); t.textContent = mode === "check" ? "검증하는 중…" : "찾아보는 중…"; toast(mode === "check" ? "클로드가 검증하는 중이에요. 1분쯤 걸려요" : "클로드가 찾아보는 중이에요. 1분쯤 걸려요");
       try {
-        if (DEMO) { await new Promise((w) => setTimeout(w, 800)); D.logs.push({ id: uid("l_"), 안건id: id, 시각: `${today()} ${pad(new Date().getHours())}:${pad(new Date().getMinutes())}`, 작성자: "클로드 제안", 내용: "(예시 답변) 실제로는 여기에 클로드가 찾아본 결론, 근거, 다음 행동이 달려요" }); toast("답이 달렸어요"); }
-        else { const r = await post({ type: "ask", target, id, q, who }); D = await load(KEY); render(); toast(`답이 달렸어요 (오늘 ${r.left}번 남음)`); }
+        if (DEMO) { await new Promise((w) => setTimeout(w, 800)); D.logs.push({ id: uid("l_"), 안건id: id, 시각: `${today()} ${pad(new Date().getHours())}:${pad(new Date().getMinutes())}`, 작성자: mode === "check" ? "클로드 검증" : "클로드 제안", 내용: mode === "check" ? "🔍 판단: 보완하면 좋아요\n\n✅ 괜찮은 점\n- (예시) 한 줄\n\n⚠️ 빠졌거나 위험한 점\n- (예시) 한 줄\n\n👉 정하기 전에 확인할 것\n1. (예시) 한 줄" : "(예시 답변) 실제로는 여기에 클로드가 찾아본 결론, 근거, 다음 행동이 달려요" }); toast("답이 달렸어요"); }
+        else { const r = await post({ type: "ask", target, id, q, mode, who }); D = await load(KEY); render(); toast(`답이 달렸어요 (오늘 ${r.left}번 남음)`); }
       } catch (e) { toast(ASKERR[e.message] || "답을 받지 못했어요. 잠시 뒤 다시 해 봐요"); }
       return target === "note" ? ideaSheet() : sheetItem();
     }
