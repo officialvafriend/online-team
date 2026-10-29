@@ -127,6 +127,11 @@
   .pfhead{display:flex;align-items:center;gap:16px} .emos{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px} .emo{height:44px;border-radius:12px;background:var(--line);font-size:22px} .emo.on{background:var(--ac-soft);box-shadow:inset 0 0 0 2px var(--ac)}
   .cdot{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:6px;vertical-align:-2px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
   .pfoot{height:auto!important;padding:8px 10px!important} .pft{display:flex;flex-direction:column;min-width:0;text-align:left} .pft b{font-size:14px} .pft small{font-size:12px;color:var(--sub);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .quick{display:flex;gap:8px;margin-top:10px} .quick .in{height:50px;font-size:16px} .quick .btn{width:auto;height:50px;padding:0 18px;font-size:16px;flex:none}
+  .qhint{font-size:12px;color:var(--sub);margin:6px 4px 12px;min-height:16px}
+  .recbig{display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;background:var(--red-soft);border-radius:20px;padding:16px 18px;text-align:left} .recbig b{font-size:17px;color:var(--red)} .recbig small{flex-basis:100%;font-size:13px;color:var(--sub);margin-left:22px}
+  .fbbtn{display:block;width:100%;margin-top:10px;padding:12px;border-radius:14px;background:var(--card);font-size:14px;font-weight:600;color:var(--ink2);box-shadow:inset 0 0 0 1px var(--line2)}
+  .navmore{font-size:12px;font-weight:700;color:var(--sub);padding:18px 14px 4px} .navb.sub{height:40px;font-size:14px}
   .recbtn{margin-top:16px;width:100%;height:50px;border-radius:14px;background:var(--red-soft);color:var(--red);font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px} .recbtn:disabled{opacity:.45}
   .rdot{width:12px;height:12px;border-radius:50%;background:var(--red);flex:none} .rdot.on{animation:blink 1s infinite} @keyframes blink{50%{opacity:.25}}
   .recbar{position:sticky;top:8px;z-index:30;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border-radius:16px;padding:12px 14px;margin-bottom:12px;box-shadow:0 0 0 2px var(--red),0 8px 24px rgba(0,0,0,.08)}
@@ -184,7 +189,7 @@ const PBADGE = ["☕", "💤", "🎯", "💰", "📦", "🧾", "🛵", "🎉", "
 const PBOSS = ["👑", "🏆", "🖋️", "💼", "⛳", "📛", "🪑", "🦸"]; // 이사님 전용
 const profNote = (n) => (D && D.notes ? D.notes.find((x) => x.종류 === "프로필" && x.작성자 === n) : null);
 const profOf = (n) => { const x = profNote(n); let j = {}; try { j = x ? JSON.parse(x.내용 || "{}") : {}; } catch (e) {} return { e: j.e || "", b: j.b || "", c: PCOLORS[j.c] ? j.c : "민트", s: x ? x.제목 || "" : "" }; };
-const avHtml = (n, cls = "") => { const p = profOf(n); return `<span class="pav ${cls}" style="background:${PCOLORS[p.c]}">${p.e ? `<span class="pe1">${esc(p.e)}</span>` : `<span class="pn">${esc(n)}</span>`}${p.b ? `<span class="pb">${esc(p.b)}</span>` : ""}</span>`; };
+const avHtml = (n, cls = "") => { const p = profOf(n); return `<span class="pav ${cls}" style="background:${PCOLORS[p.c]}">${p.e ? `<span class="pe1">${esc(p.e)}</span>` : `<span class="pn">${esc(/xl/.test(cls) ? n : [...n][0])}</span>`}${p.b ? `<span class="pb">${esc(p.b)}</span>` : ""}</span>`; };
 const sameSet = (a, b) => a.length === b.length && a.every((v) => b.includes(v));
 const pplHtml = (s) => { const l = peopleOf(s); return l.length ? `<div class="ppl">${l.map((n) => `<i class="${n === who ? "me" : ""}">${profOf(n).e ? `<span class="pe">${esc(profOf(n).e)}</span>` : ""}${esc(n)}</i>`).join("")}</div>` : ""; };
 const $ = (s) => document.querySelector(s);
@@ -268,7 +273,7 @@ const ICON = {
   todo: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 3h8v2h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h3zm2 0v3h4V3zm5.3 7.3-4.3 4.3-2.3-2.3-1.4 1.4 3.7 3.7 5.7-5.7z"/></svg>',
 };
 const TABS = [["me", "내 보드"], ["home", "홈"], ["todo", "할 일"], ["idea", "제안함"], ["ho", "인수인계"], ["meet", "회의"], ["fix", "확정"]];
-const MORE = ["home", "ho", "fix"]; // 폰 아래 메뉴의 더보기 안
+const MORE = ["home", "ho", "fix"]; // 더보기 안 (폰은 더보기 버튼, PC는 왼쪽 메뉴 아래에 작게)
 const meetOf = (id) => D.meetings.find((m) => m.id === id);
 const byBrand = (list) => (brandF ? list.filter((x) => x.브랜드 === brandF || (!x.브랜드 && brandF === "공통")) : list);
 const st = (s) => `<span class="st ${esc(s)}">${esc(s)}</span>`;
@@ -345,7 +350,7 @@ function meetHtml() {
   const ms = byBrand([...D.meetings]).sort((a, b) => (a.날짜 < b.날짜 ? 1 : a.날짜 > b.날짜 ? -1 : 0));
   if (meetSel && !D.meetings.some((m) => m.id === meetSel)) meetSel = "";
   const sel = meetSel ? meetOf(meetSel) : null;
-  const side = `<div class="card"><div class="eyebrow">회의</div><div class="headline">회의마다 안건을 적고<br>상태를 정해요</div><div class="caption">확정한 안건은 확정 탭, 담당자나 마감이 있는 건 할 일 탭에 모여요</div>
+  const side = `${REC ? "" : `<button class="recbig" data-act="recnow"><span class="rdot"></span><b>오늘 회의 녹음 시작</b><small>${D.meetings.some((x) => x.날짜 === today()) ? "오늘 회의에 녹음해요" : "오늘 회의를 만들고 바로 녹음해요"}</small></button>`}<div class="card"><div class="eyebrow">회의</div><div class="headline">회의마다 안건을 적고<br>상태를 정해요</div><div class="caption">확정한 안건은 확정 탭, 담당자나 마감이 있는 건 할 일 탭에 모여요</div>
       <div class="btns" style="margin-top:16px"><button class="btn" data-act="mnew" style="height:50px;font-size:16px">＋ 새 회의</button></div></div>
     ${brandChips()}<div class="list">${ms.length ? ms.map((m) => { const its = D.items.filter((x) => x.회의id === m.id); return `<button class="item" data-msel="${m.id}" style="${m.id === meetSel ? "background:var(--ac-soft)" : ""}"><div class="av ${m.id === meetSel ? "ac" : ""}" style="font-size:13px;line-height:1.1">${md(m.날짜)}</div><div class="tx"><b>${esc(m.제목)}</b><span>${esc(m.브랜드 || "공통")}, 안건 ${its.length}개, 확정 ${its.filter((x) => x.상태 === "확정" || x.상태 === "완료").length}개</span></div><span class="chev">›</span></button>`; }).join("") : '<div class="empty">아직 회의가 없어요</div>'}</div>`;
   if (!sel) return `<div class="gwrap"><div class="gside">${side}</div><div class="gmain">${isPC() ? '<div class="card"><div class="caption" style="margin:0">왼쪽에서 회의를 고르거나 새 회의를 만들어요</div></div>' : ""}</div></div>`;
@@ -423,7 +428,7 @@ function todoHtml() {
   const list = act.filter((x) => (todoF === "확인필요" ? x.상태 === "확인필요" : todoF === "미정" ? noOwner(x) : todoF ? hasP(x.담당자, todoF) : true)).sort(sortDue);
   const late = list.filter((x) => x.마감 && days(x.마감) < 0), soon = list.filter((x) => x.마감 && days(x.마감) >= 0), none = list.filter((x) => !x.마감);
   const blk = (t, l) => (l.length ? `<div class="sec">${t} <small>${l.length}개</small></div><div class="list">${l.map((x) => itemRow(x)).join("")}</div>` : "");
-  const add = `<div class="btns" style="margin:0 0 14px"><button class="btn" data-act="tnew" style="height:50px;font-size:16px">＋ 할 일 바로 넣기 <small style="font-weight:600;opacity:.8">(회의 없이)</small></button></div>`;
+  const add = `${quickBox("예) 시원 다음주 월요일 메타 광고 시안")}<div style="margin:-4px 0 14px;text-align:right"><button class="ic" data-act="tnew">자세히 넣기 ›</button></div>`;
   const chips = `<div class="chips" style="margin-bottom:14px"><button class="chip ${!todoF ? "on" : ""}" data-todof="">모두</button>${names.map((n) => `<button class="chip ${todoF === n ? "on" : ""} ${n === who && todoF !== n ? "me-btn" : ""}" data-todof="${esc(n)}">${esc(n)}</button>`).join("")}<button class="chip ${todoF === "미정" ? "on" : ""}" data-todof="미정">담당자 없음</button><button class="chip ${todoF === "확인필요" ? "on" : ""}" data-todof="확인필요">확인필요만</button></div>`;
   // PC에서 "모두"일 때는 사람별 칸으로 나란히 (여러 명이 맡은 건 각 칸에 다 나옴)
   if (isPC() && !todoF) {
@@ -433,6 +438,27 @@ function todoHtml() {
   return `${brandChips()}${chips}${add}
     ${list.length ? blk("늦음", late) + blk("마감 있음", soon) + blk("마감 없음", none) : '<div class="list"><div class="empty">할 일이 없어요. 확인필요, 시도, 확정 상태의 안건이 여기에 모여요</div></div>'}`;
 }
+
+// ── 한 줄 할 일 ── 이름(한섭, 보혜, 시원, 진, 이사님, 성 포함), 날짜(오늘, 내일, 모레, 월~일요일, 다음주 X요일, 11/3, 3일)를 알아서 읽음
+const WDK = "일월화수목금토";
+function parseQuick(t) {
+  let text = " " + t.trim() + " ", owners = [], due = "";
+  const names = { ...FULL, 이사님: "한섭", 한섭: "한섭", 보혜: "보혜", 시원: "시원", 진: "진" };
+  for (const [k, v] of Object.entries(names).sort((a, b) => b[0].length - a[0].length)) {
+    const re = new RegExp("(^|[\\s,])" + k + "(님|이|가|는|씨)?(?=[\\s,])", "g");
+    if (re.test(text)) { owners.push(v); text = text.replace(re, " "); }
+  }
+  const base = new Date(today() + "T00:00:00"), plus = (n) => { const d = new Date(base); d.setDate(d.getDate() + n); return ymd(d); };
+  const take = (re, fn) => { if (due) return; const m = text.match(re); if (m) { due = fn(m); text = text.replace(m[0], " "); } };
+  take(/\s오늘(까지)?\s/, () => plus(0)); take(/\s내일(까지)?\s/, () => plus(1)); take(/\s모레(까지)?\s/, () => plus(2));
+  take(/\s다음\s?주\s?([월화수목금토일])(요일)?(까지)?\s/, (m) => { const w = WDK.indexOf(m[1]), d0 = (base.getDay() + 6) % 7; return plus(7 - d0 + ((w + 6) % 7)); });
+  take(/\s(이번\s?주\s?)?([월화수목금토일])(요일)(까지)?\s/, (m) => { const w = WDK.indexOf(m[2]); let n = (w - base.getDay() + 7) % 7; if (n === 0) n = 7; return plus(n); });
+  take(/\s(\d{1,2})[\/.](\d{1,2})(까지)?\s/, (m) => { let y = base.getFullYear(); const d = `${y}-${pad(+m[1])}-${pad(+m[2])}`; return d < today() ? `${y + 1}-${pad(+m[1])}-${pad(+m[2])}` : d; });
+  take(/\s(\d{1,2})일(까지)?\s/, (m) => { const d = new Date(base); d.setDate(+m[1]); if (ymd(d) < today()) d.setMonth(d.getMonth() + 1); return ymd(d); });
+  const title = text.replace(/\s+/g, " ").replace(/^(까지|에|은|는)\s/, "").trim();
+  return { title, owners: [...new Set(owners)], due };
+}
+const quickBox = (ph) => `<div class="quick"><input class="in" id="qText" maxlength="120" placeholder="${ph}"><button class="btn" data-act="qadd">넣기</button></div><div class="qhint" id="qHint">이름과 날짜를 같이 쓰면 담당자와 마감이 알아서 들어가요</div>`;
 
 // ── 내 보드, 제안함, 인수인계 ── 노트 탭: 종류(메모/인수인계/제안), 작성자, 받는사람, 상태, 좋아요, 브랜드, 제목, 내용, 답. 제안 댓글은 기록 탭(안건id = 노트 id)
 const PNAME = (n) => (n === "한섭" ? "한섭 이사님" : n);
@@ -461,12 +487,12 @@ function meHtml() {
   const stat = (n, t, cls, act) => `<button class="mstat" ${act}><b class="${cls}">${n}</b><span>${t}</span></button>`;
   const doing = `<div class="sec">내 할 일 <small>${mine.length}개</small></div>
     <div class="list">${mine.map((x) => { const l = lastLog(x.id); return `${itemRow(x)}<div class="prog">${l ? `📍 ${esc(l.내용)} <small>${esc(ago(l.시각))}</small>` : '<span class="t-sub">어디까지 했는지 눌러서 남겨요</span>'}</div>`; }).join("")}
-      <button class="item addrow" data-act="tnew"><span class="t-sub">＋ 할 일 넣기</span></button></div>`;
+      </div>${quickBox("예) 금요일까지 체험단 견적 받기")}`;
   const ideaSec = myIdeas.length ? `<div class="sec">내가 올린 제안 <small>${myIdeas.length}개</small></div><div class="list">${myIdeas.map((n) => `<button class="item" data-idea="${n.id}"><div class="tx"><b>${esc(n.제목)}</b><span>${n.답 ? "💬 " + esc(n.답) : `👍 ${likes(n).length}, 댓글 ${cmts(n.id).length}`}</span></div><div class="val">${stBadge(n.상태)}</div></button>`).join("")}</div>` : "";
   const memoSec = `<div class="sec">내 메모 <small>${memos.length}개</small><span class="rt"><button class="ic" data-nnew="메모" style="height:30px">＋ 메모</button></span></div><div class="notes">${memos.map((n) => noteCard(n)).join("") || '<div class="list"><div class="empty">나만 보는 메모장이에요</div></div>'}</div>`;
   return `<div class="card mehead"><button data-act="prof" aria-label="내 프로필 꾸미기">${avHtml(who, "xl")}</button><div style="flex:1;min-width:0"><div class="headline">${esc(PNAME(who))}님, 할 일 ${mine.length}개</div>${profOf(who).s ? `<div class="pstat">${esc(profOf(who).s)}</div>` : ""}<div class="caption" style="margin-top:2px">${late ? `<span class="t-bad">마감 지난 것 ${late}개</span>` : "마감 지난 것 없음"}</div></div></div>
     <div class="mstats">${stat(mine.length, "할 일", "", 'data-tab="todo" data-todof="' + who + '"')}${stat(late, "늦음", late ? "t-bad" : "", 'data-tab="todo" data-todof="' + who + '"')}${stat(myIdeas.length, "내 제안", "", 'data-tab="idea"')}</div>
-    <div class="pgrid"><div>${doing}</div><div>${ideaSec}${memoSec}</div></div>`;
+    <div class="pgrid"><div>${doing}</div><div>${ideaSec}${memoSec}<button class="fbbtn" data-act="fb" style="margin-top:12px">🛠 보드 쓰다 불편한 점 올리기</button></div></div>`;
 }
 function ideaHtml() {
   const list = ideas().filter((n) => (ideaF === "boss" ? n.받는사람 === "이사님" : ideaF === "ok" ? n.상태 === "채택" : true)).sort(byMade);
@@ -474,6 +500,7 @@ function ideaHtml() {
     <div class="iact"><button class="${lk.includes(who) ? "on" : ""}" data-like="${n.id}">👍 좋아요 ${lk.length}</button><button data-idea="${n.id}">💬 댓글 ${c.length}</button></div></div>`; };
   return `<div class="compose"><textarea class="in" id="iqText" placeholder="아이디어나 건의를 적어요. 첫 줄이 제목이 돼요" rows="2"></textarea>
       <div class="crow"><div class="seg sm">${[["이사님", "이사님께"], ["팀 전체", "팀 전체"]].map(([v, t]) => `<button class="${ideaTo === v ? "on" : ""}" data-ito="${v}">${t}</button>`).join("")}</div><button class="btn" data-act="ipost" style="width:auto;height:42px;padding:0 20px;font-size:15px">올리기</button></div></div>
+    <button class="fbbtn" data-act="fb">🛠 보드 쓰다 불편한 점 올리기</button>
     <div class="chips" style="margin:14px 0">${[["", "전체"], ["boss", "이사님께"], ["ok", "채택"]].map(([v, t]) => `<button class="chip sm ${ideaF === v ? "on" : ""}" data-idf="${v}">${t}</button>`).join("")}</div>
     <div class="ilist">${list.map(card).join("") || '<div class="list"><div class="empty">첫 제안을 올려 보세요. 좋은 아이디어는 다같이 👍</div></div>'}</div>`;
 }
@@ -558,7 +585,8 @@ function render() {
   if (!pc) { $("#app").innerHTML = `${demo}<div class="top"><div class="logo">온라인팀 <b>보드</b></div><div class="r"><button class="ic me-btn" data-act="${who ? "prof" : "who"}" style="display:flex;align-items:center;gap:6px">${who ? avHtml(who, "xs") + esc(who) : "나는?"}</button><button class="ic" data-act="reload">${at ? at + " ↻" : "새로고침"}</button><button class="ic" data-act="logout">잠그기</button></div></div>${body}`; return; }
   const title = { meet: "회의", fix: "확정", todo: "할 일", idea: "제안함", ho: "인수인계" }[tab];
   $("#app").innerHTML = `<div class="shell"><aside class="side"><div class="logo">온라인팀 <b>보드</b></div>
-      ${TABS.map(([k, n]) => `<button class="navb ${tab === k ? "on" : ""}" data-tab="${k}">${ICON[k]}${n}${k === "idea" ? dot : ""}</button>`).join("")}
+      ${TABS.filter(([k]) => !MORE.includes(k)).map(([k, n]) => `<button class="navb ${tab === k ? "on" : ""}" data-tab="${k}">${ICON[k]}${n}${k === "idea" ? dot : ""}</button>`).join("")}
+      <div class="navmore">더보기</div>${TABS.filter(([k]) => MORE.includes(k)).map(([k, n]) => `<button class="navb sub ${tab === k ? "on" : ""}" data-tab="${k}">${ICON[k]}${n}</button>`).join("")}
       <div class="foot"><button class="navb me-btn pfoot" data-act="${who ? "prof" : "who"}">${who ? `${avHtml(who, "sm")}<span class="pft"><b>${esc(PNAME(who))}</b><small>${esc(profOf(who).s || "프로필 꾸미기")}</small></span>` : "👤 나는 누구?"}</button><button class="navb" data-act="reload">↻ ${at ? at + " 기준" : "새로고침"}</button><button class="navb" data-act="logout">🔒 잠그기</button></div></aside>
     <main class="main">${demo}${tab === "home" ? body : `${title ? `<div class="pchead"><h1>${title}</h1></div>` : ""}<div class="${["fix", "idea", "ho"].includes(tab) ? "narrow" : ""}">${body}</div>`}</main></div>`;
   if (tab === "home") $("#panel").innerHTML = panelKeep || panelDefault();
@@ -630,6 +658,14 @@ document.addEventListener("click", async (e) => {
     case "logout": ls.set("ot-key", null); KEY = ""; D = null; return renderLogin();
     case "who": return askWho();
     case "recstart": return recStart();
+    case "qadd": { if (!who) return askWho(); const v = val("#qText"); if (!v) return; const p = parseQuick(v); if (!p.title) return toast("할 일을 적어요");
+      const x = { id: uid("i_"), 회의id: "", 순서: "", 제목: p.title, 상태: "확정", 브랜드: "", 분야: "", 담당자: (p.owners.length ? p.owners : [who]).join(", "), 시작: "", 마감: p.due, 메모: "", 확인할것: "" };
+      await save("item", x); return toast(`넣었어요: ${x.담당자}${p.due ? ", 마감 " + md(p.due) : ""}`); }
+    case "recnow": { // 오늘 회의가 있으면 거기, 없으면 "M/D 회의"를 만들고 바로 녹음
+      if (REC) return toast("이미 녹음 중이에요"); let m = D.meetings.find((x) => x.날짜 === today());
+      if (!m) { m = { id: uid("m_"), 날짜: today(), 제목: `${md(today())} 회의`, 브랜드: "", 참석: "", 메모: "" }; await save("meeting", m); }
+      meetSel = m.id; ls.set("ot-meet", meetSel); tab = "meet"; ls.set("ot-tab", tab); render(); return recStart(); }
+    case "fb": { tab = "idea"; ls.set("ot-tab", tab); ideaTo = "팀 전체"; render(); const t = $("#iqText"); t.value = "[보드 불편] "; t.focus(); return; }
     case "prof": { if (!who) return askWho(); const p = profOf(who); edit = { e: p.e, b: p.b, c: p.c, s: p.s }; return profSheet(); }
     case "pfE": { const v = val("#pfE"); if (!v) return; edit.s = val("#pfS"); edit.e = window.Intl && Intl.Segmenter ? [...new Intl.Segmenter("ko", { granularity: "grapheme" }).segment(v)][0].segment : [...v][0]; return profSheet(); }
     case "pfsave": { const old = profNote(who), n = { id: old ? old.id : uid("n_"), 종류: "프로필", 작성자: who, 받는사람: "", 상태: "", 좋아요: "", 브랜드: "", 제목: val("#pfS"), 내용: JSON.stringify({ e: edit.e, b: edit.b, c: edit.c }), 답: "" }; closeSheet(); await save("note", n); return toast("프로필을 저장했어요"); }
@@ -666,6 +702,12 @@ document.addEventListener("click", async (e) => {
   }
 });
 const grabItem = () => ({ 제목: val("#iTitle"), 브랜드: val("#iBrand"), 분야: val("#iField"), 마감: val("#iDue"), 시작: val("#iStart"), 확인할것: val("#iChk"), 메모: val("#iMemo") });
+document.addEventListener("input", (e) => {
+  if (e.target.id !== "qText") return; const h = $("#qHint"); if (!h) return; const v = e.target.value.trim();
+  if (!v) { h.textContent = "이름과 날짜를 같이 쓰면 담당자와 마감이 알아서 들어가요"; return; }
+  const p = parseQuick(v); h.textContent = `→ "${p.title || "?"}", 담당 ${(p.owners.length ? p.owners : [who]).join(", ")}, ${p.due ? "마감 " + md(p.due) + "(" + WDK[new Date(p.due + "T00:00:00").getDay()] + ")" : "마감 없음"}`;
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.id === "qText") { e.preventDefault(); document.querySelector('[data-act="qadd"]')?.click(); } });
 document.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.id === "pw") tryLogin(); if (e.key === "Enter" && e.target.id === "lText") document.querySelector('[data-act="ladd"]')?.click(); if (e.key === "Escape") closeSheet(); });
 let wasPC = isPC(); addEventListener("resize", () => { if (isPC() !== wasPC) { wasPC = isPC(); if (D) render(); } });
 setInterval(() => { if (D && !$("#dim").classList.contains("on") && !edit) reload(true); }, 5 * 60 * 1000);
