@@ -93,6 +93,8 @@
   .board{display:grid;gap:12px} .board .col{background:var(--card);border-radius:22px;padding:16px 0 6px;min-width:0} .board .col h4{font-size:16px;font-weight:800;padding:0 18px 8px;display:flex;gap:6px;align-items:baseline} .board .col h4 small{font-size:13px;color:var(--sub);font-weight:600} .board .col.me{box-shadow:inset 0 0 0 2px var(--ac)}
   .board .item{padding:11px 18px;gap:6px 10px;flex-wrap:wrap} .board .item .tx{flex:1 1 100%} .board .item .tx b{white-space:normal;font-size:15px;line-height:1.35}
   .board .item .val{display:flex;flex-wrap:wrap;align-items:center;gap:6px;text-align:left} .board .item .val span{margin:0!important} .board .ppl{margin:0} .board .chev{display:none}
+  .opn{margin:-4px 20px 10px 76px;padding:10px 14px;border-radius:14px;background:var(--bg);font-size:14px;line-height:1.55} .opn p{margin:3px 0;display:flex;gap:8px} .opn p b{flex:none;min-width:36px;color:var(--ac);font-weight:700}
+  .opn p.idea,.log.idea{background:var(--amber-soft);color:var(--ink);border-radius:10px;padding:6px 10px;margin:6px 0 2px} .opn a,.log a{color:var(--ac);font-weight:700}
   .demo{background:var(--amber-soft);color:var(--amber);font-size:13px;font-weight:700;text-align:center;padding:8px 12px;border-radius:12px;margin-bottom:12px}
   /* PC (900px 이상): 왼쪽 메뉴 236, 본문 38/44, 숫자카드 4칸, 홈은 본문 + 오른쪽 상세 320 */
   @media (min-width:900px){
@@ -115,7 +117,7 @@
     .dim{align-items:center} .sheet{border-radius:26px;max-height:86vh;width:min(640px,100%);padding-bottom:26px}
     .toast{bottom:40px}
     .gwrap{grid-template-columns:360px minmax(0,1fr);align-items:start;gap:20px} .gside{position:sticky;top:20px;display:grid;gap:12px}
-    .board{grid-template-columns:repeat(5,minmax(0,1fr));align-items:start}
+    .board{grid-template-columns:repeat(5,minmax(0,1fr));align-items:start} .board.ppl4{grid-template-columns:repeat(4,minmax(0,1fr))}
   }
 </style>
 </head>
@@ -154,7 +156,7 @@ const days = (s) => (s ? Math.round((new Date(s + "T00:00:00") - new Date(today(
 const ddayTxt = (s) => { const d = days(s); return d == null ? "" : d === 0 ? "오늘" : d > 0 ? `D-${d}` : `${-d}일 지남`; };
 const weekRange = () => { const t = new Date(today() + "T00:00:00"), dow = (t.getDay() + 6) % 7, a = new Date(t); a.setDate(t.getDate() - dow); const b = new Date(a); b.setDate(a.getDate() + 6); return [ymd(a), ymd(b)]; };
 
-let D = null, KEY = ls.get("ot-key") || "", tab = ls.get("ot-tab") || "home", brandF = ls.get("ot-brand") || "", who = ls.get("ot-who") || "", meetSel = ls.get("ot-meet") || "", todoF = ls.get("ot-todof") || "", edit = null, panelKeep = "", DEMO = /[?&]demo=1/.test(location.search) || !!window.PREVIEW_DATA;
+let D = null, KEY = ls.get("ot-key") || "", tab = ls.get("ot-tab") || "home", brandF = ls.get("ot-brand") || "", who = ls.get("ot-who") || "", meetSel = ls.get("ot-meet") || "", todoF = ls.get("ot-todof") || "", meetView = ls.get("ot-mview") || "item", edit = null, panelKeep = "", DEMO = /[?&]demo=1/.test(location.search) || !!window.PREVIEW_DATA;
 
 // ── 시트 ──
 async function load(key) {
@@ -282,6 +284,11 @@ const homePC = () => `${homeHead()}<div class="cols"><div>${statHtml()}${myHtml(
 const panelDefault = () => `<div class="eyebrow">상세</div><h3>왼쪽에서 안건이나<br>담당자를 누르세요</h3><div class="caption">상태, 담당자, 기간을 여기서 바로 고쳐요</div>`;
 
 // ── 회의 ──
+// 회의 정리: 기록 탭의 작성자가 사람 이름이면 그 사람 의견, "클로드 제안"이면 찾아온 아이디어
+const isIdea = (l) => /제안|클로드/.test(l.작성자 || "");
+const logWho = (l) => FULL[l.작성자] || l.작성자;
+const linkify = (s) => esc(s).replace(/https?:\/\/[^\s<)]+/g, (u) => `<a href="${u}" target="_blank" rel="noopener" onclick="event.stopPropagation()">링크</a>`);
+const opsHtml = (ls) => (ls.length ? `<div class="opn">${ls.map((l) => (isIdea(l) ? `<p class="idea">💡 ${linkify(l.내용)}</p>` : `<p><b>${esc(logWho(l))}</b>${esc(l.내용)}</p>`)).join("")}</div>` : "");
 function meetHtml() {
   const ms = byBrand([...D.meetings]).sort((a, b) => (a.날짜 < b.날짜 ? 1 : a.날짜 > b.날짜 ? -1 : 0));
   if (meetSel && !D.meetings.some((m) => m.id === meetSel)) meetSel = "";
@@ -292,12 +299,21 @@ function meetHtml() {
   if (!sel) return `<div class="gwrap"><div class="gside">${side}</div><div class="gmain">${isPC() ? '<div class="card"><div class="caption" style="margin:0">왼쪽에서 회의를 고르거나 새 회의를 만들어요</div></div>' : ""}</div></div>`;
   const its = D.items.filter((x) => x.회의id === sel.id).sort((a, b) => (+a.순서 || 0) - (+b.순서 || 0));
   const cnt = STATUS.map((s) => [s, its.filter((x) => x.상태 === s).length]).filter(([, n]) => n);
-  const main = `<div class="card"><div class="mhead"><div class="tx"><div class="eyebrow">${esc(sel.날짜)}${sel.참석 ? `, ${esc(sel.참석)}` : ""}</div><div class="headline">${esc(sel.제목)}</div>
+  const ids = its.map((x) => x.id), mlogs = D.logs.filter((l) => ids.includes(l.안건id)).sort((a, b) => (a.시각 < b.시각 ? -1 : 1));
+  const seg = `<div class="seg" style="margin:22px 0 10px"><button class="${meetView === "item" ? "on" : ""}" data-mview="item">안건별</button><button class="${meetView === "person" ? "on" : ""}" data-mview="person">사람별 의견</button></div>`;
+  const byItem = `<div class="sec" style="margin-top:6px">안건 <small>${its.length}개</small></div>
+    <div class="list">${its.length ? its.map((x, i) => `<button class="item" data-item="${x.id}"><div class="av" style="font-size:14px">${i + 1}</div><div class="tx"><b>${esc(x.제목)}</b><span>${esc([x.분야, x.마감 ? "마감 " + md(x.마감) : "", x.확인할것 ? "확인: " + x.확인할것 : ""].filter(Boolean).join(", ")) || "&nbsp;"}</span></div><div class="val">${st(x.상태)}${pplHtml(x.담당자)}</div><span class="chev">›</span></button>${opsHtml(mlogs.filter((l) => l.안건id === x.id))}`).join("") : '<div class="empty">안건이 없어요. 아래에서 넣어요</div>'}</div>`;
+  const title = (l) => its.find((x) => x.id === l.안건id)?.제목 || "";
+  const pcol = (n) => { const l = mlogs.filter((g) => !isIdea(g) && logWho(g) === n); return `<div class="col ${n === who ? "me" : ""}"><h4>${esc(n)} <small>${l.length}개</small></h4>${l.map((g) => `<button class="item" data-item="${g.안건id}"><div class="tx"><b>${esc(g.내용)}</b><span>${esc(title(g))}</span></div></button>`).join("") || '<div class="empty">없음</div>'}</div>`; };
+  const ideas = mlogs.filter(isIdea);
+  const byPerson = `<div class="board ppl4">${PEOPLE.map(pcol).join("")}</div>
+    ${ideas.length ? `<div class="sec">💡 클로드 제안 <small>${ideas.length}개</small></div><div class="list">${ideas.map((g) => `<button class="item" data-item="${g.안건id}"><div class="tx"><b style="white-space:normal">${linkify(g.내용)}</b><span>${esc(title(g))}</span></div><span class="chev">›</span></button>`).join("")}</div>` : ""}`;
+  const main = `<div class="card"><div class="mhead"><div class="tx"><div class="eyebrow">${esc(sel.날짜)}</div><div class="headline">${esc(sel.제목)}</div>
+      ${peopleOf(sel.참석).length ? `<div class="ppl" style="justify-content:flex-start;margin-top:8px">${peopleOf(sel.참석).map((n) => `<i class="${n === who ? "me" : ""}">${esc(n)}</i>`).join("")}</div>` : ""}
       <div class="caption">${sel.브랜드 ? `<span class="tag">${esc(sel.브랜드)}</span>` : ""}${sel.메모 ? esc(sel.메모) : "메모 없음"}</div>
       <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${cnt.map(([s, n]) => `<span class="st ${s}">${s} ${n}</span>`).join("")}</div></div>
       <button class="ic" data-act="medit">회의 고치기</button></div></div>
-    <div class="sec">안건 <small>${its.length}개</small><span class="rt"></span></div>
-    <div class="list">${its.length ? its.map((x, i) => `<button class="item" data-item="${x.id}"><div class="av" style="font-size:14px">${i + 1}</div><div class="tx"><b>${esc(x.제목)}</b><span>${esc([x.분야, x.마감 ? "마감 " + md(x.마감) : "", x.확인할것 ? "확인: " + x.확인할것 : ""].filter(Boolean).join(", ")) || "&nbsp;"}</span></div><div class="val">${st(x.상태)}${pplHtml(x.담당자)}</div><span class="chev">›</span></button>`).join("") : '<div class="empty">안건이 없어요. 아래에서 넣어요</div>'}</div>
+    ${seg}${meetView === "person" ? byPerson : byItem}
     <div class="card"><div class="eyebrow">안건 넣기</div>
       <div class="btns" style="margin-top:0"><button class="btn sec2" data-act="inew" style="height:50px;font-size:16px">＋ 안건 하나</button><button class="btn gray" data-act="ibulk" style="height:50px;font-size:16px">여러 줄 한번에</button></div></div>`;
   return `<div class="gwrap"><div class="gside">${side}</div><div class="gmain">${main}</div></div>`;
@@ -326,7 +342,7 @@ function sheetItem() {
     <div class="lbl">메모 <small>(선택)</small></div><textarea class="in" id="iMemo" maxlength="1000" placeholder="회의에서 나온 얘기">${esc(x.메모)}</textarea>
     ${isNew ? "" : `<div class="lbl">기록 <small>회의 때마다 덧붙여요</small></div>
       <div class="mline"><input class="in" id="lText" maxlength="300" placeholder="${who ? who + ": 새 기록" : "이름을 먼저 정해요"}"><button class="btn" data-act="ladd">남기기</button></div>
-      <div style="margin-top:8px">${logs.length ? logs.map((l) => `<div class="log"><small>${esc(l.시각)}${l.작성자 ? ", " + esc(l.작성자) : ""} <button data-ldel="${l.id}" style="color:var(--sub);margin-left:6px">지우기</button></small>${esc(l.내용)}</div>`).join("") : '<div class="caption" style="margin:0">아직 기록이 없어요</div>'}</div>`}
+      <div style="margin-top:8px">${logs.length ? logs.map((l) => `<div class="log ${isIdea(l) ? "idea" : ""}"><small>${esc(l.시각)}${l.작성자 ? ", " + esc(isIdea(l) ? "💡 " + l.작성자 : logWho(l)) : ""} <button data-ldel="${l.id}" style="color:var(--sub);margin-left:6px">지우기</button></small>${linkify(l.내용)}</div>`).join("") : '<div class="caption" style="margin:0">아직 기록이 없어요</div>'}</div>`}
     <div class="btns">${isNew ? '<button class="btn gray" data-x style="flex:0 0 96px">닫기</button>' : '<button class="btn red" data-act="idel" style="flex:0 0 96px">삭제</button>'}<button class="btn" data-act="isave">저장</button></div>`);
 }
 function sheetBulk() {
@@ -400,13 +416,14 @@ function askWho(then) {
 }
 
 document.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-tab],[data-act],[data-item],[data-msel],[data-brand],[data-todof],[data-owner],[data-mbrand],[data-ist],[data-ldel],[data-iown],[data-mwho],[data-setwho],[data-x]");
+  const t = e.target.closest("[data-tab],[data-act],[data-item],[data-msel],[data-brand],[data-todof],[data-owner],[data-mbrand],[data-ist],[data-ldel],[data-iown],[data-mwho],[data-setwho],[data-mview],[data-x]");
   if (e.target.id === "go") return tryLogin();
   if (e.target === $("#dim")) return closeSheet();
   if (!t) return;
   const d = t.dataset;
   if ("x" in d) return closeSheet();
   if (d.tab) { tab = d.tab; ls.set("ot-tab", tab); if (d.todof != null) { todoF = d.todof; ls.set("ot-todof", todoF); } if (d.meet != null) { meetSel = d.meet; ls.set("ot-meet", meetSel); } closeSheet(); return render(); }
+  if (d.mview) { meetView = d.mview; ls.set("ot-mview", meetView); return render(); }
   if (d.brand != null) { brandF = d.brand; ls.set("ot-brand", brandF); return render(); }
   if (d.todof != null) { todoF = d.todof; ls.set("ot-todof", todoF); return render(); }
   if (d.owner) return panelOwner(d.owner);
