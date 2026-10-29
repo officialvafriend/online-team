@@ -123,7 +123,7 @@
   .pav.sm{width:34px;height:34px} .pav.sm .pe1{font-size:19px}
   .pav.xl{width:60px;height:60px} .pav.xl .pe1{font-size:32px} .pav.xl .pn{font-size:15px} .pav.xl .pb{width:24px;height:24px;font-size:16px;right:-4px;bottom:-2px}
   .pav.xxl{width:84px;height:84px} .pav.xxl .pe1{font-size:46px} .pav.xxl .pn{font-size:18px} .pav.xxl .pb{width:32px;height:32px;font-size:22px;right:-4px;bottom:-2px}
-  .ppl i .pe{margin-right:3px} .pstat{font-size:14px;color:var(--ac);font-weight:600;margin-top:2px}
+  .ppl i .pe{margin-right:3px} .ppl i{white-space:nowrap;display:inline-flex;align-items:center} .pstat{font-size:14px;color:var(--ac);font-weight:600;margin-top:2px}
   .pfhead{display:flex;align-items:center;gap:16px} .emos{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px} .emo{height:44px;border-radius:12px;background:var(--line);font-size:22px} .emo.on{background:var(--ac-soft);box-shadow:inset 0 0 0 2px var(--ac)}
   .cdot{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:6px;vertical-align:-2px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
   .pfoot{height:auto!important;padding:8px 10px!important} .pft{display:flex;flex-direction:column;min-width:0;text-align:left} .pft b{font-size:14px} .pft small{font-size:12px;color:var(--sub);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -132,6 +132,15 @@
   .recbig{display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;background:var(--red-soft);border-radius:20px;padding:16px 18px;text-align:left} .recbig b{font-size:17px;color:var(--red)} .recbig small{flex-basis:100%;font-size:13px;color:var(--sub);margin-left:22px}
   .fbbtn{display:block;width:100%;margin-top:10px;padding:12px;border-radius:14px;background:var(--card);font-size:14px;font-weight:600;color:var(--ink2);box-shadow:inset 0 0 0 1px var(--line2)}
   .navmore{font-size:12px;font-weight:700;color:var(--sub);padding:18px 14px 4px} .navb.sub{height:40px;font-size:14px}
+  .topme{width:38px;height:38px;display:grid;place-items:center;border-radius:50%}
+  .fnum{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#fff;color:var(--ac);font-size:11px;font-weight:800;margin-right:6px}
+  @media (max-width:899px){
+    .nav button{font-size:12px} .nav button svg{width:25px;height:25px}
+    .item{padding:14px 16px} .item .tx b{white-space:normal;line-height:1.35} .item .val .ppl{flex-wrap:wrap;max-width:120px}
+    .top{padding:4px 2px 14px} .top .r{align-items:center}
+    .card{padding:20px 18px} .headline{font-size:22px}
+    .sheet{padding:22px 18px calc(18px + env(safe-area-inset-bottom))}
+  }
   .recbtn{margin-top:16px;width:100%;height:50px;border-radius:14px;background:var(--red-soft);color:var(--red);font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px} .recbtn:disabled{opacity:.45}
   .rdot{width:12px;height:12px;border-radius:50%;background:var(--red);flex:none} .rdot.on{animation:blink 1s infinite} @keyframes blink{50%{opacity:.25}}
   .recbar{position:sticky;top:8px;z-index:30;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border-radius:16px;padding:12px 14px;margin-bottom:12px;box-shadow:0 0 0 2px var(--red),0 8px 24px rgba(0,0,0,.08)}
@@ -188,7 +197,7 @@ const PEMOJI = ["🐰", "🦊", "🐻", "🐥", "🐱", "🐶", "🐼", "🐸", 
 const PBADGE = ["☕", "💤", "🎯", "💰", "📦", "🧾", "🛵", "🎉", "😵", "🤒"];
 const PBOSS = ["👑", "🏆", "🖋️", "💼", "⛳", "📛", "🪑", "🦸"]; // 이사님 전용
 const profNote = (n) => (D && D.notes ? D.notes.find((x) => x.종류 === "프로필" && x.작성자 === n) : null);
-const profOf = (n) => { const x = profNote(n); let j = {}; try { j = x ? JSON.parse(x.내용 || "{}") : {}; } catch (e) {} return { e: j.e || "", b: j.b || "", c: PCOLORS[j.c] ? j.c : "민트", s: x ? x.제목 || "" : "" }; };
+const profOf = (n) => { const x = profNote(n); let j = {}; try { j = x ? JSON.parse(x.내용 || "{}") : {}; } catch (e) {} return { e: j.e || "", b: j.b || "", c: PCOLORS[j.c] ? j.c : "민트", s: x ? x.제목 || "" : "", f: Array.isArray(j.f) ? j.f : [] }; };
 const avHtml = (n, cls = "") => { const p = profOf(n); return `<span class="pav ${cls}" style="background:${PCOLORS[p.c]}">${p.e ? `<span class="pe1">${esc(p.e)}</span>` : `<span class="pn">${esc(/xl/.test(cls) ? n : [...n][0])}</span>`}${p.b ? `<span class="pb">${esc(p.b)}</span>` : ""}</span>`; };
 const sameSet = (a, b) => a.length === b.length && a.every((v) => b.includes(v));
 const pplHtml = (s) => { const l = peopleOf(s); return l.length ? `<div class="ppl">${l.map((n) => `<i class="${n === who ? "me" : ""}">${profOf(n).e ? `<span class="pe">${esc(profOf(n).e)}</span>` : ""}${esc(n)}</i>`).join("")}</div>` : ""; };
@@ -273,7 +282,10 @@ const ICON = {
   todo: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 3h8v2h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h3zm2 0v3h4V3zm5.3 7.3-4.3 4.3-2.3-2.3-1.4 1.4 3.7 3.7 5.7-5.7z"/></svg>',
 };
 const TABS = [["me", "내 보드"], ["home", "홈"], ["todo", "할 일"], ["idea", "제안함"], ["ho", "인수인계"], ["meet", "회의"], ["fix", "확정"]];
-const MORE = ["home", "ho", "fix"]; // 더보기 안 (폰은 더보기 버튼, PC는 왼쪽 메뉴 아래에 작게)
+const FAV0 = ["me", "todo", "idea", "meet"];
+const favs = () => { const f = (who && profOf(who).f) || []; const ok = f.filter((k) => TABS.some(([t]) => t === k)).slice(0, 4); return ok.length ? ok : FAV0; };
+const moreTabs = () => TABS.map(([k]) => k).filter((k) => !favs().includes(k)); // 더보기 안 (폰은 더보기 버튼, PC는 왼쪽 메뉴 아래에 작게)
+const tabName = (k) => (TABS.find(([t]) => t === k) || [, k])[1];
 const meetOf = (id) => D.meetings.find((m) => m.id === id);
 const byBrand = (list) => (brandF ? list.filter((x) => x.브랜드 === brandF || (!x.브랜드 && brandF === "공통")) : list);
 const st = (s) => `<span class="st ${esc(s)}">${esc(s)}</span>`;
@@ -539,7 +551,7 @@ const grabIdea = () => { const o = { 답: val("#xReply") }; if ($("#xTitle")) { 
 // 클로드에게 물어보기: 시트 쪽(Apps Script)이 Claude API로 답을 받아 기록에 "클로드 제안"으로 남김
 const askBox = (target, id) => `<div class="askbox"><div class="lbl" style="margin-top:0">🤖 클로드에게 물어보기 <small>웹에서 찾아보고 답을 남겨요</small></div><div class="mline"><input class="in" id="askQ" maxlength="200" placeholder="궁금한 점 (비우면 전체 검토)"><button class="btn" data-act="ask" data-target="${target}" data-id="${id}">물어보기</button></div></div>`;
 const ASKERR = { nokey: "클로드 연결 키가 아직 안 들어갔어요", limit: "오늘 물어보기 횟수를 다 썼어요", refusal: "클로드가 이 질문에는 답하지 않았어요", notfound: "먼저 저장한 다음 물어봐요", empty: "답이 비어 있어요. 다시 물어봐요" };
-const moreSheet = () => openSheet(`<h3>더보기</h3><div class="list" style="margin-top:10px">${TABS.filter(([k]) => MORE.includes(k)).map(([k, n]) => `<button class="item" data-tab="${k}"><div class="av">${ICON[k]}</div><div class="tx"><b>${n}</b></div><span class="chev">›</span></button>`).join("")}</div><div class="btns"><button class="btn gray" data-x>닫기</button></div>`);
+const moreSheet = () => openSheet(`<h3>더보기</h3><div class="list" style="margin-top:10px">${moreTabs().map((k) => [k, tabName(k)]).map(([k, n]) => `<button class="item" data-tab="${k}"><div class="av">${ICON[k]}</div><div class="tx"><b>${n}</b></div><span class="chev">›</span></button>`).join("")}</div><div class="btns"><button class="btn gray" data-x>닫기</button></div>`);
 
 // ── 녹음 ── 2분마다 조각을 시트 쪽(Apps Script)으로 보내 드라이브에 저장. 중간에 끊겨도 보낸 조각은 남음
 let REC = null;
@@ -578,15 +590,15 @@ function render() {
   $("#nav").style.display = pc ? "none" : "";
   if (tab === "idea") ls.set("ot-seen-idea", D.at || ""); // 제안함을 열면 읽음
   const unread = unreadIdeas(), dot = unread ? `<span class="ndot">${unread}</span>` : "";
-  document.querySelectorAll("#nav button").forEach((b) => { const k = b.dataset.tab; b.classList.toggle("on", k === tab || (k === "more" && MORE.includes(tab))); if (!b.dataset.lb) b.dataset.lb = b.textContent; b.innerHTML = ICON[k] + b.dataset.lb + (k === "idea" ? dot : ""); });
+  $("#nav").innerHTML = `<div>${[...favs(), "more"].map((k) => `<button class="${k === tab || (k === "more" && moreTabs().includes(tab)) ? "on" : ""}" data-tab="${k}">${ICON[k]}${k === "more" ? "더보기" : tabName(k)}${k === "idea" ? dot : ""}</button>`).join("")}</div>`;
   const at = D.at ? D.at.slice(11) : "";
   const body = tab === "home" ? (pc ? homePC() : homeHtml()) : tab === "meet" ? meetHtml() : tab === "fix" ? fixHtml() : tab === "me" ? meHtml() : tab === "idea" ? ideaHtml() : tab === "ho" ? hoHtml() : todoHtml();
   const demo = (DEMO ? `<div class="demo">예시 화면이에요. 눌러 봐도 시트에는 저장되지 않아요</div>` : "") + recBar();
-  if (!pc) { $("#app").innerHTML = `${demo}<div class="top"><div class="logo">온라인팀 <b>보드</b></div><div class="r"><button class="ic me-btn" data-act="${who ? "prof" : "who"}" style="display:flex;align-items:center;gap:6px">${who ? avHtml(who, "xs") + esc(who) : "나는?"}</button><button class="ic" data-act="reload">${at ? at + " ↻" : "새로고침"}</button><button class="ic" data-act="logout">잠그기</button></div></div>${body}`; return; }
+  if (!pc) { $("#app").innerHTML = `${demo}<div class="top"><div class="logo">온라인팀 <b>보드</b></div><div class="r"><button class="ic" data-act="reload" aria-label="새로고침">${at ? at + " " : ""}↻</button><button class="topme" data-act="${who ? "prof" : "who"}" aria-label="내 프로필">${who ? avHtml(who, "sm") : "나는?"}</button></div></div>${body}`; return; }
   const title = { meet: "회의", fix: "확정", todo: "할 일", idea: "제안함", ho: "인수인계" }[tab];
   $("#app").innerHTML = `<div class="shell"><aside class="side"><div class="logo">온라인팀 <b>보드</b></div>
-      ${TABS.filter(([k]) => !MORE.includes(k)).map(([k, n]) => `<button class="navb ${tab === k ? "on" : ""}" data-tab="${k}">${ICON[k]}${n}${k === "idea" ? dot : ""}</button>`).join("")}
-      <div class="navmore">더보기</div>${TABS.filter(([k]) => MORE.includes(k)).map(([k, n]) => `<button class="navb sub ${tab === k ? "on" : ""}" data-tab="${k}">${ICON[k]}${n}</button>`).join("")}
+      ${favs().map((k) => `<button class="navb ${tab === k ? "on" : ""}" data-tab="${k}">${ICON[k]}${tabName(k)}${k === "idea" ? dot : ""}</button>`).join("")}
+      <div class="navmore">더보기</div>${moreTabs().map((k) => `<button class="navb sub ${tab === k ? "on" : ""}" data-tab="${k}">${ICON[k]}${tabName(k)}</button>`).join("")}
       <div class="foot"><button class="navb me-btn pfoot" data-act="${who ? "prof" : "who"}">${who ? `${avHtml(who, "sm")}<span class="pft"><b>${esc(PNAME(who))}</b><small>${esc(profOf(who).s || "프로필 꾸미기")}</small></span>` : "👤 나는 누구?"}</button><button class="navb" data-act="reload">↻ ${at ? at + " 기준" : "새로고침"}</button><button class="navb" data-act="logout">🔒 잠그기</button></div></aside>
     <main class="main">${demo}${tab === "home" ? body : `${title ? `<div class="pchead"><h1>${title}</h1></div>` : ""}<div class="${["fix", "idea", "ho"].includes(tab) ? "narrow" : ""}">${body}</div>`}</main></div>`;
   if (tab === "home") $("#panel").innerHTML = panelKeep || panelDefault();
@@ -611,8 +623,9 @@ function profSheet() {
     <div class="mline" style="margin-top:8px"><input class="in" id="pfE" maxlength="4" placeholder="목록에 없으면 직접 넣기"><button class="btn sec2" data-act="pfE">넣기</button></div>
     ${boss ? `<div class="lbl">이사님 전용 배지</div><div class="emos">${pick(PBOSS, "b", p.b)}</div>` : ""}
     <div class="lbl">작은 배지 <small>(요즘 상태, 선택)</small></div><div class="emos"><button class="emo ${!p.b ? "on" : ""}" data-pf="b" data-pv="" style="font-size:13px;font-weight:700">없음</button>${pick(PBADGE, "b", p.b)}</div>
+    <div class="lbl">즐겨찾는 메뉴 <small>(4개까지, 누른 순서대로 아래 메뉴에 나와요)</small></div><div class="chips">${TABS.map(([k, n]) => { const i = p.f.indexOf(k); return `<button class="chip ${i >= 0 ? "on" : ""}" data-pfav="${k}">${i >= 0 ? `<span class="fnum">${i + 1}</span>` : ""}${n}</button>`; }).join("")}</div>
     <div class="lbl">바탕색</div><div class="chips">${Object.keys(PCOLORS).map((c) => `<button class="chip ${p.c === c ? "on" : ""}" data-pf="c" data-pv="${c}"><span class="cdot" style="background:${PCOLORS[c]}"></span>${c}</button>`).join("")}</div>
-    <div class="btns"><button class="btn gray" data-act="who" style="flex:0 0 112px;width:auto">다른 사람</button><button class="btn" data-act="pfsave">저장</button></div>`);
+    <div class="btns"><button class="btn gray" data-act="who" style="flex:0 0 96px;width:auto">다른 사람</button><button class="btn gray" data-act="logout" style="flex:0 0 72px;width:auto">잠그기</button><button class="btn" data-act="pfsave">저장</button></div>`);
 }
 function askWho(then) {
   whoThen = then || null;
@@ -622,7 +635,7 @@ function askWho(then) {
 }
 
 document.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-tab],[data-act],[data-item],[data-msel],[data-brand],[data-todof],[data-owner],[data-mbrand],[data-ist],[data-ldel],[data-iown],[data-mwho],[data-setwho],[data-pf],[data-mview],[data-note],[data-nnew],[data-nkind],[data-hob],[data-idea],[data-like],[data-idf],[data-ito],[data-ist2],[data-ldel2],[data-x]");
+  const t = e.target.closest("[data-tab],[data-act],[data-item],[data-msel],[data-brand],[data-todof],[data-owner],[data-mbrand],[data-ist],[data-ldel],[data-iown],[data-mwho],[data-setwho],[data-pf],[data-pfav],[data-mview],[data-note],[data-nnew],[data-nkind],[data-hob],[data-idea],[data-like],[data-idf],[data-ito],[data-ist2],[data-ldel2],[data-x]");
   if (e.target.id === "go") return tryLogin();
   if (e.target === $("#dim")) return closeSheet();
   if (!t) return;
@@ -646,6 +659,7 @@ document.addEventListener("click", async (e) => {
   if (d.owner) return panelOwner(d.owner);
   if (d.item) return openItem(d.item);
   if (d.msel) { meetSel = d.msel; ls.set("ot-meet", meetSel); return render(); }
+  if (d.pfav) { edit.s = val("#pfS"); const f = edit.f || []; edit.f = f.includes(d.pfav) ? f.filter((k) => k !== d.pfav) : f.length >= 4 ? (toast("4개까지 고를 수 있어요"), f) : [...f, d.pfav]; return profSheet(); }
   if (d.pf) { edit.s = val("#pfS"); edit[d.pf] = d.pv; return profSheet(); }
   if (d.setwho) { who = d.setwho; ls.set("ot-who", who); if (whoThen) { const f = whoThen; whoThen = null; return f(); } closeSheet(); return render(); }
   if (d.mbrand) { edit.브랜드 = edit.브랜드 === d.mbrand ? "" : d.mbrand; edit.제목 = val("#mTitle"); edit.날짜 = val("#mDate"); edit.메모 = val("#mMemo"); return sheetMeeting(); }
@@ -666,9 +680,9 @@ document.addEventListener("click", async (e) => {
       if (!m) { m = { id: uid("m_"), 날짜: today(), 제목: `${md(today())} 회의`, 브랜드: "", 참석: "", 메모: "" }; await save("meeting", m); }
       meetSel = m.id; ls.set("ot-meet", meetSel); tab = "meet"; ls.set("ot-tab", tab); render(); return recStart(); }
     case "fb": { tab = "idea"; ls.set("ot-tab", tab); ideaTo = "팀 전체"; render(); const t = $("#iqText"); t.value = "[보드 불편] "; t.focus(); return; }
-    case "prof": { if (!who) return askWho(); const p = profOf(who); edit = { e: p.e, b: p.b, c: p.c, s: p.s }; return profSheet(); }
+    case "prof": { if (!who) return askWho(); const p = profOf(who); edit = { e: p.e, b: p.b, c: p.c, s: p.s, f: p.f.length ? [...p.f] : [...FAV0] }; return profSheet(); }
     case "pfE": { const v = val("#pfE"); if (!v) return; edit.s = val("#pfS"); edit.e = window.Intl && Intl.Segmenter ? [...new Intl.Segmenter("ko", { granularity: "grapheme" }).segment(v)][0].segment : [...v][0]; return profSheet(); }
-    case "pfsave": { const old = profNote(who), n = { id: old ? old.id : uid("n_"), 종류: "프로필", 작성자: who, 받는사람: "", 상태: "", 좋아요: "", 브랜드: "", 제목: val("#pfS"), 내용: JSON.stringify({ e: edit.e, b: edit.b, c: edit.c }), 답: "" }; closeSheet(); await save("note", n); return toast("프로필을 저장했어요"); }
+    case "pfsave": { const old = profNote(who), n = { id: old ? old.id : uid("n_"), 종류: "프로필", 작성자: who, 받는사람: "", 상태: "", 좋아요: "", 브랜드: "", 제목: val("#pfS"), 내용: JSON.stringify({ e: edit.e, b: edit.b, c: edit.c, f: edit.f }), 답: "" }; closeSheet(); await save("note", n); return toast("프로필을 저장했어요"); }
     case "ask": {
       if (!who) return askWho(); if (t.disabled) return;
       const target = d.target, id = d.id, q = val("#askQ");
