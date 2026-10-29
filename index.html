@@ -146,6 +146,9 @@
   .nhead{display:flex;align-items:center;justify-content:space-between} .nhead h3 small{font-size:15px;color:var(--red);margin-left:4px}
   .nlist .item{align-items:flex-start} .nic{font-size:20px;width:28px;flex:none;text-align:center;margin-top:1px} .nlist .item .tx b{white-space:normal;line-height:1.4} .nread{opacity:.55}
   .ndot2{width:9px;height:9px;border-radius:50%;background:var(--red);flex:none;margin-top:7px}
+  /* 클로드 답, 댓글: 줄바꿈 그대로, 줄 간격 넉넉하게 (읽기 쉽게) */
+  .log{white-space:pre-wrap} .log.idea{font-size:15px;line-height:1.8;padding:12px 14px} .log.idea small{margin-bottom:6px}
+  .opn p.idea{white-space:pre-wrap;line-height:1.8;display:block}
   .recbtn{margin-top:16px;width:100%;height:50px;border-radius:14px;background:var(--red-soft);color:var(--red);font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px} .recbtn:disabled{opacity:.45}
   .rdot{width:12px;height:12px;border-radius:50%;background:var(--red);flex:none} .rdot.on{animation:blink 1s infinite} @keyframes blink{50%{opacity:.25}}
   .recbar{position:sticky;top:8px;z-index:30;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border-radius:16px;padding:12px 14px;margin-bottom:12px;box-shadow:0 0 0 2px var(--red),0 8px 24px rgba(0,0,0,.08)}
