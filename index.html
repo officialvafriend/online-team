@@ -95,6 +95,11 @@
   .board .item .val{display:flex;flex-wrap:wrap;align-items:center;gap:6px;text-align:left} .board .item .val span{margin:0!important} .board .ppl{margin:0} .board .chev{display:none}
   .opn{margin:-4px 20px 10px 76px;padding:10px 14px;border-radius:14px;background:var(--bg);font-size:14px;line-height:1.55} .opn p{margin:3px 0;display:flex;gap:8px} .opn p b{flex:none;min-width:36px;color:var(--ac);font-weight:700}
   .opn p.idea,.log.idea{background:var(--amber-soft);color:var(--ink);border-radius:10px;padding:6px 10px;margin:6px 0 2px} .opn a,.log a{color:var(--ac);font-weight:700}
+  .recbtn{margin-top:16px;width:100%;height:50px;border-radius:14px;background:var(--red-soft);color:var(--red);font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px} .recbtn:disabled{opacity:.45}
+  .rdot{width:12px;height:12px;border-radius:50%;background:var(--red);flex:none} .rdot.on{animation:blink 1s infinite} @keyframes blink{50%{opacity:.25}}
+  .recbar{position:sticky;top:8px;z-index:30;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border-radius:16px;padding:12px 14px;margin-bottom:12px;box-shadow:0 0 0 2px var(--red),0 8px 24px rgba(0,0,0,.08)}
+  .recbar b{color:var(--red);font-size:15px} .recbar #recT{font-weight:800;font-size:17px;font-variant-numeric:tabular-nums} .recbar small{flex:1 1 140px;font-size:12px;color:var(--sub);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .recbar button{height:38px;padding:0 18px;border-radius:11px;background:var(--red);color:#fff;font-weight:700}
   .demo{background:var(--amber-soft);color:var(--amber);font-size:13px;font-weight:700;text-align:center;padding:8px 12px;border-radius:12px;margin-bottom:12px}
   /* PC (900px 이상): 왼쪽 메뉴 236, 본문 38/44, 숫자카드 4칸, 홈은 본문 + 오른쪽 상세 320 */
   @media (min-width:900px){
@@ -312,7 +317,8 @@ function meetHtml() {
       ${peopleOf(sel.참석).length ? `<div class="ppl" style="justify-content:flex-start;margin-top:8px">${peopleOf(sel.참석).map((n) => `<i class="${n === who ? "me" : ""}">${esc(n)}</i>`).join("")}</div>` : ""}
       <div class="caption">${sel.브랜드 ? `<span class="tag">${esc(sel.브랜드)}</span>` : ""}${sel.메모 ? esc(sel.메모) : "메모 없음"}</div>
       <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${cnt.map(([s, n]) => `<span class="st ${s}">${s} ${n}</span>`).join("")}</div></div>
-      <button class="ic" data-act="medit">회의 고치기</button></div></div>
+      <button class="ic" data-act="medit">회의 고치기</button></div>
+      ${REC && REC.meet === sel.id ? "" : `<button class="recbtn" data-act="recstart" ${REC ? "disabled" : ""}><span class="rdot"></span>${REC ? "다른 회의 녹음 중" : "녹음 시작"}</button>`}</div>
     ${seg}${meetView === "person" ? byPerson : byItem}
     <div class="card"><div class="eyebrow">안건 넣기</div>
       <div class="btns" style="margin-top:0"><button class="btn sec2" data-act="inew" style="height:50px;font-size:16px">＋ 안건 하나</button><button class="btn gray" data-act="ibulk" style="height:50px;font-size:16px">여러 줄 한번에</button></div></div>`;
@@ -380,6 +386,36 @@ function todoHtml() {
     ${list.length ? blk("늦음", late) + blk("마감 있음", soon) + blk("마감 없음", none) : '<div class="list"><div class="empty">할 일이 없어요. 확인필요, 시도, 확정 상태의 안건이 여기에 모여요</div></div>'}`;
 }
 
+// ── 녹음 ── 2분마다 조각을 시트 쪽(Apps Script)으로 보내 드라이브에 저장. 중간에 끊겨도 보낸 조각은 남음
+let REC = null;
+const recSupported = () => !!(navigator.mediaDevices && window.MediaRecorder);
+const b64 = (blob) => new Promise((ok, no) => { const f = new FileReader(); f.onload = () => ok(String(f.result).split(",")[1]); f.onerror = no; f.readAsDataURL(blob); });
+function recSend(blob) {
+  const R = REC, part = ++R.part;
+  R.q = R.q.then(async () => {
+    const data = await b64(blob);
+    for (let i = 0; i < 3; i++) { try { await post({ type: "rec", meet: R.meet, sess: R.sess, part, mime: R.mime, b64: data }); R.sent++; recTick(); return; } catch (e) { await new Promise((w) => setTimeout(w, 3000 * (i + 1))); } }
+    R.fail++; recTick(); toast(`녹음 ${part}번째 조각을 못 보냈어요. 인터넷을 확인해 주세요`);
+  });
+}
+async function recStart() {
+  if (!recSupported()) return toast("이 브라우저는 녹음이 안 돼요. 크롬이나 사파리로 열어 주세요");
+  let stream; try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); } catch (e) { return toast("마이크를 쓸 수 없어요. 브라우저 마이크 권한을 허용해 주세요"); }
+  const mime = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"].find((m) => MediaRecorder.isTypeSupported(m)) || "";
+  const now = new Date(), mr = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 32000 } : {});
+  REC = { mr, stream, meet: meetSel, sess: `${ymd(now).replace(/-/g, "")}-${pad(now.getHours())}${pad(now.getMinutes())}`, mime: mr.mimeType || mime, part: 0, sent: 0, fail: 0, t0: Date.now(), q: Promise.resolve(), wake: null };
+  mr.ondataavailable = (e) => { if (e.data && e.data.size) recSend(e.data); };
+  mr.onstop = async () => { const R = REC; R.stream.getTracks().forEach((t) => t.stop()); clearInterval(R.timer); try { R.wake && R.wake.release(); } catch {} R.stopping = true; render(); await R.q; REC = null; render(); toast(R.fail ? `녹음 끝. ${R.fail}조각을 못 보냈어요` : `녹음 저장했어요 (${R.sent}조각)`); };
+  mr.start(120000);
+  REC.timer = setInterval(recTick, 1000); recWake(); render(); toast("녹음을 시작했어요. 화면을 켜 둔 채로 두세요");
+}
+async function recWake() { try { if (REC && navigator.wakeLock) REC.wake = await navigator.wakeLock.request("screen"); } catch {} }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && REC) recWake(); });
+addEventListener("beforeunload", (e) => { if (REC) { e.preventDefault(); e.returnValue = ""; } });
+const recTime = () => { const s = Math.floor((Date.now() - REC.t0) / 1000); return `${Math.floor(s / 60)}:${pad(s % 60)}`; };
+const recBar = () => (REC ? `<div class="recbar"><span class="rdot on"></span><b>${REC.stopping ? "녹음 저장 중…" : "녹음 중"}</b><span id="recT">${recTime()}</span><small>${esc(meetOf(REC.meet)?.제목 || "")}, 저장 ${REC.sent}조각${REC.fail ? `, 실패 ${REC.fail}` : ""}</small>${REC.stopping ? "" : '<button data-act="recstop">멈춤</button>'}</div>` : "");
+function recTick() { const b = document.querySelector(".recbar"); if (b) b.outerHTML = recBar(); }
+
 // ── 그리기 ──
 function render() {
   if (!D) return;
@@ -388,7 +424,7 @@ function render() {
   document.querySelectorAll("#nav button").forEach((b) => { b.classList.toggle("on", b.dataset.tab === tab); if (!b.dataset.ic) { b.dataset.ic = 1; b.innerHTML = ICON[b.dataset.tab] + b.textContent; } });
   const at = D.at ? D.at.slice(11) : "";
   const body = tab === "home" ? (pc ? homePC() : homeHtml()) : tab === "meet" ? meetHtml() : tab === "fix" ? fixHtml() : todoHtml();
-  const demo = DEMO ? `<div class="demo">예시 화면이에요. 눌러 봐도 시트에는 저장되지 않아요</div>` : "";
+  const demo = (DEMO ? `<div class="demo">예시 화면이에요. 눌러 봐도 시트에는 저장되지 않아요</div>` : "") + recBar();
   if (!pc) { $("#app").innerHTML = `${demo}<div class="top"><div class="logo">온라인팀 <b>보드</b></div><div class="r"><button class="ic me-btn" data-act="who">${who ? esc(who) : "나는?"}</button><button class="ic" data-act="reload">${at ? at + " ↻" : "새로고침"}</button><button class="ic" data-act="logout">잠그기</button></div></div>${body}`; return; }
   const title = { meet: "회의", fix: "확정", todo: "할 일" }[tab];
   $("#app").innerHTML = `<div class="shell"><aside class="side"><div class="logo">온라인팀 <b>보드</b></div>
@@ -439,6 +475,8 @@ document.addEventListener("click", async (e) => {
     case "reload": return reload();
     case "logout": ls.set("ot-key", null); KEY = ""; D = null; return renderLogin();
     case "who": return askWho();
+    case "recstart": return recStart();
+    case "recstop": if (REC && REC.mr.state !== "inactive") { if (!confirm("녹음을 멈출까요?")) return; REC.mr.stop(); } return;
     case "mnew": edit = { id: uid("m_"), 날짜: today(), 제목: "", 브랜드: brandF || "", 참석: "", 메모: "", _who: who ? [who] : [] }; return sheetMeeting();
     case "medit": { const m0 = meetOf(meetSel); edit = { ...m0, _who: peopleOf(m0.참석) }; return sheetMeeting(); }
     case "msave": { edit.제목 = val("#mTitle"); edit.날짜 = val("#mDate"); edit.메모 = val("#mMemo"); if (!edit.제목) return toast("제목을 적어요"); if (!edit.날짜) return toast("날짜를 골라요"); if (!sameSet(edit._who, peopleOf(edit.참석))) edit.참석 = edit._who.join(", "); delete edit._who; const m = { ...edit }; meetSel = m.id; ls.set("ot-meet", meetSel); tab = "meet"; ls.set("ot-tab", tab); closeSheet(); await save("meeting", m); return toast("저장했어요"); }
