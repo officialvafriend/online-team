@@ -141,6 +141,11 @@
     .card{padding:20px 18px} .headline{font-size:22px}
     .sheet{padding:22px 18px calc(18px + env(safe-area-inset-bottom))}
   }
+  .bell{position:relative;width:38px;height:38px;display:grid;place-items:center;border-radius:50%;font-size:18px} .bell .ndot{position:absolute;top:0;right:-2px;margin:0}
+  .side .navb .ndot{margin-left:auto}
+  .nhead{display:flex;align-items:center;justify-content:space-between} .nhead h3 small{font-size:15px;color:var(--red);margin-left:4px}
+  .nlist .item{align-items:flex-start} .nic{font-size:20px;width:28px;flex:none;text-align:center;margin-top:1px} .nlist .item .tx b{white-space:normal;line-height:1.4} .nread{opacity:.55}
+  .ndot2{width:9px;height:9px;border-radius:50%;background:var(--red);flex:none;margin-top:7px}
   .recbtn{margin-top:16px;width:100%;height:50px;border-radius:14px;background:var(--red-soft);color:var(--red);font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px} .recbtn:disabled{opacity:.45}
   .rdot{width:12px;height:12px;border-radius:50%;background:var(--red);flex:none} .rdot.on{animation:blink 1s infinite} @keyframes blink{50%{opacity:.25}}
   .recbar{position:sticky;top:8px;z-index:30;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border-radius:16px;padding:12px 14px;margin-bottom:12px;box-shadow:0 0 0 2px var(--red),0 8px 24px rgba(0,0,0,.08)}
@@ -238,6 +243,7 @@ async function save(kind, data) { // 화면 먼저 바꾸고 시트에 씀, 실�
   const now = new Date(), stamp = `${ymd(now)} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
   if (kind === "item") data.고친시각 = stamp; if (kind === "log" && !data.시각) data.시각 = stamp; if (kind === "meeting" && !data.만든시각) data.만든시각 = stamp; if (kind === "note") data.고친시각 = stamp;
   if (i >= 0) list[i] = { ...list[i], ...data }; else list.push(data);
+  if (kind === "item" || kind === "note") mySaved(data.id, data.고친시각);
   render();
   try { await post({ type: "save", kind, data }); } catch (e) { toast("저장하지 못했어요. 다시 불러올게요"); reload(true); }
 }
@@ -553,6 +559,42 @@ const askBox = (target, id) => `<div class="askbox"><div class="lbl" style="marg
 const ASKERR = { nokey: "클로드 연결 키가 아직 안 들어갔어요", limit: "오늘 물어보기 횟수를 다 썼어요", refusal: "클로드가 이 질문에는 답하지 않았어요", notfound: "먼저 저장한 다음 물어봐요", empty: "답이 비어 있어요. 다시 물어봐요" };
 const moreSheet = () => openSheet(`<h3>더보기</h3><div class="list" style="margin-top:10px">${moreTabs().map((k) => [k, tabName(k)]).map(([k, n]) => `<button class="item" data-tab="${k}"><div class="av">${ICON[k]}</div><div class="tx"><b>${n}</b></div><span class="chev">›</span></button>`).join("")}</div><div class="btns"><button class="btn gray" data-x>닫기</button></div>`);
 
+// ── 알림함 ── 따로 저장하지 않고 시트 내용에서 "나와 관련된 새 일"을 뽑음. 읽음 표시는 이 기기에만(사람별)
+const NKEY = () => "ot-noti-" + who;
+function notiState() { let st = null; try { st = JSON.parse(ls.get(NKEY()) || "null"); } catch (e) {} if (!st) { st = { since: D && D.at ? D.at : "", read: [] }; ls.set(NKEY(), JSON.stringify(st)); } return st; }
+function mySaved(id, t) { let m = {}; try { m = JSON.parse(ls.get("ot-mysave") || "{}"); } catch (e) {} m[id] = t || ""; const k = Object.keys(m); if (k.length > 300) delete m[k[0]]; ls.set("ot-mysave", JSON.stringify(m)); }
+const mine0 = () => { try { return JSON.parse(ls.get("ot-mysave") || "{}"); } catch (e) { return {}; } };
+function notis() {
+  if (!who || !D) return [];
+  const st = notiState(), since = st.since, out = [], my = mine0(), add = (o) => out.push({ ...o, read: st.read.includes(o.key) });
+  const tmr = (() => { const d = new Date(today() + "T00:00:00"); d.setDate(d.getDate() + 1); return ymd(d); })();
+  for (const x of D.items) {
+    if (!hasP(x.담당자, who)) continue;
+    if (x.고친시각 && x.고친시각 > since && my[x.id] !== x.고친시각) add({ key: "i:" + x.id + ":" + x.고친시각, ic: "📌", t: x.제목, s: "새로 맡았거나 바뀐 할 일" + (x.마감 ? ", 마감 " + md(x.마감) : ""), at: x.고친시각, go: { item: x.id } });
+    if (ACTIVE.includes(x.상태) && x.마감 && x.마감 <= tmr) add({ key: "d:" + x.id + ":" + today(), ic: x.마감 < today() ? "🔴" : "⏰", t: x.제목, s: x.마감 < today() ? `마감이 ${-days(x.마감)}일 지났어요` : x.마감 === today() ? "오늘 마감이에요" : "내일 마감이에요", at: today() + " 00:00", go: { item: x.id } });
+  }
+  const myItemIds = D.items.filter((x) => hasP(x.담당자, who)).map((x) => x.id), myIdeas = D.notes.filter((n) => n.종류 === "제안" && n.작성자 === who), myIdeaIds = myIdeas.map((n) => n.id);
+  for (const l of D.logs) {
+    if (!(l.시각 > since) || logWho(l) === who) continue;
+    const onIdea = myIdeaIds.includes(l.안건id), onItem = myItemIds.includes(l.안건id); if (!onIdea && !onItem) continue;
+    const ttl = onIdea ? D.notes.find((n) => n.id === l.안건id).제목 : D.items.find((x) => x.id === l.안건id).제목;
+    add({ key: "l:" + l.id, ic: isIdea(l) ? "🤖" : "💬", t: isIdea(l) ? "클로드 답이 달렸어요" : `${PNAME(logWho(l))}: ${l.내용}`, s: ttl, at: l.시각, go: onIdea ? { idea: l.안건id } : { item: l.안건id } });
+  }
+  for (const n of myIdeas) if (n.고친시각 > since && my[n.id] !== n.고친시각 && (n.답 || (n.상태 && n.상태 !== "새 제안"))) add({ key: "s:" + n.id + ":" + n.고친시각, ic: n.상태 === "채택" ? "🎉" : "📣", t: n.답 ? `이사님 답: ${n.답}` : `제안이 "${n.상태}"(으)로 바뀌었어요`, s: n.제목, at: n.고친시각, go: { idea: n.id } });
+  if (who === "한섭") for (const n of D.notes) if (n.종류 === "제안" && n.받는사람 === "이사님" && n.작성자 !== who && (n.만든시각 || "") > since) add({ key: "n:" + n.id, ic: "💡", t: `${PNAME(n.작성자)}님 제안: ${n.제목}`, s: "이사님께 온 새 제안", at: n.만든시각, go: { idea: n.id } });
+  const pri = (n) => (n.key.startsWith("d:") ? 0 : 1); // 마감 알림을 맨 위로
+  return out.sort((a, b) => (a.read - b.read) || (pri(a) - pri(b)) || (a.at < b.at ? 1 : -1));
+}
+const notiCount = () => notis().filter((n) => !n.read).length;
+function notiRead(keys) { const st = notiState(); st.read = [...new Set([...st.read, ...keys])].slice(-400); ls.set(NKEY(), JSON.stringify(st)); }
+function notiSheet() {
+  const l = notis(), un = l.filter((n) => !n.read);
+  openSheet(`<div class="nhead"><h3>알림 ${un.length ? `<small>${un.length}개</small>` : ""}</h3>${un.length ? '<button class="ic" data-act="nall">모두 읽음</button>' : ""}</div>
+    <div class="list nlist">${l.length ? l.map((n) => `<button class="item ${n.read ? "nread" : ""}" data-noti="${esc(n.key)}"><span class="nic">${n.ic}</span><div class="tx"><b>${esc(n.t)}</b><span>${esc(n.s)}${n.at && !n.key.startsWith("d:") ? ", " + esc(ago(n.at)) : ""}</span></div>${n.read ? "" : '<span class="ndot2"></span>'}</button>`).join("") : '<div class="empty">새 알림이 없어요</div>'}</div>
+    <div class="btns"><button class="btn gray" data-x>닫기</button></div>`);
+}
+const bellHtml = (cls) => { const c = notiCount(); return `<button class="${cls}" data-act="noti" aria-label="알림">🔔${c ? `<span class="ndot">${c}</span>` : ""}</button>`; };
+
 // ── 녹음 ── 2분마다 조각을 시트 쪽(Apps Script)으로 보내 드라이브에 저장. 중간에 끊겨도 보낸 조각은 남음
 let REC = null;
 const recSupported = () => !!(navigator.mediaDevices && window.MediaRecorder);
@@ -590,16 +632,16 @@ function render() {
   $("#nav").style.display = pc ? "none" : "";
   if (tab === "idea") ls.set("ot-seen-idea", D.at || ""); // 제안함을 열면 읽음
   const unread = unreadIdeas(), dot = unread ? `<span class="ndot">${unread}</span>` : "";
-  $("#nav").innerHTML = `<div>${[...favs(), "more"].map((k) => `<button class="${k === tab || (k === "more" && moreTabs().includes(tab)) ? "on" : ""}" data-tab="${k}">${ICON[k]}${k === "more" ? "더보기" : tabName(k)}${k === "idea" ? dot : ""}</button>`).join("")}</div>`;
+  $("#nav").innerHTML = `<div>${[...favs(), "more"].map((k) => `<button class="${k === tab || (k === "more" && moreTabs().includes(tab)) ? "on" : ""}" data-tab="${k}">${ICON[k]}${k === "more" ? "더보기" : tabName(k)}${k === "idea" ? dot : k === "me" && notiCount() ? `<span class="ndot">${notiCount()}</span>` : ""}</button>`).join("")}</div>`;
   const at = D.at ? D.at.slice(11) : "";
   const body = tab === "home" ? (pc ? homePC() : homeHtml()) : tab === "meet" ? meetHtml() : tab === "fix" ? fixHtml() : tab === "me" ? meHtml() : tab === "idea" ? ideaHtml() : tab === "ho" ? hoHtml() : todoHtml();
   const demo = (DEMO ? `<div class="demo">예시 화면이에요. 눌러 봐도 시트에는 저장되지 않아요</div>` : "") + recBar();
-  if (!pc) { $("#app").innerHTML = `${demo}<div class="top"><div class="logo">온라인팀 <b>보드</b></div><div class="r"><button class="ic" data-act="reload" aria-label="새로고침">${at ? at + " " : ""}↻</button><button class="topme" data-act="${who ? "prof" : "who"}" aria-label="내 프로필">${who ? avHtml(who, "sm") : "나는?"}</button></div></div>${body}`; return; }
+  if (!pc) { $("#app").innerHTML = `${demo}<div class="top"><div class="logo">온라인팀 <b>보드</b></div><div class="r">${bellHtml("bell")}<button class="ic" data-act="reload" aria-label="새로고침">${at ? at + " " : ""}↻</button><button class="topme" data-act="${who ? "prof" : "who"}" aria-label="내 프로필">${who ? avHtml(who, "sm") : "나는?"}</button></div></div>${body}`; return; }
   const title = { meet: "회의", fix: "확정", todo: "할 일", idea: "제안함", ho: "인수인계" }[tab];
   $("#app").innerHTML = `<div class="shell"><aside class="side"><div class="logo">온라인팀 <b>보드</b></div>
-      ${favs().map((k) => `<button class="navb ${tab === k ? "on" : ""}" data-tab="${k}">${ICON[k]}${tabName(k)}${k === "idea" ? dot : ""}</button>`).join("")}
+      ${favs().map((k) => `<button class="navb ${tab === k ? "on" : ""}" data-tab="${k}">${ICON[k]}${tabName(k)}${k === "idea" ? dot : k === "me" && notiCount() ? `<span class="ndot">${notiCount()}</span>` : ""}</button>`).join("")}
       <div class="navmore">더보기</div>${moreTabs().map((k) => `<button class="navb sub ${tab === k ? "on" : ""}" data-tab="${k}">${ICON[k]}${tabName(k)}</button>`).join("")}
-      <div class="foot"><button class="navb me-btn pfoot" data-act="${who ? "prof" : "who"}">${who ? `${avHtml(who, "sm")}<span class="pft"><b>${esc(PNAME(who))}</b><small>${esc(profOf(who).s || "프로필 꾸미기")}</small></span>` : "👤 나는 누구?"}</button><button class="navb" data-act="reload">↻ ${at ? at + " 기준" : "새로고침"}</button><button class="navb" data-act="logout">🔒 잠그기</button></div></aside>
+      <div class="foot">${(() => { const c = notiCount(); return `<button class="navb" data-act="noti">🔔 알림${c ? `<span class="ndot">${c}</span>` : ""}</button>`; })()}<button class="navb me-btn pfoot" data-act="${who ? "prof" : "who"}">${who ? `${avHtml(who, "sm")}<span class="pft"><b>${esc(PNAME(who))}</b><small>${esc(profOf(who).s || "프로필 꾸미기")}</small></span>` : "👤 나는 누구?"}</button><button class="navb" data-act="reload">↻ ${at ? at + " 기준" : "새로고침"}</button><button class="navb" data-act="logout">🔒 잠그기</button></div></aside>
     <main class="main">${demo}${tab === "home" ? body : `${title ? `<div class="pchead"><h1>${title}</h1></div>` : ""}<div class="${["fix", "idea", "ho"].includes(tab) ? "narrow" : ""}">${body}</div>`}</main></div>`;
   if (tab === "home") $("#panel").innerHTML = panelKeep || panelDefault();
 }
@@ -635,7 +677,7 @@ function askWho(then) {
 }
 
 document.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-tab],[data-act],[data-item],[data-msel],[data-brand],[data-todof],[data-owner],[data-mbrand],[data-ist],[data-ldel],[data-iown],[data-mwho],[data-setwho],[data-pf],[data-pfav],[data-mview],[data-note],[data-nnew],[data-nkind],[data-hob],[data-idea],[data-like],[data-idf],[data-ito],[data-ist2],[data-ldel2],[data-x]");
+  const t = e.target.closest("[data-tab],[data-act],[data-item],[data-msel],[data-brand],[data-todof],[data-owner],[data-mbrand],[data-ist],[data-ldel],[data-iown],[data-mwho],[data-setwho],[data-pf],[data-pfav],[data-noti],[data-mview],[data-note],[data-nnew],[data-nkind],[data-hob],[data-idea],[data-like],[data-idf],[data-ito],[data-ist2],[data-ldel2],[data-x]");
   if (e.target.id === "go") return tryLogin();
   if (e.target === $("#dim")) return closeSheet();
   if (!t) return;
@@ -659,6 +701,7 @@ document.addEventListener("click", async (e) => {
   if (d.owner) return panelOwner(d.owner);
   if (d.item) return openItem(d.item);
   if (d.msel) { meetSel = d.msel; ls.set("ot-meet", meetSel); return render(); }
+  if (d.noti) { const n = notis().find((x) => x.key === d.noti); notiRead([d.noti]); closeSheet(); render(); if (!n) return; if (n.go.item) return openItem(n.go.item); const x = D.notes.find((y) => y.id === n.go.idea); if (x) { tab = "idea"; ls.set("ot-tab", tab); render(); edit = { ...x }; return ideaSheet(); } return; }
   if (d.pfav) { edit.s = val("#pfS"); const f = edit.f || []; edit.f = f.includes(d.pfav) ? f.filter((k) => k !== d.pfav) : f.length >= 4 ? (toast("4개까지 고를 수 있어요"), f) : [...f, d.pfav]; return profSheet(); }
   if (d.pf) { edit.s = val("#pfS"); edit[d.pf] = d.pv; return profSheet(); }
   if (d.setwho) { who = d.setwho; ls.set("ot-who", who); if (whoThen) { const f = whoThen; whoThen = null; return f(); } closeSheet(); return render(); }
@@ -672,6 +715,8 @@ document.addEventListener("click", async (e) => {
     case "logout": ls.set("ot-key", null); KEY = ""; D = null; return renderLogin();
     case "who": return askWho();
     case "recstart": return recStart();
+    case "noti": return notiSheet();
+    case "nall": notiRead(notis().map((n) => n.key)); render(); return notiSheet();
     case "qadd": { if (!who) return askWho(); const v = val("#qText"); if (!v) return; const p = parseQuick(v); if (!p.title) return toast("할 일을 적어요");
       const x = { id: uid("i_"), 회의id: "", 순서: "", 제목: p.title, 상태: "확정", 브랜드: "", 분야: "", 담당자: (p.owners.length ? p.owners : [who]).join(", "), 시작: "", 마감: p.due, 메모: "", 확인할것: "" };
       await save("item", x); return toast(`넣었어요: ${x.담당자}${p.due ? ", 마감 " + md(p.due) : ""}`); }
