@@ -151,6 +151,12 @@
   .opn p.idea{white-space:pre-wrap;line-height:1.8;display:block}
   .askbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px} .askbtns .btn{height:auto;padding:12px 8px;font-size:16px;display:flex;flex-direction:column;align-items:center;gap:2px} .askbtns .btn small{font-size:12px;font-weight:600;opacity:.8}
   .askmore{margin-top:10px} .askmore summary{font-size:13px;color:var(--sub);cursor:pointer;padding:4px 0}
+  .rst{font-size:12px;font-weight:700;color:var(--ink2);white-space:nowrap} .rsum{margin-top:10px;font-size:16px;font-weight:700;color:var(--ac);line-height:1.5}
+  .rper{background:var(--card);border-radius:16px;padding:14px 16px;font-size:15px;line-height:1.75;white-space:pre-wrap} .rper b{display:block;font-size:14px;color:var(--ac);margin-bottom:4px}
+  .rlines{display:grid;gap:8px} .rline{background:var(--card);border-radius:14px;padding:12px 14px;border-left:4px solid var(--line2)} .rline .rt{font-size:15px;line-height:1.6} .rline .rt small{color:var(--sub);font-variant-numeric:tabular-nums;margin-right:4px}
+  .rline.k-의견{border-left-color:#7fb8f0} .rline.k-결정{border-left-color:var(--green)} .rline.k-할일{border-left-color:var(--ac)} .rline.k-질문{border-left-color:var(--amber)} .rline.k-기타{opacity:.7}
+  .rctl{display:grid;grid-template-columns:auto auto 1fr;gap:6px;margin-top:8px} .rctl select{height:36px;border-radius:10px;border:0;background:var(--line);padding:0 8px;font-size:14px;color:var(--ink);min-width:0}
+  .recln{display:block;width:100%;text-align:left;margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--bg);font-size:14px;font-weight:600;color:var(--ink2)}
   .recbtn{margin-top:16px;width:100%;height:50px;border-radius:14px;background:var(--red-soft);color:var(--red);font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px} .recbtn:disabled{opacity:.45}
   .rdot{width:12px;height:12px;border-radius:50%;background:var(--red);flex:none} .rdot.on{animation:blink 1s infinite} @keyframes blink{50%{opacity:.25}}
   .recbar{position:sticky;top:8px;z-index:30;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border-radius:16px;padding:12px 14px;margin-bottom:12px;box-shadow:0 0 0 2px var(--red),0 8px 24px rgba(0,0,0,.08)}
@@ -229,11 +235,11 @@ let D = null, KEY = ls.get("ot-key") || "", tab = ls.get("ot-tab") || "me", bran
 
 // ── 시트 ──
 async function load(key) {
-  if (DEMO) { const d = demoData(); d.notes = d.notes || []; return d; }
+  if (DEMO) { const d = demoData(); d.notes = d.notes || []; d.recs = d.recs || []; return d; }
   if (!APPS_URL) throw Object.assign(new Error("setup"), { code: "setup" });
   const r = await (await fetch(`${APPS_URL}?k=${encodeURIComponent(key)}&t=${Date.now()}`, { cache: "no-store" })).json();
   if (!r.ok) throw Object.assign(new Error(r.error), { code: r.error });
-  r.notes = r.notes || [];
+  r.notes = r.notes || []; r.recs = r.recs || [];
   return r;
 }
 async function post(body) {
@@ -243,7 +249,7 @@ async function post(body) {
   return r;
 }
 async function save(kind, data) { // 화면 먼저 바꾸고 시트에 씀, 실패하면 다시 불러옴
-  const list = { meeting: D.meetings, item: D.items, log: D.logs, note: D.notes }[kind];
+  const list = { meeting: D.meetings, item: D.items, log: D.logs, note: D.notes, rec: D.recs }[kind];
   const i = list.findIndex((x) => x.id === data.id);
   const now = new Date(), stamp = `${ymd(now)} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
   if (kind === "item") data.고친시각 = stamp; if (kind === "log" && !data.시각) data.시각 = stamp; if (kind === "meeting" && !data.만든시각) data.만든시각 = stamp; if (kind === "note") data.고친시각 = stamp;
@@ -283,6 +289,7 @@ async function tryLogin() {
 
 // ── 공통 조각 ──
 const ICON = {
+  rec: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11z"/></svg>',
   idea: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-4 12.7V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.3A7 7 0 0 0 12 2zM9 20h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1z"/></svg>',
   ho: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zm8 1.5V8h4.5zM8 12v2h8v-2zm0 4v2h6v-2z"/></svg>',
   more: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>',
@@ -292,7 +299,7 @@ const ICON = {
   fix: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5zm-1.2 13.6-3.6-3.6 1.4-1.4 2.2 2.2 4.8-4.8 1.4 1.4z"/></svg>',
   todo: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 3h8v2h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h3zm2 0v3h4V3zm5.3 7.3-4.3 4.3-2.3-2.3-1.4 1.4 3.7 3.7 5.7-5.7z"/></svg>',
 };
-const TABS = [["me", "내 보드"], ["home", "홈"], ["todo", "할 일"], ["idea", "제안함"], ["ho", "인수인계"], ["meet", "회의"], ["fix", "확정"]];
+const TABS = [["me", "내 보드"], ["home", "홈"], ["todo", "할 일"], ["idea", "제안함"], ["ho", "인수인계"], ["meet", "회의"], ["rec", "녹음"], ["fix", "확정"]];
 const FAV0 = ["me", "todo", "idea", "meet"];
 const favs = () => { const f = (who && profOf(who).f) || []; const ok = f.filter((k) => TABS.some(([t]) => t === k)).slice(0, 4); return ok.length ? ok : FAV0; };
 const moreTabs = () => TABS.map(([k]) => k).filter((k) => !favs().includes(k)); // 더보기 안 (폰은 더보기 버튼, PC는 왼쪽 메뉴 아래에 작게)
@@ -393,6 +400,7 @@ function meetHtml() {
       <div class="caption">${sel.브랜드 ? `<span class="tag">${esc(sel.브랜드)}</span>` : ""}${sel.메모 ? esc(sel.메모) : "메모 없음"}</div>
       <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${cnt.map(([s, n]) => `<span class="st ${s}">${s} ${n}</span>`).join("")}</div></div>
       <button class="ic" data-act="medit">회의 고치기</button></div>
+      ${D.recs.filter((x) => x.회의id === sel.id).map((x) => `<button class="recln" data-tab="rec" data-recgo="${x.id}">🎙 ${esc(sessTxt(x.세션))} 녹음, ${esc(RST[x.상태] || x.상태)} ›</button>`).join("")}
       ${REC && REC.meet === sel.id ? "" : `<button class="recbtn" data-act="recstart" ${REC ? "disabled" : ""}><span class="rdot"></span>${REC ? "다른 회의 녹음 중" : "녹음 시작"}</button>`}</div>
     ${seg}${meetView === "person" ? byPerson : byItem}
     <div class="card"><div class="eyebrow">안건 넣기</div>
@@ -602,6 +610,59 @@ function notiSheet() {
 }
 const bellHtml = (cls) => { const c = notiCount(); return `<button class="${cls}" data-act="noti" aria-label="알림">🔔${c ? `<span class="ndot">${c}</span>` : ""}</button>`; };
 
+// ── 녹음 정리 ── 녹음 탭: 원문 [[시간, 말]], 분류 [{i, who, kind, item}], 정리 {결론, 안건별:[{item, 정리}]}
+let recSel = "", recCls = null;
+const RKINDS = ["의견", "결정", "할일", "질문", "기타"];
+const RKIC = { 의견: "💬", 결정: "✅", 할일: "📌", 질문: "❓", 기타: "➖" };
+const jp = (t, d) => { try { return t ? JSON.parse(t) : d; } catch (e) { return d; } };
+const sessTxt = (s) => (s ? `${+s.slice(4, 6)}/${+s.slice(6, 8)} ${s.slice(9, 11)}:${s.slice(11, 13)}` : "");
+const RST = { "받아쓰기 기다림": "⏳ 받아쓰기 기다림", "받아쓰기 끝": "📝 받아쓰기 끝", "정리 끝": "🤖 클로드 정리 끝", "보드에 넣음": "✅ 보드에 넣음" };
+function recHtml() {
+  if (recSel) return recDetail();
+  const list = [...D.recs].sort((a, b) => (a.세션 < b.세션 ? 1 : -1));
+  return `<div class="card"><div class="eyebrow">🎙 녹음</div><div class="headline">녹음하면 여기 모여요</div><div class="caption">PC 바탕화면 "회의 받아쓰기"를 누르면 받아쓰고, 클로드가 줄마다 누가, 무슨 말인지 먼저 정리해 둬요. 확인하고 "보드에 넣기"만 누르면 돼요</div></div>
+    <div class="list">${list.map((x) => { const m = meetOf(x.회의id); return `<button class="item" data-recsel="${x.id}"><div class="av" style="font-size:20px">🎙</div><div class="tx"><b>${esc(m ? m.제목 : "회의 없음")}</b><span>${esc(sessTxt(x.세션))}${x.길이 ? ", " + esc(x.길이) : ""}</span></div><div class="val"><span class="rst">${esc(RST[x.상태] || x.상태)}</span></div><span class="chev">›</span></button>`; }).join("") || '<div class="empty">아직 녹음이 없어요. 회의 탭 맨 위 "오늘 회의 녹음 시작"으로 녹음해요</div>'}</div>`;
+}
+function recDetail() {
+  const x = D.recs.find((y) => y.id === recSel); if (!x) { recSel = ""; return recHtml(); }
+  const m = meetOf(x.회의id), lines = jp(x.원문, []), sum = jp(x.정리, {}), its = D.items.filter((i) => i.회의id === x.회의id);
+  if (!recCls || recCls.id !== x.id) { const c = jp(x.분류, []); recCls = { id: x.id, rows: lines.map((_, i) => ({ who: "?", kind: "기타", item: "", ...(c.find((y) => +y.i === i) || {}) })), dirty: false }; }
+  const iname = (v) => (v && v.startsWith("new:") ? "새 안건: " + v.slice(4) : (its.find((i) => i.id === v) || {}).제목 || "");
+  const opts = (v) => `<option value="">안건 없음</option>${its.map((i) => `<option value="${i.id}" ${v === i.id ? "selected" : ""}>${esc(i.제목.slice(0, 24))}</option>`).join("")}${v && v.startsWith("new:") ? `<option value="${esc(v)}" selected>새 안건: ${esc(v.slice(4, 28))}</option>` : ""}`;
+  const head = `<button class="ic" data-recback style="margin-bottom:8px">‹ 녹음 목록</button>
+    <div class="card"><div class="eyebrow">${esc(sessTxt(x.세션))}${x.길이 ? ", " + esc(x.길이) : ""}, ${esc(RST[x.상태] || x.상태)}</div><div class="headline">${esc(m ? m.제목 : "회의 없음")}</div>
+      ${sum.결론 ? `<div class="rsum">💡 ${esc(sum.결론)}</div>` : ""}
+      <div class="btns" style="margin-top:14px">${lines.length ? `<button class="btn sec2" data-act="recorg" style="height:48px;font-size:15px">🤖 ${sum.결론 ? "다시 정리" : "클로드 정리"}</button><button class="btn" data-act="recapply" style="height:48px;font-size:15px">보드에 넣기</button>` : `<div class="caption" style="margin:0">아직 받아쓰기 전이에요. PC 바탕화면 "회의 받아쓰기"를 눌러 주세요</div>`}</div></div>`;
+  const per = (sum.안건별 || []).filter((a) => a.정리).map((a) => `<div class="rper"><b>${esc(iname(a.item) || "기타")}</b><div>${esc(a.정리)}</div></div>`).join("");
+  const rows = lines.map((l, i) => { const c = recCls.rows[i]; return `<div class="rline k-${c.kind}"><div class="rt"><small>${esc(l[0])}</small> ${esc(l[1])}</div>
+      <div class="rctl"><select data-rc="who" data-ri="${i}">${[...PEOPLE, "?"].map((p) => `<option value="${p}" ${c.who === p ? "selected" : ""}>${p === "?" ? "누구?" : (profOf(p).e ? profOf(p).e + " " : "") + p}</option>`).join("")}</select>
+      <select data-rc="kind" data-ri="${i}">${RKINDS.map((k) => `<option value="${k}" ${c.kind === k ? "selected" : ""}>${RKIC[k]} ${k === "할일" ? "할 일" : k}</option>`).join("")}</select>
+      <select data-rc="item" data-ri="${i}">${opts(c.item)}</select></div></div>`; }).join("");
+  return `${head}${per ? `<div class="sec">안건별 정리</div><div class="notes">${per}</div>` : ""}
+    <div class="sec">받아쓴 글 <small>${lines.length}줄</small><span class="rt">${recCls.dirty ? '<button class="ic me-btn" data-act="recsave">분류 저장</button>' : ""}</span></div><div class="rlines">${rows || '<div class="empty">받아쓴 글이 아직 없어요</div>'}</div>`;
+}
+async function recApply() {
+  const x = D.recs.find((y) => y.id === recSel); if (!x) return;
+  if (x.상태 === "보드에 넣음" && !confirm("이미 보드에 넣은 녹음이에요. 한 번 더 넣을까요?")) return;
+  const lines = jp(x.원문, []), sum = jp(x.정리, {}), rows = recCls.rows, newIds = {}, stamp = () => { const n = new Date(); return `${ymd(n)} ${pad(n.getHours())}:${pad(n.getMinutes())}`; };
+  let n = { 의견: 0, 결정: 0, 할일: 0, 질문: 0 }, ord = D.items.filter((i) => i.회의id === x.회의id).length;
+  const itemOf = async (v) => { if (!v) return ""; if (!v.startsWith("new:")) return v; if (newIds[v]) return newIds[v]; const id = uid("i_"); await save("item", { id, 회의id: x.회의id, 순서: ++ord, 제목: v.slice(4), 상태: "후보", 브랜드: "", 분야: "", 담당자: "", 시작: "", 마감: "", 메모: "", 확인할것: "" }); return (newIds[v] = id); };
+  toast("보드에 넣는 중이에요…");
+  for (let i = 0; i < rows.length; i++) {
+    const c = rows[i], text = (lines[i] || [])[1] || ""; if (!text || !n.hasOwnProperty(c.kind)) continue;
+    const who2 = c.who === "?" ? "" : c.who, id = await itemOf(c.item);
+    if (c.kind === "의견" && id) await save("log", { id: uid("l_"), 안건id: id, 시각: stamp(), 작성자: who2 || "회의", 내용: text });
+    if (c.kind === "결정" && id) { const it = D.items.find((y) => y.id === id); if (it && it.상태 !== "확정") await save("item", { ...it, 상태: "확정" }); await save("log", { id: uid("l_"), 안건id: id, 시각: stamp(), 작성자: who2 || "회의", 내용: "결정: " + text }); }
+    if (c.kind === "할일") { const p = parseQuick(text); await save("item", { id: uid("i_"), 회의id: x.회의id, 순서: ++ord, 제목: p.title || text, 상태: "확정", 브랜드: "", 분야: "", 담당자: (p.owners.length ? p.owners : who2 ? [who2] : []).join(", "), 시작: "", 마감: p.due, 메모: "회의 녹음에서", 확인할것: "" }); }
+    if (c.kind === "질문") await save("item", { id: uid("i_"), 회의id: x.회의id, 순서: ++ord, 제목: "질문: " + text, 상태: "확인필요", 브랜드: "", 분야: "", 담당자: who2, 시작: "", 마감: "", 메모: "", 확인할것: "" });
+    n[c.kind]++;
+  }
+  for (const a of sum.안건별 || []) { const id = await itemOf(a.item); if (id && a.정리) await save("log", { id: uid("l_"), 안건id: id, 시각: stamp(), 작성자: "클로드 정리", 내용: "📝 회의 정리\n" + a.정리 }); }
+  const m = meetOf(x.회의id); if (m && sum.결론 && !(m.메모 || "").includes(sum.결론)) await save("meeting", { ...m, 메모: (m.메모 ? m.메모 + "\n" : "") + "결론: " + sum.결론 });
+  await save("rec", { ...x, 분류: JSON.stringify(rows.map((c, i) => ({ i, ...c }))), 상태: "보드에 넣음" });
+  toast(`넣었어요: 의견 ${n.의견}, 결정 ${n.결정}, 할 일 ${n.할일}, 질문 ${n.질문}`);
+}
+
 // ── 녹음 ── 2분마다 조각을 시트 쪽(Apps Script)으로 보내 드라이브에 저장. 중간에 끊겨도 보낸 조각은 남음
 let REC = null;
 const recSupported = () => !!(navigator.mediaDevices && window.MediaRecorder);
@@ -620,6 +681,7 @@ async function recStart() {
   const mime = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"].find((m) => MediaRecorder.isTypeSupported(m)) || "";
   const now = new Date(), mr = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 32000 } : {});
   REC = { mr, stream, meet: meetSel, sess: `${ymd(now).replace(/-/g, "")}-${pad(now.getHours())}${pad(now.getMinutes())}`, mime: mr.mimeType || mime, part: 0, sent: 0, fail: 0, t0: Date.now(), q: Promise.resolve(), wake: null };
+  save("rec", { id: `${REC.meet}_${REC.sess}`, 회의id: REC.meet, 세션: REC.sess, 길이: "", 상태: "받아쓰기 기다림", 원문: "", 분류: "", 정리: "" });
   mr.ondataavailable = (e) => { if (e.data && e.data.size) recSend(e.data); };
   mr.onstop = async () => { const R = REC; R.stream.getTracks().forEach((t) => t.stop()); clearInterval(R.timer); try { R.wake && R.wake.release(); } catch {} R.stopping = true; render(); await R.q; REC = null; render(); toast(R.fail ? `녹음 끝. ${R.fail}조각을 못 보냈어요` : `녹음 저장했어요 (${R.sent}조각)`); };
   mr.start(120000);
@@ -641,15 +703,15 @@ function render() {
   const unread = unreadIdeas(), dot = unread ? `<span class="ndot">${unread}</span>` : "";
   $("#nav").innerHTML = `<div>${[...favs(), "more"].map((k) => `<button class="${k === tab || (k === "more" && moreTabs().includes(tab)) ? "on" : ""}" data-tab="${k}">${ICON[k]}${k === "more" ? "더보기" : tabName(k)}${k === "idea" ? dot : k === "me" && notiCount() ? `<span class="ndot">${notiCount()}</span>` : ""}</button>`).join("")}</div>`;
   const at = D.at ? D.at.slice(11) : "";
-  const body = tab === "home" ? (pc ? homePC() : homeHtml()) : tab === "meet" ? meetHtml() : tab === "fix" ? fixHtml() : tab === "me" ? meHtml() : tab === "idea" ? ideaHtml() : tab === "ho" ? hoHtml() : todoHtml();
+  const body = tab === "home" ? (pc ? homePC() : homeHtml()) : tab === "meet" ? meetHtml() : tab === "fix" ? fixHtml() : tab === "me" ? meHtml() : tab === "idea" ? ideaHtml() : tab === "ho" ? hoHtml() : tab === "rec" ? recHtml() : todoHtml();
   const demo = (DEMO ? `<div class="demo">예시 화면이에요. 눌러 봐도 시트에는 저장되지 않아요</div>` : "") + recBar();
   if (!pc) { $("#app").innerHTML = `${demo}<div class="top"><div class="logo">온라인팀 <b>보드</b></div><div class="r">${bellHtml("bell")}<button class="ic" data-act="reload" aria-label="새로고침">${at ? at + " " : ""}↻</button><button class="topme" data-act="${who ? "prof" : "who"}" aria-label="내 프로필">${who ? avHtml(who, "sm") : "나는?"}</button></div></div>${body}`; return; }
-  const title = { meet: "회의", fix: "확정", todo: "할 일", idea: "제안함", ho: "인수인계" }[tab];
+  const title = { meet: "회의", fix: "확정", todo: "할 일", idea: "제안함", ho: "인수인계", rec: recSel ? "" : "녹음" }[tab];
   $("#app").innerHTML = `<div class="shell"><aside class="side"><div class="logo">온라인팀 <b>보드</b></div>
       ${favs().map((k) => `<button class="navb ${tab === k ? "on" : ""}" data-tab="${k}">${ICON[k]}${tabName(k)}${k === "idea" ? dot : k === "me" && notiCount() ? `<span class="ndot">${notiCount()}</span>` : ""}</button>`).join("")}
       <div class="navmore">더보기</div>${moreTabs().map((k) => `<button class="navb sub ${tab === k ? "on" : ""}" data-tab="${k}">${ICON[k]}${tabName(k)}</button>`).join("")}
       <div class="foot">${(() => { const c = notiCount(); return `<button class="navb" data-act="noti">🔔 알림${c ? `<span class="ndot">${c}</span>` : ""}</button>`; })()}<button class="navb me-btn pfoot" data-act="${who ? "prof" : "who"}">${who ? `${avHtml(who, "sm")}<span class="pft"><b>${esc(PNAME(who))}</b><small>${esc(profOf(who).s || "프로필 꾸미기")}</small></span>` : "👤 나는 누구?"}</button><button class="navb" data-act="reload">↻ ${at ? at + " 기준" : "새로고침"}</button><button class="navb" data-act="logout">🔒 잠그기</button></div></aside>
-    <main class="main">${demo}${tab === "home" ? body : `${title ? `<div class="pchead"><h1>${title}</h1></div>` : ""}<div class="${["fix", "idea", "ho"].includes(tab) ? "narrow" : ""}">${body}</div>`}</main></div>`;
+    <main class="main">${demo}${tab === "home" ? body : `${title ? `<div class="pchead"><h1>${title}</h1></div>` : ""}<div class="${["fix", "idea", "ho", "rec"].includes(tab) ? "narrow" : ""}">${body}</div>`}</main></div>`;
   if (tab === "home") $("#panel").innerHTML = panelKeep || panelDefault();
 }
 function openItem(id) { const x = D.items.find((i) => i.id === id); if (!x) return; edit = { ...x, _own: peopleOf(x.담당자) }; sheetItem(); }
@@ -684,13 +746,14 @@ function askWho(then) {
 }
 
 document.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-tab],[data-act],[data-item],[data-msel],[data-brand],[data-todof],[data-owner],[data-mbrand],[data-ist],[data-ldel],[data-iown],[data-mwho],[data-setwho],[data-pf],[data-pfav],[data-noti],[data-mview],[data-note],[data-nnew],[data-nkind],[data-hob],[data-idea],[data-like],[data-idf],[data-ito],[data-ist2],[data-ldel2],[data-x]");
+  const t = e.target.closest("[data-tab],[data-act],[data-item],[data-msel],[data-brand],[data-todof],[data-owner],[data-mbrand],[data-ist],[data-ldel],[data-iown],[data-mwho],[data-setwho],[data-pf],[data-pfav],[data-noti],[data-recsel],[data-recback],[data-mview],[data-note],[data-nnew],[data-nkind],[data-hob],[data-idea],[data-like],[data-idf],[data-ito],[data-ist2],[data-ldel2],[data-x]");
   if (e.target.id === "go") return tryLogin();
   if (e.target === $("#dim")) return closeSheet();
   if (!t) return;
   const d = t.dataset;
   if ("x" in d) return closeSheet();
   if (d.tab === "more") return moreSheet();
+  if (d.recgo) { recSel = d.recgo; recCls = null; }
   if (d.tab) { tab = d.tab; ls.set("ot-tab", tab); if (d.todof != null) { todoF = d.todof; ls.set("ot-todof", todoF); } if (d.meet != null) { meetSel = d.meet; ls.set("ot-meet", meetSel); } closeSheet(); return render(); }
   if (d.hob != null) { hoBrand = d.hob; ls.set("ot-hob", hoBrand); return render(); }
   if (d.note) { const n = D.notes.find((x) => x.id === d.note); if (!n) return; edit = { ...n }; return noteSheet(); }
@@ -708,6 +771,8 @@ document.addEventListener("click", async (e) => {
   if (d.owner) return panelOwner(d.owner);
   if (d.item) return openItem(d.item);
   if (d.msel) { meetSel = d.msel; ls.set("ot-meet", meetSel); return render(); }
+  if (d.recsel) { recSel = d.recsel; recCls = null; return render(); }
+  if ("recback" in d) { if (recCls && recCls.dirty && !confirm("분류를 저장하지 않았어요. 나갈까요?")) return; recSel = ""; recCls = null; return render(); }
   if (d.noti) { const n = notis().find((x) => x.key === d.noti); notiRead([d.noti]); closeSheet(); render(); if (!n) return; if (n.go.item) return openItem(n.go.item); const x = D.notes.find((y) => y.id === n.go.idea); if (x) { tab = "idea"; ls.set("ot-tab", tab); render(); edit = { ...x }; return ideaSheet(); } return; }
   if (d.pfav) { edit.s = val("#pfS"); const f = edit.f || []; edit.f = f.includes(d.pfav) ? f.filter((k) => k !== d.pfav) : f.length >= 4 ? (toast("4개까지 고를 수 있어요"), f) : [...f, d.pfav]; return profSheet(); }
   if (d.pf) { edit.s = val("#pfS"); edit[d.pf] = d.pv; return profSheet(); }
@@ -722,6 +787,10 @@ document.addEventListener("click", async (e) => {
     case "logout": ls.set("ot-key", null); KEY = ""; D = null; return renderLogin();
     case "who": return askWho();
     case "recstart": return recStart();
+    case "recsave": { const x = D.recs.find((y) => y.id === recSel); if (!x) return; recCls.dirty = false; await save("rec", { ...x, 분류: JSON.stringify(recCls.rows.map((c, i) => ({ i, ...c }))) }); return toast("분류를 저장했어요"); }
+    case "recapply": { if (recCls && recCls.dirty) { const x = D.recs.find((y) => y.id === recSel); recCls.dirty = false; await save("rec", { ...x, 분류: JSON.stringify(recCls.rows.map((c, i) => ({ i, ...c }))) }); } return recApply(); }
+    case "recorg": { if (t.disabled) return; t.disabled = true; t.textContent = "정리하는 중…"; toast("클로드가 정리하는 중이에요. 1분쯤 걸려요");
+      try { if (!DEMO) { await post({ type: "organize", id: recSel }); D = await load(KEY); } recCls = null; render(); toast("정리했어요"); } catch (e) { t.disabled = false; toast(ASKERR[e.message] || "정리하지 못했어요. 잠시 뒤 다시 해 봐요"); render(); } return; }
     case "noti": return notiSheet();
     case "nall": notiRead(notis().map((n) => n.key)); render(); return notiSheet();
     case "qadd": { if (!who) return askWho(); const v = val("#qText"); if (!v) return; const p = parseQuick(v); if (!p.title) return toast("할 일을 적어요");
@@ -769,6 +838,12 @@ document.addEventListener("click", async (e) => {
   }
 });
 const grabItem = () => ({ 제목: val("#iTitle"), 브랜드: val("#iBrand"), 분야: val("#iField"), 마감: val("#iDue"), 시작: val("#iStart"), 확인할것: val("#iChk"), 메모: val("#iMemo") });
+document.addEventListener("change", (e) => {
+  const el = e.target; if (!el.dataset || !el.dataset.rc || !recCls) return;
+  const i = +el.dataset.ri, k = el.dataset.rc; recCls.rows[i][k] = el.value; recCls.dirty = true;
+  if (k === "who") for (let j = i + 1; j < recCls.rows.length && recCls.rows[j].who === "?"; j++) recCls.rows[j].who = el.value; // 아래 "누구?" 줄은 같은 사람으로 이어 채움
+  const y = scrollY; render(); scrollTo(0, y);
+});
 document.addEventListener("input", (e) => {
   if (e.target.id !== "qText") return; const h = $("#qHint"); if (!h) return; const v = e.target.value.trim();
   if (!v) { h.textContent = "이름과 날짜를 같이 쓰면 담당자와 마감이 알아서 들어가요"; return; }
