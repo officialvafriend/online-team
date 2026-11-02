@@ -326,7 +326,7 @@ const ICON = {
   todo: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 3h8v2h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h3zm2 0v3h4V3zm5.3 7.3-4.3 4.3-2.3-2.3-1.4 1.4 3.7 3.7 5.7-5.7z"/></svg>',
 };
 const TABS = [["me", "내 보드"], ["home", "홈"], ["todo", "할 일"], ["idea", "제안함"], ["ho", "인수인계"], ["meet", "회의"], ["rec", "녹음"], ["fix", "확정"]];
-if (DEMO) TABS.splice(1, 0, ["chat", "쓰레드"]); // 쓰레드는 확인받기 전까지 예시 화면에서만
+TABS.splice(1, 0, ["chat", "쓰레드"]);
 const FAV0 = ["me", "todo", "idea", "meet"];
 const favs = () => { const f = (who && profOf(who).f) || []; const ok = f.filter((k) => TABS.some(([t]) => t === k)).slice(0, 4); return ok.length ? ok : FAV0; };
 const moreTabs = () => TABS.map(([k]) => k).filter((k) => !favs().includes(k)); // 더보기 안 (폰은 더보기 버튼, PC는 왼쪽 메뉴 아래에 작게)
@@ -1005,6 +1005,8 @@ document.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.
 document.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.id === "pw") tryLogin(); if (e.key === "Enter" && e.target.id === "lText") document.querySelector('[data-act="ladd"]')?.click(); if (e.key === "Escape") closeSheet(); });
 let wasPC = isPC(); addEventListener("resize", () => { if (isPC() !== wasPC) { wasPC = isPC(); if (D) render(); } });
 setInterval(() => { if (D && !$("#dim").classList.contains("on") && !edit) reload(true); }, 5 * 60 * 1000);
+// 쓰레드를 열어 두면 30초마다 새 댓글 확인 (댓글을 쓰는 중이면 건너뜀)
+setInterval(() => { if (D && !DEMO && tab === "chat" && document.visibilityState === "visible" && !$("#dim").classList.contains("on") && !edit && !(val("#cText") || "")) reload(true); }, 30 * 1000);
 
 // 시험용 데이터 (?demo=1): 시트 없이 화면만 볼 때
 function demoData() {
