@@ -637,7 +637,7 @@ function recDetail() {
     <div class="card"><div class="eyebrow">${esc(sessTxt(x.세션))}${x.길이 ? ", " + esc(x.길이) : ""}, ${esc(RST[x.상태] || x.상태)}</div><div class="headline">${esc(m ? m.제목 : "회의 없음")}</div>
       ${sum.결론 ? `<div class="rsum">💡 ${esc(sum.결론)}</div>` : ""}
       <div class="btns" style="margin-top:14px">${lines.length ? `<button class="btn sec2" data-act="recorg" style="height:48px;font-size:15px">🤖 ${sum.결론 ? "다시 정리" : "클로드 정리"}</button><button class="btn" data-act="recapply" style="height:48px;font-size:15px">보드에 넣기</button>` : `<div class="caption" style="margin:0">아직 받아쓰기 전이에요. PC 바탕화면 "회의 받아쓰기"를 켜 두면 회의하면서 같이 받아써요</div>`}</div></div>`;
-  const per = (sum.안건별 || []).filter((a) => a.정리).map((a) => `<div class="rper"><b>${esc(iname(a.item) || "기타")}</b><div>${esc(a.정리)}</div></div>`).join("");
+  const per = (sum.안건별 || []).filter((a) => a.정리).map((a) => `<div class="rper"><b>${esc(iname(a.item) || "기타")}</b>${(Array.isArray(a.정리) ? a.정리 : String(a.정리).split(/\n/)).filter(Boolean).map((t) => `<div class="rli">${esc(t)}</div>`).join("")}</div>`).join("");
   const ul = (a) => `<div class="rper">${a.map((t) => `<div class="rli">${esc(t)}</div>`).join("")}</div>`;
   const ppl = (sum.사람별 || []).filter((p) => (p.할일 || []).length).map((p) => `<div class="rper"><b>${PEOPLE.includes(p.who) ? avHtml(p.who, "xs") + " " + esc(PNAME(p.who)) : "⚪ " + esc(p.who || "정해지지 않음")}</b>${p.할일.map((t) => `<div class="rli">${esc(t)}</div>`).join("")}</div>`).join("");
   const secs = [["rs-fix", "📌 정한 것", (sum.정한것 || []).length ? ul(sum.정한것) : ""], ["rs-open", "❓ 못 정한 것", (sum.못정한것 || []).length ? ul(sum.못정한것) : ""], ["rs-ppl", "👤 사람별 할 일", ppl], ["rs-item", "🗂 안건별 정리", per]].filter((x) => x[2]);
@@ -812,7 +812,7 @@ document.addEventListener("click", async (e) => {
     case "recorg": { if (t.disabled) return; t.disabled = true; t.textContent = "정리하는 중…"; toast("클로드가 정리하는 중이에요. 1분쯤 걸려요");
       try { if (!DEMO) { const x = D.recs.find((y) => y.id === recSel), n = jp(x && x.원문, []).length, C = 250;
           if (n <= C) await post({ type: "organize", id: recSel });
-          else { for (let from = 0; from < n; from += C) { t.textContent = `정리하는 중… ${Math.min(from + C, n)}/${n}줄`; await post({ type: "organize", id: recSel, from, to: from + C }); } t.textContent = "회의록 쓰는 중…"; await post({ type: "organize", id: recSel, sum: true }); }
+          else { for (let from = 0; from < n; from += C) { t.textContent = `정리하는 중… ${Math.min(from + C, n)}/${n}줄`; const b = { type: "organize", id: recSel, from, to: from + C }; try { await post(b); } catch (e) { if (e.message === "limit") throw e; await post(b); } } t.textContent = "회의록 쓰는 중…"; await post({ type: "organize", id: recSel, sum: true }); }
           D = await load(KEY); } recCls = null; render(); toast("정리했어요"); } catch (e) { t.disabled = false; toast(ASKERR[e.message] || "정리하지 못했어요. 잠시 뒤 다시 해 봐요"); render(); } return; }
     case "noti": return notiSheet();
     case "nall": notiRead(notis().map((n) => n.key)); render(); return notiSheet();
