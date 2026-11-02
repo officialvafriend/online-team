@@ -123,6 +123,18 @@
   .pav{position:relative;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;flex:none;vertical-align:middle;line-height:1} .pav .pe1{font-size:16px} .pav .pn{font-size:11px;font-weight:800;color:var(--ink2)} .pav .pb{position:absolute;right:-4px;bottom:-3px;font-size:11px;background:var(--card);border-radius:50%;width:15px;height:15px;display:grid;place-items:center}
   .rtoc{background:var(--card);border-radius:16px;padding:14px 16px;margin:12px 0;display:flex;flex-direction:column;gap:2px} .rtoc button{all:unset;cursor:pointer;padding:9px 2px;font-size:15px;font-weight:700;color:var(--ac);border-bottom:1px solid var(--line)} .rtoc button:last-child{border:0}
   .rli{padding:5px 0;line-height:1.6;font-size:15px} .rli+.rli{border-top:1px dashed var(--line)}
+  .mn{background:var(--card);border-radius:20px;padding:24px 20px 20px;font-size:16px;line-height:1.75;color:var(--ink)} .mn header{border-bottom:2px solid var(--ink);padding-bottom:14px}
+  .mn-kicker{font-size:13px;font-weight:800;color:var(--ac);letter-spacing:.08em} .mn h2{font-size:24px;font-weight:800;margin:4px 0 10px;line-height:1.3}
+  .mn dl{display:flex;flex-direction:column;gap:2px;margin:0} .mn dl div{display:flex;gap:12px} .mn dt{flex:0 0 36px;color:var(--sub);font-size:14px} .mn dd{margin:0;font-size:15px}
+  .mn h3{font-size:18px;font-weight:800;margin:26px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line2)} .mn-concl{margin:0;font-size:17px;font-weight:700;background:var(--ac-soft);border-radius:12px;padding:12px 14px}
+  .mn-item{padding:4px 0 14px} .mn-item+.mn-item{border-top:1px dashed var(--line2);padding-top:14px} .mn-item h4{display:flex;gap:10px;align-items:flex-start;font-size:17px;font-weight:800;line-height:1.45;margin:0 0 6px}
+  .mn-item h4 span{flex:none;width:26px;height:26px;border-radius:50%;background:var(--ac);color:#fff;font-size:14px;display:grid;place-items:center;margin-top:1px}
+  .mn-item ul{margin:0;padding:0 0 0 36px} .mn-item li{margin:3px 0} .mn-item li b{color:var(--ac)}
+  .mn-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0 0 36px} .mn-meta span{font-size:13px;font-weight:700;color:var(--ink2);background:var(--line);border-radius:999px;padding:3px 10px}
+  .mn-meta button{all:unset;cursor:pointer;font-size:13px;font-weight:700;color:var(--ac);margin-left:auto}
+  .mn-ol{margin:0;padding-left:24px} .mn-ol li{margin:4px 0} .mn footer{margin-top:26px;font-size:13px;color:var(--sub)}
+  .mn-btns{display:flex;gap:8px;margin:12px 0 0} .mn-btns button{all:unset;cursor:pointer;flex:1;text-align:center;font-size:14px;font-weight:700;color:var(--ac);background:var(--card);border-radius:14px;padding:12px 0}
+  @media print{body *{visibility:hidden} .mn,.mn *{visibility:visible} .mn{position:absolute;left:0;top:0;width:100%;border-radius:0;padding:0} .mn-meta button{display:none} @page{margin:18mm}}
   .thtop{display:flex;gap:12px;align-items:center;justify-content:space-between;margin:4px 4px 16px} .thtop .btn{height:44px;font-size:15px}
   .thlist{background:var(--card);border-radius:22px;overflow:hidden} .throw{all:unset;box-sizing:border-box;cursor:pointer;display:flex;gap:12px;align-items:center;width:100%;padding:14px 16px;border-top:1px solid var(--line)} .throw:first-child{border:0} .throw:hover{background:var(--press)}
   .throw .tx{flex:1;min-width:0} .throw .tx b{display:block;font-size:16px;line-height:1.35} .throw .tx span{display:block;font-size:14px;color:var(--sub);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -130,7 +142,7 @@
   .thpost{background:var(--card);border-radius:22px;padding:18px} .thwho{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap} .thwho b{font-size:15px} .thwho small{font-size:13px;color:var(--sub)} .thbot{width:34px;height:34px;border-radius:50%;background:var(--ac-soft);display:grid;place-items:center;font-size:18px}
   .thtxt{font-size:15px;line-height:1.65;white-space:pre-wrap;word-break:break-word} .thtxt .ccard{white-space:normal;margin:8px 0 2px;display:block}
   .thd{border-top:1px solid var(--line);padding:10px 0} .thd summary{cursor:pointer;font-weight:800;font-size:15px;padding:4px 0} .thd summary small{color:var(--sub);font-weight:600} .thp{padding:6px 0} .thp b{display:block;font-size:14px;color:var(--ac);margin-top:4px}
-  .threps{display:flex;flex-direction:column;gap:14px;padding:0 4px 90px} .threp{display:flex;gap:10px;align-items:flex-start} .thrb{flex:1;min-width:0} .thrb .thwho{margin-bottom:2px} .thdel{all:unset;cursor:pointer;margin-left:auto;font-size:12px;color:var(--sub)}
+  .threps{display:flex;flex-direction:column;gap:14px;padding:0 4px 12px} .threp{display:flex;gap:10px;align-items:flex-start} .thrb{flex:1;min-width:0} .thrb .thwho{margin-bottom:2px} .thdel{all:unset;cursor:pointer;margin-left:auto;font-size:12px;color:var(--sub)}
   .csys2{font-size:13px;color:var(--sub);margin-bottom:6px} .csys2 b{color:var(--ac);display:inline!important;font-size:13px}
   .chat{display:flex;flex-direction:column;gap:10px;padding:4px 0 90px} .cday{align-self:center;font-size:12px;font-weight:700;color:var(--sub);background:var(--line);border-radius:999px;padding:4px 12px;margin:8px 0}
   .crow{display:flex;gap:8px;align-items:flex-end;max-width:92%} .crow.mine{align-self:flex-end;flex-direction:row-reverse} .crow.sys{align-self:center;max-width:94%} .cbody{display:flex;flex-direction:column;gap:6px;min-width:0}
@@ -139,7 +151,7 @@
   .ccard{background:var(--card);border:1.5px solid var(--ac-soft);border-radius:18px;padding:12px 14px;min-width:220px} .ccard b{display:block;font-size:15px;line-height:1.4;margin-top:2px} .ccard b small{font-weight:600;color:var(--sub);font-size:12px} .cc-sub{font-size:14px;color:var(--ink2);margin-top:4px;line-height:1.5}
   .cc-btns{display:flex;gap:6px;margin-top:10px} .cc-btns button{all:unset;cursor:pointer;font-size:13px;font-weight:700;color:var(--ac);background:var(--ac-soft);border-radius:999px;padding:7px 12px}
   .csys{align-self:center;font-size:13px;color:var(--sub);text-align:center} .csys b{color:var(--ac)}
-  .cbar{position:sticky;bottom:calc(70px + env(safe-area-inset-bottom));display:flex;gap:6px;align-items:center;background:var(--bg);padding:8px 0} .cbar .in{flex:1;margin:0} .cbar .ic{font-size:20px}
+  .cbar{position:static;margin-bottom:24px;display:flex;gap:6px;align-items:center;background:var(--bg);padding:8px 0} .cbar .in{flex:1;margin:0} .cbar .ic{font-size:20px}
   @media (min-width:900px){.cbar{bottom:0}}
   .pav .pimg{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
   .pav.xs{width:20px;height:20px} .pav.xs .pe1{font-size:12px} .pav.xs .pn{font-size:9px} .pav.xs .pb{display:none}
@@ -665,19 +677,13 @@ function recDetail() {
   const opts = (v) => `<option value="">안건 없음</option>${its.map((i) => `<option value="${i.id}" ${v === i.id ? "selected" : ""}>${esc(i.제목.slice(0, 24))}</option>`).join("")}${v && v.startsWith("new:") ? `<option value="${esc(v)}" selected>새 안건: ${esc(v.slice(4, 28))}</option>` : ""}`;
   const head = `<button class="ic" data-recback style="margin-bottom:8px">‹ 녹음 목록</button>
     <div class="card"><div class="eyebrow">${esc(sessTxt(x.세션))}${x.길이 ? ", " + esc(x.길이) : ""}, ${esc(RST[x.상태] || x.상태)}</div><div class="headline">${esc(m ? m.제목 : "회의 없음")}</div>
-      ${sum.결론 ? `<div class="rsum">💡 ${esc(sum.결론)}</div>` : ""}
       <div class="btns" style="margin-top:14px">${lines.length ? `<button class="btn sec2" data-act="recorg" style="height:48px;font-size:15px">🤖 ${sum.결론 ? "다시 정리" : "클로드 정리"}</button><button class="btn" data-act="recapply" style="height:48px;font-size:15px">보드에 넣기</button>` : `<div class="caption" style="margin:0">아직 받아쓰기 전이에요. PC 바탕화면 "회의 받아쓰기"를 켜 두면 회의하면서 같이 받아써요</div>`}</div></div>`;
-  const per = (sum.안건별 || []).filter((a) => a.정리).map((a) => `<div class="rper"><b>${esc(iname(a.item) || "기타")}</b>${(Array.isArray(a.정리) ? a.정리 : String(a.정리).split(/\n/)).filter(Boolean).map((t) => `<div class="rli">${esc(t)}</div>`).join("")}</div>`).join("");
-  const ul = (a) => `<div class="rper">${a.map((t) => `<div class="rli">${esc(t)}</div>`).join("")}</div>`;
-  const ppl = (sum.사람별 || []).filter((p) => (p.할일 || []).length).map((p) => `<div class="rper"><b>${PEOPLE.includes(p.who) ? avHtml(p.who, "xs") + " " + esc(PNAME(p.who)) : "⚪ " + esc(p.who || "정해지지 않음")}</b>${p.할일.map((t) => `<div class="rli">${esc(t)}</div>`).join("")}</div>`).join("");
-  const secs = [["rs-fix", "📌 정한 것", (sum.정한것 || []).length ? ul(sum.정한것) : ""], ["rs-open", "❓ 못 정한 것", (sum.못정한것 || []).length ? ul(sum.못정한것) : ""], ["rs-ppl", "👤 사람별 할 일", ppl], ["rs-item", "🗂 안건별 정리", per]].filter((x) => x[2]);
-  const toc = secs.length ? `<div class="rtoc"><div class="eyebrow">목차</div>${[...secs, ["rs-lines", "📝 받아쓴 글"]].map(([id, t]) => `<button data-jump="${id}">${t}</button>`).join("")}</div>` : "";
   const fold = lines.length > 200 && !recOpen;
   const rows = (fold ? [] : lines).map((l, i) => { const c = recCls.rows[i]; return `<div class="rline k-${c.kind}"><div class="rt"><small>${esc(l[0])}</small> ${esc(l[1])}</div>
       <div class="rctl"><select data-rc="who" data-ri="${i}">${[...PEOPLE, "?"].map((p) => `<option value="${p}" ${c.who === p ? "selected" : ""}>${p === "?" ? "누구?" : (profOf(p).e ? profOf(p).e + " " : "") + p}</option>`).join("")}</select>
       <select data-rc="kind" data-ri="${i}">${RKINDS.map((k) => `<option value="${k}" ${c.kind === k ? "selected" : ""}>${RKIC[k]} ${k === "할일" ? "할 일" : k}</option>`).join("")}</select>
       <select data-rc="item" data-ri="${i}">${opts(c.item)}</select></div></div>`; }).join("");
-  return `${head}${toc}${secs.map(([id, t, h]) => `<div class="sec" id="${id}">${t}</div><div class="notes">${h}</div>`).join("")}
+  return `${head}${sum.결론 ? minutesHtml(x).replace(/<div class="mn-btns">[\s\S]*$/, "") : ""}
     <div class="sec" id="rs-lines">📝 받아쓴 글 <small>${lines.length}줄</small><span class="rt">${recCls.dirty ? '<button class="ic me-btn" data-act="recsave">분류 저장</button>' : ""}</span></div><div class="rlines">${fold ? `<button class="btn sec2" data-act="recopen" style="height:48px">📝 받아쓴 글 ${lines.length}줄 펼치기</button>` : rows || '<div class="empty">받아쓴 글이 아직 없어요</div>'}</div>`;
 }
 async function recApply() {
@@ -784,23 +790,36 @@ function thHtml() {
     <div class="thlist">${l.map((t) => { const z = t.rs.at(-1); return `<button class="throw" data-th="${t.id}"><div class="thic">${t.kind === "rec" ? "📝" : avHtml(t.작성자, "sm")}</div><div class="tx"><b>${esc(t.제목)}</b>
       <span>${z ? `${esc(PNAME(logWho(z)))}: ${esc(thPlain(z.내용).replace(/\n/g, " ").slice(0, 60))}` : esc(thPlain(t.첫글).replace(/\n/g, " ").slice(0, 60))}</span></div><div class="thmeta">${esc(ago(t.last))}${t.rs.length ? `<em>💬 ${t.rs.length}</em>` : ""}</div></button>`; }).join("") || '<div class="empty">아직 쓰레드가 없어요</div>'}</div>`;
 }
+function minutesHtml(x) {
+  const sm = jp(x.정리, {}), m = meetOf(x.회의id), its = D.items.filter((i) => i.회의id === x.회의id);
+  const clean = (t) => String(t || "").replace(/^\?\s*:\s*/, "").replace(/\s*\((짐작|추측)\)/g, "").trim();
+  const lines = (v) => (Array.isArray(v) ? v : String(v || "").split(/\n/)).map(clean).filter(Boolean);
+  const said = (t) => { const k = t.match(/^([^\s:]{1,6}):\s*(.+)$/); return k ? `<b>${esc(PEOPLE.includes(k[1]) ? PNAME(k[1]) : k[1])}</b> ${esc(k[2])}` : esc(t); };
+  const s0 = x.세션 || "", day = s0 ? `${s0.slice(0, 4)}년 ${+s0.slice(4, 6)}월 ${+s0.slice(6, 8)}일 ${s0.slice(9, 11)}:${s0.slice(11, 13)}` : "";
+  const agenda = (sm.안건별 || []).map((a, n) => {
+    const it = its.find((i) => i.id === a.item), title = it ? it.제목 : String(a.item || "").replace(/^new:/, "") || "기타", own = it ? peopleOf(it.담당자).map(PNAME).join(", ") : "";
+    const meta = [own ? "담당 " + own : "", it && it.마감 ? "마감 " + md(it.마감) : "", it ? it.상태 : ""].filter(Boolean);
+    return `<section class="mn-item"><h4><span>${n + 1}</span>${esc(title)}</h4><ul>${lines(a.정리).map((t) => `<li>${said(t)}</li>`).join("")}</ul>
+      ${meta.length || it ? `<div class="mn-meta">${meta.map((v) => `<span>${esc(v)}</span>`).join("")}${it ? `<button data-copen="${it.id}">안건 열기 ›</button>` : ""}</div>` : ""}</section>`;
+  }).join("");
+  const ol = (a) => `<ol class="mn-ol">${a.map((t) => `<li>${esc(clean(t))}</li>`).join("")}</ol>`;
+  return `<article class="mn"><header><div class="mn-kicker">회의록</div><h2>${esc(m ? m.제목 : "회의")}</h2>
+      <dl><div><dt>일시</dt><dd>${esc(day)}</dd></div>${x.길이 ? `<div><dt>길이</dt><dd>${esc(x.길이)}</dd></div>` : ""}${m && m.참석 ? `<div><dt>참석</dt><dd>${esc(m.참석)}</dd></div>` : ""}</dl></header>
+    <h3>결론</h3><p class="mn-concl">${esc(clean(sm.결론))}</p>
+    ${agenda ? `<h3>안건별 정리</h3>${agenda}` : ""}
+    ${(sm.정한것 || []).length ? `<h3>정한 것</h3>${ol(sm.정한것)}` : ""}
+    ${(sm.못정한것 || []).length ? `<h3>다음에 정할 것</h3>${ol(sm.못정한것)}` : ""}
+    <footer>클로드가 회의 녹음을 받아써서 정리했어요. 누가 한 말인지는 짐작이라 틀릴 수 있어요.</footer></article>
+    <div class="mn-btns"><button data-recgo2="${x.id}">📝 받아쓴 글 보기</button><button data-act="mnprint">🖨 PDF로 저장</button></div>`;
+}
 function thView() {
   const t = thList().find((x) => x.id === thSel); if (!t) { thSel = ""; return thHtml(); }
   let first;
-  if (t.kind === "rec") {
-    const x = D.recs.find((y) => y.id === t.id), sm = jp(x.정리, {}), its = D.items.filter((i) => i.회의id === x.회의id);
-    const iname = (v) => (v && v.startsWith("new:") ? v.slice(4) : (its.find((i) => i.id === v) || {}).제목 || "기타");
-    const li = (a) => a.map((v) => `<div class="rli">${esc(v)}</div>`).join(""), lines = (v) => (Array.isArray(v) ? v : String(v || "").split(/\n/)).filter(Boolean);
-    const blocks = [["📌 정한 것", (sm.정한것 || []).length, li(sm.정한것 || [])], ["❓ 못 정한 것", (sm.못정한것 || []).length, li(sm.못정한것 || [])],
-      ["👤 사람별 할 일", (sm.사람별 || []).length, (sm.사람별 || []).filter((p) => (p.할일 || []).length).map((p) => `<div class="thp"><b>${PEOPLE.includes(p.who) ? avHtml(p.who, "xs") + " " + esc(PNAME(p.who)) : "⚪ " + esc(p.who)}</b>${li(p.할일)}</div>`).join("")],
-      ["🗂 안건별 정리", (sm.안건별 || []).length, (sm.안건별 || []).map((a) => `<div class="thp"><b>${esc(iname(a.item))}</b>${li(lines(a.정리))}</div>`).join("")]].filter((v) => v[1]);
-    first = `<div class="thpost"><div class="thwho"><span class="thbot">🤖</span><b>클로드</b><small>${esc(sessTxt(x.세션))}${x.길이 ? ", " + esc(x.길이) : ""} 회의를 정리했어요</small></div>
-      <div class="rsum">💡 ${esc(sm.결론)}</div>${blocks.map(([h, n, body], i) => `<details class="thd" ${i < 3 ? "open" : ""}><summary>${h} <small>${n}</small></summary>${body}</details>`).join("")}
-      <div class="cc-btns"><button data-recgo2="${x.id}">📝 받아쓴 글 보기</button></div></div>`;
-  } else first = `<div class="thpost"><div class="thwho">${avHtml(t.작성자, "sm")}<b>${esc(PNAME(t.작성자))}</b><small>${esc(ago(t.시각))}</small></div><div class="thtxt">${thBody(t.첫글)}</div></div>`;
+  if (t.kind === "rec") first = minutesHtml(D.recs.find((y) => y.id === t.id));
+  else first = `<div class="thpost"><div class="thwho">${avHtml(t.작성자, "sm")}<b>${esc(PNAME(t.작성자))}</b><small>${esc(ago(t.시각))}</small></div><div class="thtxt">${thBody(t.첫글)}</div></div>`;
   const reps = t.rs.map((l) => { const w = logWho(l), mine = w === who; return `<div class="threp">${avHtml(w, "sm")}<div class="thrb"><div class="thwho"><b>${esc(PNAME(w))}</b><small>${esc(ago(l.시각))}</small>${mine ? `<button class="thdel" data-thdel="${l.id}">지우기</button>` : ""}</div><div class="thtxt">${thBody(l.내용)}</div></div></div>`; }).join("");
-  return `<button class="ic" data-thback style="margin-bottom:8px">‹ 쓰레드 목록</button><div class="headline" style="font-size:22px;margin:0 4px 12px">${esc(t.제목)}</div>${first}
-    <div class="sec">댓글 <small>${t.rs.length}개</small></div><div class="threps">${reps || '<div class="empty">첫 댓글을 남겨 봐요</div>'}</div>
+  return `<button class="ic" data-thback style="margin-bottom:8px">‹ 쓰레드 목록</button>${t.kind === "rec" ? "" : `<div class="headline" style="font-size:22px;margin:0 4px 12px">${esc(t.제목)}</div>`}${first}
+    <div class="sec">💬 댓글 <small>${t.rs.length}개</small></div><div class="threps">${reps || '<div class="empty" style="background:none;padding:8px 4px">첫 댓글을 남겨 봐요</div>'}</div>
     <div class="cbar"><button class="ic" data-act="cattach" aria-label="안건 보내기">📎</button><input class="in" id="cText" placeholder="댓글 (@진 하면 알림)" autocomplete="off"><button class="btn" data-act="csend" style="flex:0 0 68px;width:auto;height:46px;font-size:15px">보내기</button></div>`;
 }
 function thReply(내용) { save("log", { id: uid("l_"), 안건id: thSel, 시각: stamp(), 작성자: who, 내용 }); setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 50); }
@@ -819,7 +838,7 @@ function thNew() {
     <div class="lbl">내용</div><textarea class="in" id="thB" rows="5" placeholder="하고 싶은 말, 같이 정할 것"></textarea><div class="btns"><button class="btn" data-act="thmake">만들기</button></div>`);
 }
 document.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-act='csend'],[data-act='cattach'],[data-act='cownsave'],[data-act='thnew'],[data-act='thmake'],[data-act='recopen'],[data-csend],[data-copen],[data-cown],[data-cpick],[data-th],[data-thback],[data-thdel],[data-recgo2]"); if (!t) return;
+  const t = e.target.closest("[data-act='csend'],[data-act='cattach'],[data-act='cownsave'],[data-act='thnew'],[data-act='thmake'],[data-act='recopen'],[data-act='mnprint'],[data-csend],[data-copen],[data-cown],[data-cpick],[data-th],[data-thback],[data-thdel],[data-recgo2]"); if (!t) return;
   const act = t.dataset.act;
   if (act === "recopen") { recOpen = true; return render(); }
   if (t.dataset.th) { thSel = t.dataset.th; render(); return window.scrollTo(0, 0); }
@@ -827,6 +846,7 @@ document.addEventListener("click", async (e) => {
   if (t.dataset.recgo2) { tab = "rec"; recSel = t.dataset.recgo2; recCls = null; render(); return window.scrollTo(0, 0); }
   if (t.dataset.copen) return openItem(t.dataset.copen);
   if (!who) return askWho();
+  if (act === "mnprint") return window.print();
   if (act === "thnew") return thNew();
   if (act === "thmake") { const 제목 = val("#thT"), 내용 = val("#thB"); if (!제목) return toast("제목을 적어 주세요"); const id = uid("n_"); closeSheet();
     await save("note", { id, 종류: "쓰레드", 작성자: who, 받는사람: "", 상태: "", 좋아요: "", 브랜드: "", 제목, 내용, 답: "", 만든시각: stamp() }); thSel = id; render(); return toast("쓰레드를 만들었어요"); }
