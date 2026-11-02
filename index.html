@@ -119,6 +119,9 @@
   .nav button{position:relative}
   .askbox{margin-top:22px;padding:14px;border-radius:16px;background:var(--amber-soft)} .askbox .lbl{color:var(--amber)} .askbox .in{background:var(--card)}
   .pav{position:relative;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;flex:none;vertical-align:middle;line-height:1} .pav .pe1{font-size:16px} .pav .pn{font-size:11px;font-weight:800;color:var(--ink2)} .pav .pb{position:absolute;right:-4px;bottom:-3px;font-size:11px;background:var(--card);border-radius:50%;width:15px;height:15px;display:grid;place-items:center}
+  .rtoc{background:var(--card);border-radius:16px;padding:14px 16px;margin:12px 0;display:flex;flex-direction:column;gap:2px} .rtoc button{all:unset;cursor:pointer;padding:9px 2px;font-size:15px;font-weight:700;color:var(--ac);border-bottom:1px solid var(--line)} .rtoc button:last-child{border:0}
+  .rli{padding:5px 0;line-height:1.6;font-size:15px} .rli+.rli{border-top:1px dashed var(--line)}
+  .pav .pimg{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
   .pav.xs{width:20px;height:20px} .pav.xs .pe1{font-size:12px} .pav.xs .pn{font-size:9px} .pav.xs .pb{display:none}
   .pav.sm{width:34px;height:34px} .pav.sm .pe1{font-size:19px}
   .pav.xl{width:60px;height:60px} .pav.xl .pe1{font-size:32px} .pav.xl .pn{font-size:15px} .pav.xl .pb{width:24px;height:24px;font-size:16px;right:-4px;bottom:-2px}
@@ -213,8 +216,9 @@ const PEMOJI = ["🐰", "🦊", "🐻", "🐥", "🐱", "🐶", "🐼", "🐸", 
 const PBADGE = ["☕", "💤", "🎯", "💰", "📦", "🧾", "🛵", "🎉", "😵", "🤒"];
 const PBOSS = ["👑", "🏆", "🖋️", "💼", "⛳", "📛", "🪑", "🦸"]; // 이사님 전용
 const profNote = (n) => (D && D.notes ? D.notes.find((x) => x.종류 === "프로필" && x.작성자 === n) : null);
-const profOf = (n) => { const x = profNote(n); let j = {}; try { j = x ? JSON.parse(x.내용 || "{}") : {}; } catch (e) {} return { e: j.e || "", b: j.b || "", c: PCOLORS[j.c] ? j.c : "민트", s: x ? x.제목 || "" : "", f: Array.isArray(j.f) ? j.f : [] }; };
-const avHtml = (n, cls = "") => { const p = profOf(n); return `<span class="pav ${cls}" style="background:${PCOLORS[p.c]}">${p.e ? `<span class="pe1">${esc(p.e)}</span>` : `<span class="pn">${esc(/xl/.test(cls) ? n : [...n][0])}</span>`}${p.b ? `<span class="pb">${esc(p.b)}</span>` : ""}</span>`; };
+const profOf = (n) => { const x = profNote(n); let j = {}; try { j = x ? JSON.parse(x.내용 || "{}") : {}; } catch (e) {} return { e: j.e || "", b: j.b || "", c: PCOLORS[j.c] ? j.c : "민트", s: x ? x.제목 || "" : "", f: Array.isArray(j.f) ? j.f : [], i: typeof j.i === "string" && j.i.startsWith("data:image/") ? j.i : "" }; };
+const pimg = (i) => `<img class="pimg" src="${esc(i)}" alt="">`;
+const avHtml = (n, cls = "") => { const p = profOf(n); return `<span class="pav ${cls}" style="background:${PCOLORS[p.c]}">${p.i ? pimg(p.i) : p.e ? `<span class="pe1">${esc(p.e)}</span>` : `<span class="pn">${esc(/xl/.test(cls) ? n : [...n][0])}</span>`}${p.b ? `<span class="pb">${esc(p.b)}</span>` : ""}</span>`; };
 const sameSet = (a, b) => a.length === b.length && a.every((v) => b.includes(v));
 const pplHtml = (s) => { const l = peopleOf(s); return l.length ? `<div class="ppl">${l.map((n) => `<i class="${n === who ? "me" : ""}">${profOf(n).e ? `<span class="pe">${esc(profOf(n).e)}</span>` : ""}${esc(n)}</i>`).join("")}</div>` : ""; };
 const $ = (s) => document.querySelector(s);
@@ -616,7 +620,7 @@ const RKINDS = ["의견", "결정", "할일", "질문", "기타"];
 const RKIC = { 의견: "💬", 결정: "✅", 할일: "📌", 질문: "❓", 기타: "➖" };
 const jp = (t, d) => { try { return t ? JSON.parse(t) : d; } catch (e) { return d; } };
 const sessTxt = (s) => (s ? `${+s.slice(4, 6)}/${+s.slice(6, 8)} ${s.slice(9, 11)}:${s.slice(11, 13)}` : "");
-const RST = { "받아쓰기 기다림": "⏳ 받아쓰기 기다림", "받아쓰기 끝": "📝 받아쓰기 끝", "정리 끝": "🤖 클로드 정리 끝", "보드에 넣음": "✅ 보드에 넣음" };
+const RST = { "녹음 중": "🔴 녹음 중", "녹음 끝": "⏳ 받아쓰기 기다림", "받아쓰는 중": "✍️ 회의하면서 받아쓰는 중", "정리 중": "🤖 클로드 정리 중", "받아쓰기 기다림": "⏳ 받아쓰기 기다림", "받아쓰기 끝": "📝 받아쓰기 끝", "정리 끝": "🤖 클로드 정리 끝", "보드에 넣음": "✅ 보드에 넣음" };
 function recHtml() {
   if (recSel) return recDetail();
   const list = [...D.recs].sort((a, b) => (a.세션 < b.세션 ? 1 : -1));
@@ -632,14 +636,18 @@ function recDetail() {
   const head = `<button class="ic" data-recback style="margin-bottom:8px">‹ 녹음 목록</button>
     <div class="card"><div class="eyebrow">${esc(sessTxt(x.세션))}${x.길이 ? ", " + esc(x.길이) : ""}, ${esc(RST[x.상태] || x.상태)}</div><div class="headline">${esc(m ? m.제목 : "회의 없음")}</div>
       ${sum.결론 ? `<div class="rsum">💡 ${esc(sum.결론)}</div>` : ""}
-      <div class="btns" style="margin-top:14px">${lines.length ? `<button class="btn sec2" data-act="recorg" style="height:48px;font-size:15px">🤖 ${sum.결론 ? "다시 정리" : "클로드 정리"}</button><button class="btn" data-act="recapply" style="height:48px;font-size:15px">보드에 넣기</button>` : `<div class="caption" style="margin:0">아직 받아쓰기 전이에요. PC 바탕화면 "회의 받아쓰기"를 눌러 주세요</div>`}</div></div>`;
+      <div class="btns" style="margin-top:14px">${lines.length ? `<button class="btn sec2" data-act="recorg" style="height:48px;font-size:15px">🤖 ${sum.결론 ? "다시 정리" : "클로드 정리"}</button><button class="btn" data-act="recapply" style="height:48px;font-size:15px">보드에 넣기</button>` : `<div class="caption" style="margin:0">아직 받아쓰기 전이에요. PC 바탕화면 "회의 받아쓰기"를 켜 두면 회의하면서 같이 받아써요</div>`}</div></div>`;
   const per = (sum.안건별 || []).filter((a) => a.정리).map((a) => `<div class="rper"><b>${esc(iname(a.item) || "기타")}</b><div>${esc(a.정리)}</div></div>`).join("");
+  const ul = (a) => `<div class="rper">${a.map((t) => `<div class="rli">${esc(t)}</div>`).join("")}</div>`;
+  const ppl = (sum.사람별 || []).filter((p) => (p.할일 || []).length).map((p) => `<div class="rper"><b>${PEOPLE.includes(p.who) ? avHtml(p.who, "xs") + " " + esc(PNAME(p.who)) : "⚪ " + esc(p.who || "정해지지 않음")}</b>${p.할일.map((t) => `<div class="rli">${esc(t)}</div>`).join("")}</div>`).join("");
+  const secs = [["rs-fix", "📌 정한 것", (sum.정한것 || []).length ? ul(sum.정한것) : ""], ["rs-open", "❓ 못 정한 것", (sum.못정한것 || []).length ? ul(sum.못정한것) : ""], ["rs-ppl", "👤 사람별 할 일", ppl], ["rs-item", "🗂 안건별 정리", per]].filter((x) => x[2]);
+  const toc = secs.length ? `<div class="rtoc"><div class="eyebrow">목차</div>${[...secs, ["rs-lines", "📝 받아쓴 글"]].map(([id, t]) => `<button data-jump="${id}">${t}</button>`).join("")}</div>` : "";
   const rows = lines.map((l, i) => { const c = recCls.rows[i]; return `<div class="rline k-${c.kind}"><div class="rt"><small>${esc(l[0])}</small> ${esc(l[1])}</div>
       <div class="rctl"><select data-rc="who" data-ri="${i}">${[...PEOPLE, "?"].map((p) => `<option value="${p}" ${c.who === p ? "selected" : ""}>${p === "?" ? "누구?" : (profOf(p).e ? profOf(p).e + " " : "") + p}</option>`).join("")}</select>
       <select data-rc="kind" data-ri="${i}">${RKINDS.map((k) => `<option value="${k}" ${c.kind === k ? "selected" : ""}>${RKIC[k]} ${k === "할일" ? "할 일" : k}</option>`).join("")}</select>
       <select data-rc="item" data-ri="${i}">${opts(c.item)}</select></div></div>`; }).join("");
-  return `${head}${per ? `<div class="sec">안건별 정리</div><div class="notes">${per}</div>` : ""}
-    <div class="sec">받아쓴 글 <small>${lines.length}줄</small><span class="rt">${recCls.dirty ? '<button class="ic me-btn" data-act="recsave">분류 저장</button>' : ""}</span></div><div class="rlines">${rows || '<div class="empty">받아쓴 글이 아직 없어요</div>'}</div>`;
+  return `${head}${toc}${secs.map(([id, t, h]) => `<div class="sec" id="${id}">${t}</div><div class="notes">${h}</div>`).join("")}
+    <div class="sec" id="rs-lines">📝 받아쓴 글 <small>${lines.length}줄</small><span class="rt">${recCls.dirty ? '<button class="ic me-btn" data-act="recsave">분류 저장</button>' : ""}</span></div><div class="rlines">${rows || '<div class="empty">받아쓴 글이 아직 없어요</div>'}</div>`;
 }
 async function recApply() {
   const x = D.recs.find((y) => y.id === recSel); if (!x) return;
@@ -681,9 +689,9 @@ async function recStart() {
   const mime = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"].find((m) => MediaRecorder.isTypeSupported(m)) || "";
   const now = new Date(), mr = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 32000 } : {});
   REC = { mr, stream, meet: meetSel, sess: `${ymd(now).replace(/-/g, "")}-${pad(now.getHours())}${pad(now.getMinutes())}`, mime: mr.mimeType || mime, part: 0, sent: 0, fail: 0, t0: Date.now(), q: Promise.resolve(), wake: null };
-  save("rec", { id: `${REC.meet}_${REC.sess}`, 회의id: REC.meet, 세션: REC.sess, 길이: "", 상태: "받아쓰기 기다림", 원문: "", 분류: "", 정리: "" });
+  save("rec", { id: `${REC.meet}_${REC.sess}`, 회의id: REC.meet, 세션: REC.sess, 길이: "", 상태: "녹음 중", 원문: "", 분류: "", 정리: "" });
   mr.ondataavailable = (e) => { if (e.data && e.data.size) recSend(e.data); };
-  mr.onstop = async () => { const R = REC; R.stream.getTracks().forEach((t) => t.stop()); clearInterval(R.timer); try { R.wake && R.wake.release(); } catch {} R.stopping = true; render(); await R.q; REC = null; render(); toast(R.fail ? `녹음 끝. ${R.fail}조각을 못 보냈어요` : `녹음 저장했어요 (${R.sent}조각)`); };
+  mr.onstop = async () => { const R = REC; R.stream.getTracks().forEach((t) => t.stop()); clearInterval(R.timer); try { R.wake && R.wake.release(); } catch {} R.stopping = true; render(); await R.q; REC = null; save("rec", { id: `${R.meet}_${R.sess}`, 상태: "녹음 끝" }); render(); toast(R.fail ? `녹음 끝. ${R.fail}조각을 못 보냈어요` : `녹음 저장했어요 (${R.sent}조각)`); };
   mr.start(120000);
   REC.timer = setInterval(recTick, 1000); recWake(); render(); toast("녹음을 시작했어요. 화면을 켜 둔 채로 두세요");
 }
@@ -693,6 +701,17 @@ addEventListener("beforeunload", (e) => { if (REC) { e.preventDefault(); e.retur
 const recTime = () => { const s = Math.floor((Date.now() - REC.t0) / 1000); return `${Math.floor(s / 60)}:${pad(s % 60)}`; };
 const recBar = () => (REC ? `<div class="recbar"><span class="rdot on"></span><b>${REC.stopping ? "녹음 저장 중…" : "녹음 중"}</b><span id="recT">${recTime()}</span><small>${esc(meetOf(REC.meet)?.제목 || "")}, 저장 ${REC.sent}조각${REC.fail ? `, 실패 ${REC.fail}` : ""}</small>${REC.stopping ? "" : '<button data-act="recstop">멈춤</button>'}</div>` : "");
 function recTick() { const b = document.querySelector(".recbar"); if (b) b.outerHTML = recBar(); }
+
+document.addEventListener("click", (e) => { const j = e.target.closest("[data-jump]"); if (j) { const el = document.getElementById(j.dataset.jump); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); } });
+// 프로필 사진 고르기 → 192px 정사각형 jpg로 줄여서 edit.i
+document.addEventListener("change", (e) => {
+  if (e.target.id !== "pfI" || !e.target.files[0]) return;
+  const img = new Image(), url = URL.createObjectURL(e.target.files[0]);
+  img.onload = () => { const S = 192, c = document.createElement("canvas"), z = Math.min(img.width, img.height), x = (img.width - z) / 2, y = img.height > img.width ? (img.height - z) * 0.3 : (img.height - z) / 2;
+    c.width = c.height = S; c.getContext("2d").drawImage(img, x, y, z, z, 0, 0, S, S); URL.revokeObjectURL(url);
+    edit.s = val("#pfS"); edit.i = c.toDataURL("image/jpeg", 0.85); profSheet(); toast("사진을 넣었어요. 저장을 눌러 주세요"); };
+  img.onerror = () => toast("이 사진은 열 수 없어요. 다른 사진으로 해 봐요"); img.src = url;
+});
 
 // ── 그리기 ──
 function render() {
@@ -727,8 +746,9 @@ const toggle = (l, n) => (l.includes(n) ? l.filter((v) => v !== n) : [...l, n]);
 let whoThen = null;
 function profSheet() {
   const p = edit, boss = who === "한섭", pick = (list, key, cur) => list.map((e) => `<button class="emo ${cur === e ? "on" : ""}" data-pf="${key}" data-pv="${esc(e)}">${esc(e)}</button>`).join("");
-  const prev = `<span class="pav xxl" style="background:${PCOLORS[p.c]}">${p.e ? `<span class="pe1">${esc(p.e)}</span>` : `<span class="pn">${esc(who)}</span>`}${p.b ? `<span class="pb">${esc(p.b)}</span>` : ""}</span>`;
-  openSheet(`<div class="pfhead">${prev}<div><h3>${esc(PNAME(who))}</h3><div class="caption" style="margin:4px 0 0">나를 나타내는 이모지를 골라요. 모두에게 이렇게 보여요</div></div></div>
+  const prev = `<span class="pav xxl" style="background:${PCOLORS[p.c]}">${p.i ? pimg(p.i) : p.e ? `<span class="pe1">${esc(p.e)}</span>` : `<span class="pn">${esc(who)}</span>`}${p.b ? `<span class="pb">${esc(p.b)}</span>` : ""}</span>`;
+  openSheet(`<div class="pfhead">${prev}<div><h3>${esc(PNAME(who))}</h3><div class="caption" style="margin:4px 0 0">사진이나 이모지로 나를 보여 줘요. 모두에게 이렇게 보여요</div></div></div>
+    <div class="lbl">프로필 사진 <small>(사진이 있으면 이모지 대신 사진이 보여요)</small></div><div class="btns" style="margin-top:0"><label class="btn sec2" style="cursor:pointer;display:flex;align-items:center;justify-content:center">📷 사진 고르기<input type="file" id="pfI" accept="image/*" hidden></label>${p.i ? '<button class="btn gray" data-act="pfIdel" style="flex:0 0 96px;width:auto">사진 빼기</button>' : ""}</div>
     <div class="lbl">한 줄 상태 <small>(선택)</small></div><input class="in" id="pfS" maxlength="40" placeholder="예) 체험단 견적 받는 중" value="${esc(p.s)}">
     <div class="lbl">대표 이모지</div><div class="emos">${pick(PEMOJI, "e", p.e)}</div>
     <div class="mline" style="margin-top:8px"><input class="in" id="pfE" maxlength="4" placeholder="목록에 없으면 직접 넣기"><button class="btn sec2" data-act="pfE">넣기</button></div>
@@ -790,7 +810,10 @@ document.addEventListener("click", async (e) => {
     case "recsave": { const x = D.recs.find((y) => y.id === recSel); if (!x) return; recCls.dirty = false; await save("rec", { ...x, 분류: JSON.stringify(recCls.rows.map((c, i) => ({ i, ...c }))) }); return toast("분류를 저장했어요"); }
     case "recapply": { if (recCls && recCls.dirty) { const x = D.recs.find((y) => y.id === recSel); recCls.dirty = false; await save("rec", { ...x, 분류: JSON.stringify(recCls.rows.map((c, i) => ({ i, ...c }))) }); } return recApply(); }
     case "recorg": { if (t.disabled) return; t.disabled = true; t.textContent = "정리하는 중…"; toast("클로드가 정리하는 중이에요. 1분쯤 걸려요");
-      try { if (!DEMO) { await post({ type: "organize", id: recSel }); D = await load(KEY); } recCls = null; render(); toast("정리했어요"); } catch (e) { t.disabled = false; toast(ASKERR[e.message] || "정리하지 못했어요. 잠시 뒤 다시 해 봐요"); render(); } return; }
+      try { if (!DEMO) { const x = D.recs.find((y) => y.id === recSel), n = jp(x && x.원문, []).length, C = 250;
+          if (n <= C) await post({ type: "organize", id: recSel });
+          else { for (let from = 0; from < n; from += C) { t.textContent = `정리하는 중… ${Math.min(from + C, n)}/${n}줄`; await post({ type: "organize", id: recSel, from, to: from + C }); } t.textContent = "회의록 쓰는 중…"; await post({ type: "organize", id: recSel, sum: true }); }
+          D = await load(KEY); } recCls = null; render(); toast("정리했어요"); } catch (e) { t.disabled = false; toast(ASKERR[e.message] || "정리하지 못했어요. 잠시 뒤 다시 해 봐요"); render(); } return; }
     case "noti": return notiSheet();
     case "nall": notiRead(notis().map((n) => n.key)); render(); return notiSheet();
     case "qadd": { if (!who) return askWho(); const v = val("#qText"); if (!v) return; const p = parseQuick(v); if (!p.title) return toast("할 일을 적어요");
@@ -801,9 +824,10 @@ document.addEventListener("click", async (e) => {
       if (!m) { m = { id: uid("m_"), 날짜: today(), 제목: `${md(today())} 회의`, 브랜드: "", 참석: "", 메모: "" }; await save("meeting", m); }
       meetSel = m.id; ls.set("ot-meet", meetSel); tab = "meet"; ls.set("ot-tab", tab); render(); return recStart(); }
     case "fb": { tab = "idea"; ls.set("ot-tab", tab); ideaTo = "팀 전체"; render(); const t = $("#iqText"); t.value = "[보드 불편] "; t.focus(); return; }
-    case "prof": { if (!who) return askWho(); const p = profOf(who); edit = { e: p.e, b: p.b, c: p.c, s: p.s, f: p.f.length ? [...p.f] : [...FAV0] }; return profSheet(); }
+    case "prof": { if (!who) return askWho(); const p = profOf(who); edit = { e: p.e, b: p.b, c: p.c, s: p.s, f: p.f.length ? [...p.f] : [...FAV0], i: p.i }; return profSheet(); }
+    case "pfIdel": edit.s = val("#pfS"); edit.i = ""; return profSheet();
     case "pfE": { const v = val("#pfE"); if (!v) return; edit.s = val("#pfS"); edit.e = window.Intl && Intl.Segmenter ? [...new Intl.Segmenter("ko", { granularity: "grapheme" }).segment(v)][0].segment : [...v][0]; return profSheet(); }
-    case "pfsave": { const old = profNote(who), n = { id: old ? old.id : uid("n_"), 종류: "프로필", 작성자: who, 받는사람: "", 상태: "", 좋아요: "", 브랜드: "", 제목: val("#pfS"), 내용: JSON.stringify({ e: edit.e, b: edit.b, c: edit.c, f: edit.f }), 답: "" }; closeSheet(); await save("note", n); return toast("프로필을 저장했어요"); }
+    case "pfsave": { const old = profNote(who), n = { id: old ? old.id : uid("n_"), 종류: "프로필", 작성자: who, 받는사람: "", 상태: "", 좋아요: "", 브랜드: "", 제목: val("#pfS"), 내용: JSON.stringify({ e: edit.e, b: edit.b, c: edit.c, f: edit.f, ...(edit.i ? { i: edit.i } : {}) }), 답: "" }; closeSheet(); await save("note", n); return toast("프로필을 저장했어요"); }
     case "ask": {
       if (!who) return askWho(); if (t.disabled) return;
       const target = d.target, id = d.id, mode = d.mode || "q", q = mode === "q" ? val("#askQ") : "";
