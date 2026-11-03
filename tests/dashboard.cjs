@@ -17,7 +17,7 @@ const state = { ok: true, at: '2026-11-03 14:00', meetings: [], items: [], recs:
   { id: 'n_room2', 종류: '쓰레드', 제목: '다른 대화방', 작성자: '보혜', 내용: '', 만든시각: '2026-11-03 12:00' },
   ...['한섭', '보혜', '시원', '진'].map((p, i) => ({ id: 'n_profile' + i, 종류: '프로필', 작성자: p, 제목: p + '의 한 줄 상태', 내용: '{}' })),
 ] };
-const files = new Map(); let failLog = false, uploadCount = 0;
+const files = new Map(); let failLog = false, uploadCount = 0, readCount = 0, activeUploads = 0, peakUploads = 0;
 (async () => {
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   const browser = await chromium.launch({ headless: true, channel: "chrome" });
@@ -31,12 +31,13 @@ const files = new Map(); let failLog = false, uploadCount = 0;
       if (req.method() === 'POST') {
         const b = req.postDataJSON(); out = { ok: true };
         if (b.type === 'attachmentUpload') {
-          uploadCount++;
+          uploadCount++; activeUploads++; peakUploads = Math.max(peakUploads, activeUploads);
+          await new Promise(r => setTimeout(r, 100)); activeUploads--;
           const bytes = Buffer.from(b.b64, 'base64'); assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'), b.sha256);
           const file = { id: 'test_file_' + b.uploadId, name: b.name, mime: b.mime, size: bytes.length, sha256: b.sha256 };
           files.set(file.id, { ...file, b64: b.b64 }); out = { ok: true, file };
         }
-        if (b.type === 'attachmentRead') out = { ok: true, ...files.get(b.id) };
+        if (b.type === 'attachmentRead') { readCount++; out = { ok: true, ...files.get(b.id) }; }
         if (b.type === 'save') {
           if (b.kind === 'log' && failLog) out = { ok: false, error: 'test_failure' };
           else { const list = state[b.kind === 'log' ? 'logs' : 'notes']; const i = list.findIndex(x => x.id === b.data.id); if (i < 0) list.push(b.data); else list[i] = b.data; }
@@ -86,6 +87,7 @@ const files = new Map(); let failLog = false, uploadCount = 0;
     failLog = false;
     await page.locator('[data-act="csend"]').click();
     await page.locator('.chat-photo img:not([hidden])').waitFor();
+    assert.equal(readCount, 0, 'sender preview must not download the just-uploaded original');
     assert.equal(uploadCount, 1, 'retry should reuse the uploaded original');
     assert.equal(state.logs.length, 1);
     assert.ok(state.logs[0].내용.length < 2000, 'messages must contain metadata only');
@@ -157,6 +159,7 @@ const files = new Map(); let failLog = false, uploadCount = 0;
     await page.locator('[data-act="csend"]').click();
     await page.waitForFunction(() => document.querySelector('#photoPreview').childElementCount === 0);
     assert.equal(uploadCount, beforeBatchUpload + 3, 'batch retry must not upload again');
+    assert.equal(peakUploads, 3, 'three uploads should run concurrently');
     assert.equal(state.logs.length, 3, 'multiple files should be sent as one message');
     assert.equal((state.logs[2].내용.match(/\[\[파일:/g) || []).length, 3);
     assert.ok(state.logs[2].내용.startsWith('시안 3장 한 번에 공유합니다'));
