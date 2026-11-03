@@ -61,7 +61,18 @@ const files = new Map(); let failLog = false, uploadCount = 0;
     const original = await page.evaluate(async () => {
       const c = document.createElement('canvas'); c.width = 2400; c.height = 1600;
       const ctx = c.getContext('2d'); ctx.fillStyle = '#164e50'; ctx.fillRect(0, 0, c.width, c.height);
-      ctx.fillStyle = '#fff'; ctx.font = '110px sans-serif'; ctx.fillText('ORIGINAL 2400 × 1600', 90, 800);
+      ctx.fillStyle = '#faf8f3'; ctx.fillRect(0, 0, 2400, 1600);
+      ctx.fillStyle = '#153e40'; ctx.fillRect(0, 0, 780, 1600);
+      ctx.fillStyle = '#f0eee6'; ctx.font = 'bold 72px sans-serif'; ctx.fillText('VAFRIEND', 70, 140);
+      ctx.font = '34px sans-serif'; ctx.fillText('DESIGN REVIEW', 70, 220);
+      ctx.fillStyle = '#d9edb1'; ctx.beginPath(); ctx.arc(390, 760, 260, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#153e40'; ctx.font = 'bold 100px sans-serif'; ctx.fillText('VF', 315, 790);
+      ctx.fillStyle = '#253e3f'; ctx.font = 'bold 80px sans-serif'; ctx.fillText('Design details, clearly.', 900, 170);
+      ctx.font = '32px sans-serif'; ctx.fillText('Original image · 2400 × 1600 px', 900, 240);
+      for (let i = 0; i < 5; i++) { ctx.fillStyle = ['#153e40', '#c5dba8', '#e4bb82', '#e3d5c0', '#717f80'][i]; ctx.fillRect(900 + i * 255, 360, 220, 220); }
+      ctx.fillStyle = '#253e3f'; ctx.font = 'bold 40px sans-serif'; ctx.fillText('Typography & fine print', 900, 720);
+      for (let i = 0; i < 8; i++) { ctx.font = `${32 - i * 2}px sans-serif`; ctx.fillText('Original detail preserved — ABC abc 0123456789', 900, 800 + i * 65); }
+      ctx.font = '20px sans-serif'; ctx.fillText('TEST IMAGE / no compression / inspect at 100% and 200%', 900, 1480);
       const blob = await new Promise(r => c.toBlob(r, 'image/png')); return Array.from(new Uint8Array(await blob.arrayBuffer()));
     });
     const file = { name: '고화질 시안.png', mimeType: 'image/png', buffer: Buffer.from(original) };
@@ -80,14 +91,31 @@ const files = new Map(); let failLog = false, uploadCount = 0;
     assert.ok(state.logs[0].내용.length < 2000, 'messages must contain metadata only');
     assert.equal(await page.locator('.chat-photo img').evaluate(img => img.naturalWidth), 2400);
     await page.locator('.chat-photo').click();
-    await page.locator('.photo-full').waitFor();
-    await page.locator('.photo-zoom').click();
-    assert.equal(await page.locator('.photo-zoom.original-size').count(), 1);
+    await page.locator('.iv-image').waitFor();
+    await page.waitForFunction(() => document.querySelector('.iv-info').textContent.includes('2,400'));
+    assert.ok((await page.locator('.chat-photo img').boundingBox()).width > 450, 'chat preview should be large enough for design review');
+    await page.locator('[data-iv="actual"]').click();
+    assert.equal(await page.locator('.iv-image').evaluate(img => img.getBoundingClientRect().width), 2400);
+    await page.locator('[data-iv="double"]').click();
+    assert.equal(await page.locator('.iv-image').evaluate(img => img.getBoundingClientRect().width), 4800);
+    await page.locator('[data-iv="fit"]').click();
+    await page.screenshot({ path: path.join(root, '../outputs/online-team-image-review.png') });
+    await page.locator('.iv-stage').hover(); await page.mouse.wheel(0, -200);
+    assert.equal(await page.locator('[data-iv="fit"]').getAttribute('aria-pressed'), 'false');
+    await page.locator('[data-iv="actual"]').click();
+    const beforePan = await page.locator('.iv-stage').evaluate(el => el.scrollLeft);
+    const area = await page.locator('.iv-stage').boundingBox();
+    await page.mouse.move(area.x + area.width / 2, area.y + area.height / 2); await page.mouse.down();
+    await page.mouse.move(area.x + area.width / 2 - 180, area.y + area.height / 2, { steps: 5 }); await page.mouse.up();
+    assert.ok(await page.locator('.iv-stage').evaluate(el => el.scrollLeft) > beforePan + 100);
+    await page.screenshot({ path: path.join(root, '../outputs/online-team-image-review-detail.png') });
+    await page.locator('[data-iv="background"]').click();
+    assert.equal(await page.locator('.iv-stage.iv-light').count(), 1);
     const downloadEvent = page.waitForEvent('download');
-    await page.locator('#sheet [data-file-download]').click();
+    await page.locator('.iv-download').click();
     const download = await downloadEvent;
     assert.deepEqual(fs.readFileSync(await download.path()), Buffer.from(original));
-    await page.locator('[data-photo-close]').click(); await page.waitForFunction(() => !sheetPushed && navSkip === 0);
+    await page.locator('.iv-close').click(); await page.waitForFunction(() => !imageReview && navSkip === 0);
     // The saved photo can be read after a complete reload, without local draft state.
     await page.reload({ waitUntil: "domcontentloaded" }); await page.locator('.side [data-tab="chat"]').click();
     await page.locator('[data-th="n_room1"]').click();
@@ -120,12 +148,28 @@ const files = new Map(); let failLog = false, uploadCount = 0;
     await page.locator('[data-th="n_room1"]').click();
     await page.locator('#chatPhotoInput').setInputFiles(file);
     await page.screenshot({ path: path.join(root, '../outputs/online-team-mobile.png') });
+    await page.locator('[data-draft-view]').click();
+    await page.waitForFunction(() => document.querySelector('.iv-info').textContent.includes('2,400'));
+    assert.equal(await page.locator('.image-review').evaluate(el => el.getBoundingClientRect().width), 390);
+    await page.screenshot({ path: path.join(root, '../outputs/online-team-image-review-mobile.png') });
+    const pinchBefore = await page.locator('.iv-scale').innerText();
+    await page.locator('.iv-stage').evaluate(el => {
+      // Synthetic touch pointers exercise the same pinch state and image-space anchor.
+      const r = el.getBoundingClientRect(), y = r.top + 160;
+      const send = (type, id, x) => el.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: id, pointerType: 'touch', button: 0, clientX: r.left + x, clientY: y }));
+      const nativeCapture = el.setPointerCapture; el.setPointerCapture = () => {};
+      send('pointerdown', 21, 130); send('pointerdown', 22, 230); send('pointermove', 22, 330);
+      send('pointerup', 21, 130); send('pointerup', 22, 330); el.setPointerCapture = nativeCapture;
+    });
+    assert.notEqual(await page.locator('.iv-scale').innerText(), pinchBefore);
+    await page.goBack(); await page.waitForFunction(() => !imageReview);
+    assert.equal(await page.locator('#cText').count(), 1, 'browser back should close the viewer and keep the conversation');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     const mobileHead = await page.locator('.chead').boundingBox(); assert.ok(mobileHead.y >= -1 && mobileHead.y < 20);
     await page.setViewportSize({ width: 1254, height: 884 });
     await page.screenshot({ path: path.join(root, '../outputs/online-team-desktop.png') });
     assert.deepEqual(errors, []);
-    console.log('PASS: original byte integrity, retry, reload, clipboard, document, sticky header, favorites, first screen, team status, help, desktop/mobile');
+    console.log('PASS: original byte integrity, large preview, fullscreen, 100%/200%, wheel zoom, drag pan, mobile pinch, viewer back, retry, reload, clipboard, document, sticky header, favorites, desktop/mobile');
   } finally { await browser.close(); server.close(); }
 })().catch(e => { console.error(e); server.close(); process.exitCode = 1; });
 

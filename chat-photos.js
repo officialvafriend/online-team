@@ -14,11 +14,11 @@ function decodeAttachment(token) {
 }
 function attachmentHtml(token) {
   const m = decodeAttachment(token); if (!m) return esc('첨부파일 정보를 읽을 수 없어요');
-  return `<div class="attachment" data-file-token="${token}">${previewableImage(m.mime) ? `<button class="chat-photo" data-photo-view="${token}" aria-label="사진 크게 보기"><span class="photo-loading">사진 불러오는 중…</span><img data-file-image="${m.id}" alt="${esc(m.name)}" hidden></button>` : '<span class="file-icon" aria-hidden="true">📄</span>'}<span class="file-name">${esc(m.name)}</span><small>${fileSize(m.size)} · 원본</small><button class="file-download" data-file-download="${token}">원본 다운로드</button></div>`;
+  return `<div class="attachment ${previewableImage(m.mime) ? "attachment-image" : ""}" data-file-token="${token}">${previewableImage(m.mime) ? `<button class="chat-photo" data-photo-view="${token}" aria-label="사진 크게 보기"><span class="photo-loading">사진 불러오는 중…</span><img data-file-image="${m.id}" alt="${esc(m.name)}" hidden></button>` : '<span class="file-icon" aria-hidden="true">📄</span>'}<span class="file-name">${esc(m.name)}</span><small class="attachment-resolution">${fileSize(m.size)} · 원본</small>${previewableImage(m.mime) ? `<button class="image-open" data-photo-view="${token}">확대해서 자세히 보기</button>` : ""}<button class="file-download" data-file-download="${token}">원본 다운로드</button></div>`;
 }
 function photoPreview() {
   const p = chatPhotos.get(thSel), busy = photoJobs.has(thSel) || photoSends.has(thSel);
-  return p || busy ? `<div class="photo-preview">${p ? `${previewableImage(p.file.type) ? `<img src="${p.url}" alt="보낼 사진">` : '<span class="file-icon">📄</span>'}<span>${esc(p.file.name)}<small>${fileSize(p.file.size)} · 원본 그대로</small></span>` : '<span>파일을 준비하고 있어요…</span>'}<button type="button" data-photo-remove ${busy ? 'disabled' : ''} aria-label="첨부 파일 빼기">✕</button></div>` : '';
+  return p || busy ? `<div class="photo-preview">${p ? `${previewableImage(p.file.type) ? `<button class="draft-image-open" data-draft-view aria-label="첨부할 이미지 확대해서 확인"><img src="${p.url}" alt="보낼 사진"><span>확대해서 확인</span></button>` : '<span class="file-icon">📄</span>'}<span>${esc(p.file.name)}<small>${fileSize(p.file.size)} · 원본 그대로</small></span>` : '<span>파일을 준비하고 있어요…</span>'}<button type="button" data-photo-remove ${busy ? 'disabled' : ''} aria-label="첨부 파일 빼기">✕</button></div>` : '';
 }
 function updatePhotoPreview() {
   const el = $('#photoPreview'); if (el) el.innerHTML = photoPreview();
@@ -76,12 +76,9 @@ async function sendChatPhoto(text) {
   } catch (e) { toast('보내지 못했어요. 첨부한 파일은 그대로 있으니 다시 보내 주세요'); }
   finally { photoSends.delete(room); updatePhotoPreview(); }
 }
-async function showAttachment(token) {
+function showAttachment(token) {
   const m = decodeAttachment(token); if (!m) return;
-  openSheet(`<h3>${esc(m.name)}</h3><p class="caption">원본 화질 · ${fileSize(m.size)}</p><div id="originalPhoto"><p class="caption">원본을 불러오고 있어요…</p></div><div class="btns"><button class="btn sec2" data-file-download="${token}">원본 다운로드</button><button class="btn gray" data-photo-close>닫기</button></div>`);
-  const holder = $('#originalPhoto');
-  try { const url = await loadAttachment(m); if (holder.isConnected) holder.innerHTML = `<button class="photo-zoom" aria-label="사진 100% 크기로 보기"><img class="photo-full" src="${url}" alt="${esc(m.name)}"></button><p class="caption">사진을 누르면 100% 크기로 볼 수 있어요</p>`; }
-  catch { if (holder.isConnected) holder.innerHTML = '<p class="warn">원본을 불러오지 못했어요. 닫고 다시 열어 주세요</p>'; }
+  return openImageReview(m, () => loadAttachment(m));
 }
 document.addEventListener('change', e => { if (e.target.id === 'chatPhotoInput') { selectChatFile(e.target.files[0]); e.target.value = ''; } });
 document.addEventListener('paste', e => {
@@ -95,7 +92,7 @@ document.addEventListener('click', async e => {
   if (e.target.closest('[data-photo-remove]') && !photoSends.has(thSel)) { const p = chatPhotos.get(thSel); if (p) URL.revokeObjectURL(p.url); chatPhotos.delete(thSel); updatePhotoPreview(); }
   const pick = e.target.closest('[data-pick-file]'); if (pick) { closeSheet(); $('#chatPhotoInput')?.click(); }
   const view = e.target.closest('[data-photo-view]'); if (view) return showAttachment(view.dataset.photoView);
-  const zoom = e.target.closest('.photo-zoom'); if (zoom) { const big = zoom.classList.toggle('original-size'); zoom.setAttribute('aria-label', big ? '사진을 화면에 맞추기' : '사진 100% 크기로 보기'); }
+  if (e.target.closest('[data-draft-view]')) { const p = chatPhotos.get(thSel); if (p) return openImageReview({ name: p.file.name, size: p.file.size }, () => Promise.resolve(p.url)); }
   const download = e.target.closest('[data-file-download]');
   if (download && !download.disabled) {
     const m = decodeAttachment(download.dataset.fileDownload); if (!m) return;
@@ -111,7 +108,7 @@ let originalLoads = 0; const originalQueue = [];
 async function loadVisibleOriginal(img) {
   const card = img.closest('[data-file-token]'), m = card && decodeAttachment(card.dataset.fileToken); if (!m) return;
   originalQueue.push(async () => {
-    try { const url = await loadAttachment(m); if (img.isConnected) { img.src = url; img.hidden = false; card.querySelector('.photo-loading')?.remove(); } }
+    try { const url = await loadAttachment(m); if (img.isConnected) { img.onload = () => { const label = card.querySelector('.attachment-resolution'); if (label) label.textContent = `${img.naturalWidth.toLocaleString()} × ${img.naturalHeight.toLocaleString()} px · ${fileSize(m.size)} · 원본`; }; img.src = url; img.hidden = false; card.querySelector('.photo-loading')?.remove(); } }
     catch { if (card.isConnected) card.querySelector('.photo-loading').textContent = '눌러서 원본 보기'; }
   });
   pumpOriginals();
