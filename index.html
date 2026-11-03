@@ -352,6 +352,7 @@ body{letter-spacing:-.01em;font-feature-settings:"tnum" 1}
     #app > .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px} #app > .chips::-webkit-scrollbar{display:none} #app > .chips .chip{flex:none}
   }
 </style>
+<link rel="stylesheet" href="chat-photos.css">
 </head>
 <body>
 <div class="wrap" id="app"></div>
@@ -360,6 +361,8 @@ body{letter-spacing:-.01em;font-feature-settings:"tnum" 1}
 </div></nav>
 <div class="dim" id="dim"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast"></div>
+<script src="chat-photos.js"></script>
+<script src="dashboard-ui.js"></script>
 <script>
 // 온라인팀 회의 보드 — 데이터는 구글시트(회의, 안건, 기록 탭), Apps Script(비밀번호)로 읽고 씀. 비밀번호는 이 기기에만 저장
 const APPS_URL = "https://script.google.com/macros/s/AKfycbxjg-ChnaEq4HTy-6K4mhEv8y840A7DPDUIL3BFFKla-N4NT4iVd_suGQ3jaYaG8SG59g/exec";
@@ -399,7 +402,7 @@ const days = (s) => (s ? Math.round((new Date(s + "T00:00:00") - new Date(today(
 const ddayTxt = (s) => { const d = days(s); return d == null ? "" : d === 0 ? "오늘" : d > 0 ? `D-${d}` : `${-d}일 지남`; };
 const weekRange = () => { const t = new Date(today() + "T00:00:00"), dow = (t.getDay() + 6) % 7, a = new Date(t); a.setDate(t.getDate() - dow); const b = new Date(a); b.setDate(a.getDate() + 6); return [ymd(a), ymd(b)]; };
 
-let D = null, KEY = ls.get("ot-key") || "", tab = ["home", "more"].includes(ls.get("ot-tab")) ? "chat" : ls.get("ot-tab") || "chat", brandF = ls.get("ot-brand") || "", who = ls.get("ot-who") || "", meetSel = ls.get("ot-meet") || "", todoF = ls.get("ot-todof") || "", ideaF = ls.get("ot-idf") || "", ideaTo = "이사님", hoBrand = ls.get("ot-hob") || "", meetView = ls.get("ot-mview") || "item", edit = null, panelKeep = "", DEMO = /[?&]demo=1/.test(location.search) || !!window.PREVIEW_DATA;
+let D = null, KEY = ls.get("ot-key") || "", tab = initialBoardTab(), brandF = ls.get("ot-brand") || "", who = ls.get("ot-who") || "", meetSel = ls.get("ot-meet") || "", todoF = ls.get("ot-todof") || "", ideaF = ls.get("ot-idf") || "", ideaTo = "이사님", hoBrand = ls.get("ot-hob") || "", meetView = ls.get("ot-mview") || "item", edit = null, panelKeep = "", DEMO = /[?&]demo=1/.test(location.search) || !!window.PREVIEW_DATA;
 
 // ── 시트 ──
 async function load(key) {
@@ -468,7 +471,7 @@ const ICON = {
   fix: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5zm-1.2 13.6-3.6-3.6 1.4-1.4 2.2 2.2 4.8-4.8 1.4 1.4z"/></svg>',
   todo: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 3h8v2h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h3zm2 0v3h4V3zm5.3 7.3-4.3 4.3-2.3-2.3-1.4 1.4 3.7 3.7 5.7-5.7z"/></svg>',
 };
-const TABS = [["me", "내 보드"], ["home", "홈"], ["todo", "할 일"], ["idea", "제안함"], ["ho", "인수인계"], ["meet", "회의"], ["rec", "녹음"], ["fix", "확정"]];
+const TABS = [["me", "나의 보드"], ["home", "홈"], ["todo", "할 일"], ["idea", "제안함"], ["ho", "인수인계"], ["meet", "회의"], ["rec", "녹음"], ["fix", "확정"]];
 TABS.splice(1, 0, ["chat", "메신저"]);
 const FAV0 = ["me", "todo", "idea", "meet"];
 const favs = () => { const f = (who && profOf(who).f) || []; const ok = f.filter((k) => TABS.some(([t]) => t === k)).slice(0, 4); const r = (ok.length ? ok : FAV0).filter((k) => k !== "chat"); r.splice(1, 0, "chat"); return r; }; // 메신저는 늘 아래 메뉴 두 번째
@@ -981,7 +984,7 @@ const thUnread = (t) => t.rs.filter((l) => l.시각 > thSeen(t.id) && logWho(l) 
 const thUnreadAll = () => (who && D ? thList().reduce((a, t) => a + thUnread(t), 0) : 0);
 const isBot = (l) => /^클로드/.test(l.작성자 || "");
 const scrollEnd = () => setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 30);
-const thPlain = (t) => String(t || "").replace(/^🤖\s*/, "").replace(/\n?\[\[되돌리기:[^\]]*\]\]/g, "").replace(/\[\[안건:[\w]+\]\]/g, "📌 안건").replace(/\[\[담당:[\w]+\|([^\]]*)\]\]/g, "👤 담당자 정함: $1");
+const thPlain = (t) => String(t || "").replace(PHOTO_PATTERN, "📎 첨부파일").replace(/^🤖\s*/, "").replace(/\n?\[\[되돌리기:[^\]]*\]\]/g, "").replace(/\[\[안건:[\w]+\]\]/g, "📌 안건").replace(/\[\[담당:[\w]+\|([^\]]*)\]\]/g, "👤 담당자 정함: $1");
 function thItemCard(id) {
   const x = D.items.find((y) => y.id === id); if (!x) return "";
   const own = peopleOf(x.담당자).map(PNAME).join(", "), sub = [own ? "담당 " + own : "담당 없음", x.마감 ? md(x.마감) + (x.시간 ? " " + x.시간 : "") + " " + ddayTxt(x.마감) : ""].filter(Boolean).join(", ");
@@ -989,7 +992,8 @@ function thItemCard(id) {
 }
 const thBody = (t, lid) => esc(String(t || "").replace(/^🤖\s*/, "")).replace(/\n?\[\[되돌리기:[^\]]*\]\]/g, lid ? `<button class="cundo" data-undo="${lid}">↩️ 잘못 넣었으면 되돌리기</button>` : "").replace(/@(이사님|한섭|보혜|시원|시워니|진이|진)/g, '<span class="cmention">@$1</span>')
   .replace(/\n?\[\[안건:([\w]+)\]\]\n?/g, (_, id) => thItemCard(id))
-  .replace(/\n?\[\[담당:([\w]+)\|([^\]]*)\]\]/g, (_, id, n) => `<span class="csys2">👤 담당 정함: <b>${esc(n)}</b></span>${thItemCard(id)}`);
+  .replace(/\n?\[\[담당:([\w]+)\|([^\]]*)\]\]/g, (_, id, n) => `<span class="csys2">👤 담당 정함: <b>${esc(n)}</b></span>${thItemCard(id)}`)
+  .replace(PHOTO_PATTERN, (_, token) => attachmentHtml(token));
 function thSeed() { // 예시 화면에서만: 쓰레드 하나, 회의록 댓글 몇 개
   if (!DEMO || D._thSeed) return; D._thSeed = 1;
   const y = ymd(new Date(Date.now() - 864e5)), rec = [...D.recs].sort((p, q) => (p.세션 < q.세션 ? 1 : -1)).find((x) => jp(x.정리, {}).결론);
@@ -1009,7 +1013,7 @@ function thHtml() {
   const row = (t) => { const z = t.rs.at(-1), n = thUnread(t), ic = t.kind === "rec" ? '<div class="thic">📝</div>' : t.kind === "dm" ? avHtml(t.other, "md") : '<div class="thic">💬</div>';
     const prev = z ? `${t.kind === "dm" ? "" : esc(isBot(z) ? "클로드" : PNAME(logWho(z))) + ": "}${esc(thPlain(z.내용).replace(/\n/g, " ").slice(0, 60))}` : esc(thPlain(t.첫글).replace(/\n/g, " ").slice(0, 60)) || "아직 메시지가 없어요";
     return `<button class="throw ${thPins().includes(t.id) ? "pin" : ""}" data-th="${t.id}">${ic}<div class="tx"><b>${thPins().includes(t.id) ? "📌 " : ""}${esc(t.제목)}${t.mem && t.mem.length ? ` <small>${t.mem.length}명</small>` : ""}</b><span>${prev}</span></div><div class="thmeta">${esc(ago(t.last))}${n ? `<em class="thun">${n}</em>` : ""}</div></button>`; };
-  return `${who ? `<div class="dmrow">${others.map((p) => `<button class="dmb" data-dm="${p}">${avHtml(p, "md")}<span>${esc(PNAME(p))}</span></button>`).join("")}<button class="dmb" data-act="thnew"><span class="dmplus">＋</span><span>새 방</span></button></div>` : ""}
+  return `${teamStatusHtml()}
     <div class="thlist">${l.map(row).join("") || '<div class="empty">아직 대화방이 없어요. 위 ＋ 새 방으로 만들어요</div>'}</div>`;
 }
 function minutesHtml(x) {
@@ -1056,7 +1060,7 @@ function thView() {
     top = `<div class="mini"><div class="eyebrow">📝 회의록</div><b>${esc(String(sm.결론 || "").replace(/^\?\s*:\s*/, ""))}</b><div class="minib"><button data-act="thmin">${thMin ? "회의록 접기" : "회의록 보기"}</button><button data-act="mnpdf">PDF 받기</button></div></div>${thMin ? minutesHtml(x) : ""}`; }
   return `<div class="chead"><button class="ic" data-thback aria-label="목록">‹</button><h2>${esc(t.제목)}${t.kind === "dm" ? ' <small>1:1</small>' : ""}</h2>${isBoss() ? `<button class="ic" data-act="thpin">${thPins().includes(t.id) ? "고정 풀기" : "맨 위 고정"}</button>${t.kind === "dm" ? "" : '<button class="ic" data-act="thren">이름 바꾸기</button>'}${t.kind === "rec" ? "" : '<button class="ic" data-act="thkill">방 지우기</button>'}` : ""}</div>${t.mem && t.mem.length ? `<div class="caption" style="margin:-6px 4px 10px">${t.mem.map(PNAME).join(", ")}</div>` : ""}${top}
     <div class="msgs">${thMsgsHtml(t)}</div>
-    <div class="cbox"><button class="cb" data-act="cattach" aria-label="안건 공유"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5 12.6 20a5.5 5.5 0 0 1-7.8-7.8l8.5-8.5a3.7 3.7 0 0 1 5.2 5.2l-8.5 8.5a1.8 1.8 0 0 1-2.6-2.6l7.8-7.8"/></svg></button><textarea id="cText" rows="1" aria-label="메시지" placeholder="메시지 보내기">${esc(cDraft)}</textarea><button class="cb" data-act="cask" aria-label="클로드에게 묻기">${CMARK}</button><button class="send" data-act="csend">보내기</button></div>`;
+    <div class="cbox"><div id="photoPreview">${photoPreview()}</div><input id="chatPhotoInput" type="file" aria-label="파일 첨부" hidden><button class="cb" data-act="cattach" aria-label="첨부하기"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5 12.6 20a5.5 5.5 0 0 1-7.8-7.8l8.5-8.5a3.7 3.7 0 0 1 5.2 5.2l-8.5 8.5a1.8 1.8 0 0 1-2.6-2.6l7.8-7.8"/></svg></button><textarea id="cText" rows="1" aria-label="메시지" placeholder="메시지 보내기">${esc(cDraft)}</textarea><button class="cb" data-act="cask" aria-label="클로드에게 묻기">${CMARK}</button><button class="send" data-act="csend" ${photoJobs.has(thSel) || photoSends.has(thSel) ? "disabled" : ""}>${photoSends.has(thSel) ? "보내는 중…" : "보내기"}</button></div>`;
 }
 let thPop = "", thTyping = [], thReadMap = {};
 function thReadTxt(t, l, w) {
@@ -1134,7 +1138,7 @@ async function thUndo(lid) {
 function thAttach() {
   cDraft = val("#cText") || cDraft;
   const its = D.items.filter((x) => ACTIVE.includes(x.상태)).sort(sortDue).slice(0, 40);
-  openSheet(`<h3>안건 공유하기</h3><div class="caption">고른 안건이 카드로 올라가요. 입력칸에 쓴 말도 같이 가요</div><div class="list">${its.map((x) => `<button class="item" data-csend="${x.id}"><div class="tx"><b>${esc(x.제목)}</b><span>${esc(peopleOf(x.담당자).join(", ") || "담당자 없음")}${x.마감 ? ", " + md(x.마감) : ""}</span></div><span class="chev">›</span></button>`).join("")}</div>`);
+  openSheet(`<h3>첨부하기</h3><button class="item attachment-pick" data-pick-file><div class="av ac">📎</div><div class="tx"><b>첨부파일 첨부하기</b><span>사진·문서 원본 그대로 · 파일당 20MB</span></div><span class="chev">›</span></button><div class="lbl">안건 공유하기</div><div class="caption">고른 안건이 카드로 올라가요. 입력칸에 쓴 말도 같이 가요</div><div class="list">${its.map((x) => `<button class="item" data-csend="${x.id}"><div class="tx"><b>${esc(x.제목)}</b><span>${esc(peopleOf(x.담당자).join(", ") || "담당자 없음")}${x.마감 ? ", " + md(x.마감) : ""}</span></div><span class="chev">›</span></button>`).join("")}</div>`);
 }
 function thOwner(id, own) {
   const x = D.items.find((y) => y.id === id); if (!x) return; edit = { _cown: id, own: own || peopleOf(x.담당자) };
@@ -1190,7 +1194,7 @@ document.addEventListener("click", async (e) => {
     return toast("제목을 바꿨어요"); }
   if (t.dataset.cat) { const a = $("#cText"), s0 = a.selectionStart ?? a.value.length, add = (s0 && !/\s$/.test(a.value.slice(0, s0)) ? " " : "") + "@" + (t.dataset.cat === "한섭" ? "이사님" : t.dataset.cat) + " ";
     a.value = a.value.slice(0, s0) + add + a.value.slice(s0); cDraft = a.value; a.focus(); a.setSelectionRange(s0 + add.length, s0 + add.length); return; }
-  if (act === "csend") { const v = val("#cText"); if (!v) return; cDraft = ""; const ask = v.match(/^@클로드\s*([\s\S]*)$/); if (ask) return ask[1].trim() ? thAsk(ask[1].trim()) : thAskSheet(); return thReply(v); }
+  if (act === "csend") { const v = val("#cText"); if (photoJobs.has(thSel) || photoSends.has(thSel)) return; if (chatPhotos.has(thSel)) return sendChatPhoto(v); if (!v) return; cDraft = ""; const ask = v.match(/^@클로드\s*([\s\S]*)$/); if (ask) return ask[1].trim() ? thAsk(ask[1].trim()) : thAskSheet(); return thReply(v); }
   if (act === "cattach") return thAttach();
   if (t.dataset.csend) { const v = cDraft; cDraft = ""; closeSheet(); thReply((v ? v + "\n" : "") + "[[안건:" + t.dataset.csend + "]]", false); return toast("안건을 공유했어요"); }
   if (t.dataset.cown) return thOwner(t.dataset.cown);
@@ -1211,16 +1215,16 @@ function render() {
   $("#nav").style.display = pc || (tab === "chat" && thSel) ? "none" : "";
   if (tab === "idea") ls.set("ot-seen-idea", D.at || ""); // 제안함을 열면 읽음
   const unread = unreadIdeas() + thUnreadAll(), dot = unread ? `<span class="ndot">${unread}</span>` : "";
-  $("#nav").innerHTML = `<div>${MAIN.map(([g, n, go]) => `<button class="${groupOf(tab) === g ? "on" : ""}" data-tab="${go}">${ICON[g]}${n}${g === "chat" ? dot : ""}</button>`).join("")}</div>`;
+  $("#nav").innerHTML = `<div>${[["me", "나의 보드", "me"], ...MAIN].map(([g, n, go]) => `<button class="${(g === "me" ? tab === "me" : tab !== "me" && groupOf(tab) === g) ? "on" : ""}" data-tab="${go}">${ICON[g]}${n}${g === "chat" ? dot : ""}</button>`).join("")}</div>`;
   const at = D.at ? D.at.slice(11) : "";
   const body = subBar() + (tab === "home" ? (pc ? homePC() : homeHtml()) : tab === "meet" ? meetHtml() : tab === "fix" ? fixHtml() : tab === "me" ? meHtml() : tab === "idea" ? ideaHtml() : tab === "ho" ? hoHtml() : tab === "rec" ? recHtml() : tab === "chat" ? thHtml() : todoHtml());
   const demo = (DEMO ? `<div class="demo">예시 화면이에요. 눌러 봐도 시트에는 저장되지 않아요</div>` : "") + recBar();
-  if (!pc) { $("#app").innerHTML = `${demo}<div class="top"><div class="logo">온라인팀 <b>보드</b></div><div class="r">${bellHtml("bell")}<button class="ic" data-act="reload" aria-label="새로고침">${at ? at + " " : ""}↻</button><button class="topme" data-act="${who ? "prof" : "who"}" aria-label="내 프로필">${who ? avHtml(who, "sm") : "나는?"}</button></div></div>${body}`; setBadge(thUnreadAll() + (who ? notiCount() : 0)); return; }
-  const title = (tab === "chat" && thSel) || (tab === "rec" && recSel) ? "" : MAIN.find(([g]) => g === groupOf(tab))[1];
+  if (!pc) { $("#app").innerHTML = `${demo}<div class="top"><div class="logo">온라인팀 <b>보드</b></div><div class="r">${bellHtml("bell")}<button class="ic" data-act="reload" aria-label="새로고침">${at ? at + " " : ""}↻</button><button class="topme" data-act="${who ? "prof" : "who"}" aria-label="내 프로필">${who ? avHtml(who, "sm") : "나는?"}</button></div></div>${!(tab === "chat" && thSel) ? `<div class="mobile-help"><button class="ic" data-board-prefs>☆ 즐겨찾기</button>${boardHelpButton()}</div>` : ""}${body}`; setBadge(thUnreadAll() + (who ? notiCount() : 0)); return; }
+  const title = (tab === "chat" && thSel) || (tab === "rec" && recSel) ? "" : tab === "me" ? "나의 보드" : MAIN.find(([g]) => g === groupOf(tab))[1];
   $("#app").innerHTML = `<div class="shell"><aside class="side"><div class="logo">온라인팀 <b>보드</b></div>
-      ${MAIN.map(([g, n, go]) => `<button class="navb ${groupOf(tab) === g ? "on" : ""}" data-tab="${go}">${ICON[g]}${n}${g === "chat" ? dot : ""}</button>`).join("")}
-      <div class="foot">${(() => { const c = notiCount(); return `<button class="navb" data-act="noti">🔔 알림${c ? `<span class="ndot">${c}</span>` : ""}</button>`; })()}<button class="navb me-btn pfoot" data-act="${who ? "prof" : "who"}">${who ? `${avHtml(who, "sm")}<span class="pft"><b>${esc(PNAME(who))}</b><small>${esc(profOf(who).s || "프로필 꾸미기")}</small></span>` : "👤 나는 누구?"}</button><button class="navb" data-act="reload">↻ ${at ? at + " 기준" : "새로고침"}</button><button class="navb" data-act="logout">🔒 잠그기</button></div></aside>
-    <main class="main">${demo}${tab === "home" ? body : `${groupOf(tab) === "chat" ? `<div class="narrow mid">${title ? `<div class="pchead"><h1>${title}</h1></div>` : ""}${body}</div>` : `${title ? `<div class="pchead"><h1>${title}</h1></div>` : ""}<div class="${["fix", "idea", "ho", "rec"].includes(tab) ? "narrow" : ""}">${body}</div>`}`}</main></div>`;
+      ${MAIN.map(([g, n, go]) => `<button class="navb ${tab !== "me" && groupOf(tab) === g ? "on" : ""}" data-tab="${go}">${ICON[g]}${n}${g === "chat" ? dot : ""}</button>`).join("")}
+      ${favoriteLinks()}<div class="foot">${(() => { const c = notiCount(); return `<button class="navb" data-act="noti">🔔 알림${c ? `<span class="ndot">${c}</span>` : ""}</button>`; })()}<button class="navb me-btn pfoot" data-act="${who ? "prof" : "who"}">${who ? `${avHtml(who, "sm")}<span class="pft"><b>${esc(PNAME(who))}</b><small>${esc(profOf(who).s || "프로필 꾸미기")}</small></span>` : "👤 나는 누구?"}</button><button class="navb" data-act="reload">↻ ${at ? at + " 기준" : "새로고침"}</button><button class="navb" data-act="logout">🔒 잠그기</button></div></aside>
+    <main class="main">${demo}${tab === "home" ? body : `${groupOf(tab) === "chat" ? `<div class="narrow mid">${title ? `<div class="pchead"><h1>${title}</h1>${boardHelpButton()}</div>` : ""}${body}</div>` : `${title ? `<div class="pchead"><h1>${title}</h1>${boardHelpButton()}</div>` : ""}<div class="${["fix", "idea", "ho", "rec"].includes(tab) ? "narrow" : ""}">${body}</div>`}`}</main></div>`;
   if (tab === "home") $("#panel").innerHTML = panelKeep || panelDefault();
   setBadge(thUnreadAll() + (who ? notiCount() : 0));
 }
@@ -1387,7 +1391,7 @@ function demoData() {
   if (window.PREVIEW_DATA) return JSON.parse(JSON.stringify(window.PREVIEW_DATA)); // 미리보기.html: 실제 시트 사본(읽기 전용)
   const t = today(), d = (n) => { const x = new Date(t + "T00:00:00"); x.setDate(x.getDate() + n); return ymd(x); };
   const items = [["네이버 블로그(체험단)", "확정", "마케팅-바이럴", "보혜, 한섭", d(5)], ["네이버 파워링크", "확인필요", "마케팅-바이럴", "", ""], ["쓰레드 (쓰레드봇, 대표, 직원 댓글)", "후보", "마케팅-바이럴", "", ""], ["틱톡", "제외", "마케팅-바이럴", "", ""], ["메타광고", "시도", "마케팅-바이럴", "시원", d(-2)], ["광고 랜딩페이지, 소구점 정리", "확정", "콘텐츠", "", d(10)], ["슬로건, 포지셔닝 (레딜 타격감, 버프 멘솔, 오븐스 단맛)", "확정", "브랜딩", "보혜", d(2)]];
-  return { at: `${t} ${pad(new Date().getHours())}:${pad(new Date().getMinutes())}`, meetings: [{ id: "m_demo", 날짜: t, 제목: "버프 광고 채널 선정", 브랜드: "액상덕후", 참석: "", 메모: "시험 데이터" }],
+  return { notes: [], recs: [], at: `${t} ${pad(new Date().getHours())}:${pad(new Date().getMinutes())}`, meetings: [{ id: "m_demo", 날짜: t, 제목: "버프 광고 채널 선정", 브랜드: "액상덕후", 참석: "", 메모: "시험 데이터" }],
     items: items.map(([제목, 상태, 분야, 담당자, 마감], i) => ({ id: "i_" + i, 회의id: "m_demo", 순서: i + 1, 제목, 상태, 브랜드: "", 분야, 담당자, 시작: "", 마감, 메모: "", 확인할것: i === 1 ? "광고 심의 가능한지" : "", 고친시각: `${t} 10:00` })),
     logs: [{ id: "l_1", 안건id: "i_0", 시각: `${t} 10:12`, 작성자: "보혜", 내용: "체험단 업체 두 곳 견적 받는 중" }] };
 }
