@@ -162,6 +162,7 @@
   .pav.md{width:44px;height:44px} .pav.md .pn{font-size:17px} .msg.cont{padding-left:42px}
   .dmplus{width:44px;height:44px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-size:22px;color:var(--ac)}
   .throw.pin{background:var(--ac-soft)} .throw .tx b small{font-size:12px;color:var(--sub);font-weight:600} .chip[disabled]{opacity:1}
+  .mbtns{display:flex;flex-direction:column;gap:6px;align-items:stretch;flex:none} .mbtns .ic{background:var(--line);height:38px;font-size:14px;text-align:left}
   .minib{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px} .minib button{height:44px;border-radius:12px;background:var(--ac);color:#fff;font-size:15px;font-weight:800} .minib button+button{background:var(--ac-soft);color:var(--ac)}
   .chead{flex-wrap:wrap}
   .thun{font-style:normal;background:var(--red);color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 7px;align-self:flex-end}
@@ -477,7 +478,8 @@ function meetHtml() {
       ${peopleOf(sel.참석).length ? `<div class="ppl" style="justify-content:flex-start;margin-top:8px">${peopleOf(sel.참석).map((n) => `<i class="${n === who ? "me" : ""}">${esc(n)}</i>`).join("")}</div>` : ""}
       <div class="caption">${sel.브랜드 ? `<span class="tag">${esc(sel.브랜드)}</span>` : ""}${sel.메모 ? esc(sel.메모) : "메모 없음"}</div>
       <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${cnt.map(([s, n]) => `<span class="st ${s}">${s} ${n}</span>`).join("")}</div></div>
-      <button class="ic" data-act="medit">회의 고치기</button></div>
+      <div class="mbtns"><button class="ic" data-act="medit">✏️ 회의 고치기</button>${(() => { const r0 = D.recs.filter((x) => x.회의id === sel.id && jp(x.정리, {}).결론).sort((p, q) => (p.세션 < q.세션 ? 1 : -1))[0];
+        return r0 ? `<button class="ic" data-mnroom="${r0.id}">📝 회의록 보기</button><button class="ic" data-mnpdfid="${r0.id}">🖨 PDF 받기</button>` : ""; })()}</div></div>
       ${D.recs.filter((x) => x.회의id === sel.id).map((x) => `<button class="recln" data-tab="rec" data-recgo="${x.id}">🎙 ${esc(sessTxt(x.세션))} 녹음, ${esc(RST[x.상태] || x.상태)} ›</button>`).join("")}
       ${REC && REC.meet === sel.id ? "" : `<button class="recbtn" data-act="recstart" ${REC ? "disabled" : ""}><span class="rdot"></span>${REC ? "다른 회의 녹음 중" : "녹음 시작"}</button>`}</div>
     ${seg}${meetView === "person" ? byPerson : byItem}
@@ -963,7 +965,7 @@ function thNew(keep) {
   if (keep) { $("#thT").value = t0; $("#thB").value = b0; }
 }
 document.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-act='mnpdf'],[data-nmem],[data-act='thpin'],[data-act='thkill'],[data-dm],[data-qq],[data-shto],[data-act='cask'],[data-act='caskgo'],[data-act='thmin'],[data-act='ishare'],[data-undo],[data-act='cwrite'],[data-act='thren'],[data-act='threnok'],[data-cat],[data-act='csend'],[data-act='cattach'],[data-act='cownsave'],[data-act='thnew'],[data-act='thmake'],[data-act='recopen'],[data-act='mnprint'],[data-csend],[data-copen],[data-cown],[data-cpick],[data-th],[data-thback],[data-thdel],[data-recgo2]"); if (!t) return;
+  const t = e.target.closest("[data-mnroom],[data-mnpdfid],[data-act='mnpdf'],[data-nmem],[data-act='thpin'],[data-act='thkill'],[data-dm],[data-qq],[data-shto],[data-act='cask'],[data-act='caskgo'],[data-act='thmin'],[data-act='ishare'],[data-undo],[data-act='cwrite'],[data-act='thren'],[data-act='threnok'],[data-cat],[data-act='csend'],[data-act='cattach'],[data-act='cownsave'],[data-act='thnew'],[data-act='thmake'],[data-act='recopen'],[data-act='mnprint'],[data-csend],[data-copen],[data-cown],[data-cpick],[data-th],[data-thback],[data-thdel],[data-recgo2]"); if (!t) return;
   const act = t.dataset.act;
   if (act === "recopen") { recOpen = true; return render(); }
   if (t.dataset.th) { thSel = t.dataset.th; thMin = false; cDraft = ""; render(); return scrollEnd(); }
@@ -973,6 +975,8 @@ document.addEventListener("click", async (e) => {
   if (t.dataset.recgo2) { tab = "rec"; recSel = t.dataset.recgo2; recCls = null; render(); return window.scrollTo(0, 0); }
   if (t.dataset.copen) return openItem(t.dataset.copen);
   if (!who) return askWho();
+  if (t.dataset.mnroom) { tab = "chat"; ls.set("ot-tab", tab); thSel = t.dataset.mnroom; thMin = true; render(); return window.scrollTo(0, 0); }
+  if (t.dataset.mnpdfid) { const x = D.recs.find((y) => y.id === t.dataset.mnpdfid); if (!x) return; const tmp = document.createElement("div"); tmp.innerHTML = minutesHtml(x); return mnPdf(tmp.querySelector("[data-act=mnprint]")); }
   if (act === "mnprint") return mnPdf(t);
   if (act === "mnpdf") { const x = D.recs.find((y) => y.id === thSel); if (!x) return; const tmp = document.createElement("div"); tmp.innerHTML = minutesHtml(x); return mnPdf(tmp.querySelector("[data-act=mnprint]")); }
   if (act === "thnew") return thNew();
