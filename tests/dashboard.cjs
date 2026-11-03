@@ -95,6 +95,7 @@ const files = new Map(); let failLog = false, uploadCount = 0, readCount = 0, ac
     await page.locator('.chat-photo').click();
     await page.locator('.iv-image').waitFor();
     await page.waitForFunction(() => document.querySelector('.iv-info').textContent.includes('2,400'));
+    assert.equal(await page.locator('.iv-next').isVisible(), false);
     assert.ok((await page.locator('.chat-photo img').boundingBox()).width > 450, 'chat preview should be large enough for design review');
     await page.locator('[data-iv="actual"]').click();
     assert.equal(await page.locator('.iv-image').evaluate(img => img.getBoundingClientRect().width), 2400);
@@ -143,6 +144,14 @@ const files = new Map(); let failLog = false, uploadCount = 0, readCount = 0, ac
     assert.equal(await page.locator('[data-photo-remove]').count(), 4);
     await page.locator('[data-photo-remove]').nth(1).click();
     assert.equal(await page.locator('[data-photo-remove]').count(), 3);
+    await page.locator('[data-draft-view]').nth(1).click();
+    await page.waitForFunction(() => document.querySelector('.iv-info').textContent.includes('2,400'));
+    assert.equal(await page.locator('.iv-gallery-count').innerText(), '2 / 3');
+    await page.locator('.iv-previous').click();
+    await page.waitForFunction(() => document.querySelector('.iv-info').textContent.includes('2,400'));
+    assert.equal(await page.locator('.iv-gallery-count').innerText(), '1 / 3');
+    assert.equal(await page.locator('.iv-previous').isEnabled(), false);
+    await page.locator('.iv-close').click(); await page.waitForFunction(() => !imageReview && navSkip === 0);
     await page.screenshot({ path: path.join(root, '../outputs/online-team-multiple-attachments.png') });
     await page.setViewportSize({ width: 390, height: 844 });
     assert.equal(await page.locator('[data-photo-remove]').count(), 3);
@@ -164,6 +173,47 @@ const files = new Map(); let failLog = false, uploadCount = 0, readCount = 0, ac
     assert.equal((state.logs[2].내용.match(/\[\[파일:/g) || []).length, 3);
     assert.ok(state.logs[2].내용.startsWith('시안 3장 한 번에 공유합니다'));
     assert.equal(await page.locator('.attachment-image').count(), 4);
+    // The viewer stays open while browsing only images in the same message.
+    const galleryMessage = state.logs[2].id;
+    await page.locator(`[data-message-id="${galleryMessage}"] .chat-photo`).first().click();
+    await page.waitForFunction(() => document.querySelector('.iv-info').textContent.includes('2,400'));
+    assert.equal(await page.locator('.iv-gallery-count').innerText(), '1 / 3');
+    await page.locator('.iv-next').click();
+    await page.waitForFunction(() => document.querySelector('.iv-info').textContent.includes('2,400'));
+    assert.equal(await page.locator('.iv-title strong').innerText(), '시안 3.png');
+    await page.keyboard.press('ArrowRight');
+    await page.waitForFunction(() => document.querySelector('.iv-info').textContent.includes('2,400'));
+    assert.equal(await page.locator('.iv-gallery-count').innerText(), '3 / 3');
+    assert.equal(await page.locator('.iv-next').isEnabled(), false);
+    await page.keyboard.press('ArrowLeft');
+    await page.waitForFunction(() => document.querySelector('.iv-info').textContent.includes('2,400'));
+    assert.equal(await page.locator('.iv-gallery-count').innerText(), '2 / 3');
+    assert.equal(await page.locator('.iv-title strong').innerText(), '시안 3.png');
+    await page.locator('[data-iv="actual"]').click();
+    assert.equal(await page.locator('.iv-image').evaluate(el => el.getBoundingClientRect().width), 2400);
+    await page.locator('[data-iv="fit"]').click();
+    await page.screenshot({ path: path.join(root, '../outputs/online-team-gallery.png') });
+    await page.setViewportSize({ width: 390, height: 844 });
+    const swipeGallery = async (fromX, toX) => page.locator('.iv-stage').evaluate((el, { fromX, toX }) => {
+      const r = el.getBoundingClientRect(), y = r.top + 180, capture = el.setPointerCapture; el.setPointerCapture = () => {};
+      const send = (type, x) => el.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: 77, pointerType: 'touch', button: 0, clientX: r.left + x, clientY: y }));
+      send('pointerdown', fromX); send('pointermove', toX); send('pointerup', toX); el.setPointerCapture = capture;
+    }, { fromX, toX });
+    await swipeGallery(280, 100);
+    await page.waitForFunction(() => document.querySelector('.iv-info').textContent.includes('2,400'));
+    assert.equal(await page.locator('.iv-gallery-count').innerText(), '3 / 3');
+    await swipeGallery(100, 280);
+    await page.waitForFunction(() => document.querySelector('.iv-info').textContent.includes('2,400'));
+    assert.equal(await page.locator('.iv-gallery-count').innerText(), '2 / 3');
+    await page.locator('[data-iv="actual"]').click(); await swipeGallery(280, 100);
+    assert.equal(await page.locator('.iv-gallery-count').innerText(), '2 / 3', 'zoomed dragging must pan instead of changing photos');
+    await page.screenshot({ path: path.join(root, '../outputs/online-team-gallery-mobile.png') });
+    const galleryDownloadPromise = page.waitForEvent('download'); await page.locator('.iv-download').click();
+    const galleryDownload = await galleryDownloadPromise;
+    assert.equal(galleryDownload.suggestedFilename(), '시안 3.png');
+    assert.deepEqual(fs.readFileSync(await galleryDownload.path()), Buffer.from(original));
+    await page.locator('.iv-close').click(); await page.waitForFunction(() => !imageReview && navSkip === 0);
+    await page.setViewportSize({ width: 1254, height: 884 });
     // Pin and discuss the photo message without mixing replies into the main chat.
     const rootMessage = state.logs[0].id;
     await page.locator(`[data-message-pin="${rootMessage}"]`).click();
@@ -238,7 +288,7 @@ const files = new Map(); let failLog = false, uploadCount = 0, readCount = 0, ac
     await page.setViewportSize({ width: 1254, height: 884 });
     await page.screenshot({ path: path.join(root, '../outputs/online-team-desktop.png') });
     assert.deepEqual(errors, []);
-    console.log('PASS: message pins, threaded replies, reply retry, live teammate replies, reload, mobile threads, multi-select, append, individual removal, grouped send, batch retry, original byte integrity, large preview, fullscreen, 100%/200%, wheel zoom, drag pan, mobile pinch, viewer back, retry, reload, clipboard, document, sticky header, favorites, desktop/mobile');
+    console.log('PASS: gallery buttons, arrow keys, touch swipes, draft gallery, zoomed pan isolation, current-image download, message pins, threaded replies, reply retry, live teammate replies, reload, mobile threads, multi-select, append, individual removal, grouped send, batch retry, original byte integrity, large preview, fullscreen, 100%/200%, wheel zoom, drag pan, mobile pinch, viewer back, retry, reload, clipboard, document, sticky header, favorites, desktop/mobile');
   } finally { await browser.close(); server.close(); }
 })().catch(e => { console.error(e); server.close(); process.exitCode = 1; });
 

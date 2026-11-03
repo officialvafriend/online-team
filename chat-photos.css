@@ -125,3 +125,13 @@
 .thread-parent-content{max-height:240px;overflow:auto;overscroll-behavior:contain;padding-right:4px}
 .thread-parent-content .chat-photo img{max-height:160px}
 @media(prefers-reduced-motion:reduce){.sheet{animation:none}}
+
+.iv-viewport{position:relative;min-height:0;overflow:hidden}
+.iv-viewport .iv-stage{height:100%;width:100%}
+.image-review .iv-previous,.image-review .iv-next{position:absolute;top:50%;transform:translateY(-50%);z-index:1;display:grid;place-items:center;width:48px;height:56px;border-radius:12px;background:#202526;color:#fff;border:1px solid #657173;box-shadow:0 3px 10px #0003}
+.image-review .iv-previous{left:12px}
+.image-review .iv-next{right:12px}
+.image-review .iv-previous[hidden],.image-review .iv-next[hidden]{display:none}
+.image-review .iv-previous:disabled,.image-review .iv-next:disabled{opacity:.35}
+.iv-gallery-count{display:inline-block;margin-left:12px;font-variant-numeric:tabular-nums}
+@media(max-width:599px){.image-review .iv-previous,.image-review .iv-next{width:44px;height:48px}.image-review .iv-previous{left:6px}.image-review .iv-next{right:6px}}

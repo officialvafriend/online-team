@@ -97,9 +97,13 @@ async function sendChatPhoto(text) {
   } catch (e) { toast('보내지 못했어요. 첨부한 파일은 그대로 있으니 다시 보내 주세요'); }
   finally { photoSends.delete(room); updatePhotoPreview(); }
 }
-function showAttachment(token) {
+function showAttachment(token, origin) {
   const m = decodeAttachment(token); if (!m) return;
-  return openImageReview(m, () => loadAttachment(m));
+  const container = origin?.closest('.bub,.thread-parent-content,.message-reply');
+  const metas = container ? [...container.querySelectorAll('[data-file-token]')].map(el => decodeAttachment(el.dataset.fileToken)).filter(meta => meta && previewableImage(meta.mime)) : [m];
+  const unique = metas.filter((meta, i) => metas.findIndex(other => other.id === meta.id) === i);
+  const items = unique.length ? unique.map(meta => ({ meta, getSource: () => loadAttachment(meta) })) : [{ meta: m, getSource: () => loadAttachment(m) }];
+  return openImageReview(m, () => loadAttachment(m), items, Math.max(0, items.findIndex(item => item.meta.id === m.id)));
 }
 document.addEventListener('change', e => { if (e.target.id === 'chatPhotoInput') { selectChatFiles([...e.target.files]); e.target.value = ''; } });
 document.addEventListener('paste', e => {
@@ -114,8 +118,13 @@ document.addEventListener('click', async e => {
   if (remove && !photoSends.has(thSel)) { const batch = chatPhotos.get(thSel), p = batch?.files.find(p => p.id === remove.dataset.photoRemove); if (p) { if (p.meta) attachmentCache.delete(p.meta.id); URL.revokeObjectURL(p.url); batch.files = batch.files.filter(f => f !== p); if (!batch.files.length) chatPhotos.delete(thSel); } updatePhotoPreview(); }
   if (e.target.closest('[data-add-files]') && !photoSends.has(thSel)) $('#chatPhotoInput')?.click();
   const pick = e.target.closest('[data-pick-file]'); if (pick) { closeSheet(); $('#chatPhotoInput')?.click(); }
-  const view = e.target.closest('[data-photo-view]'); if (view) return showAttachment(view.dataset.photoView);
-  if (e.target.closest('[data-draft-view]')) { const p = chatPhotos.get(thSel)?.files.find(p => p.id === e.target.closest('[data-draft-view]').dataset.draftView); if (p) return openImageReview({ name: p.file.name, size: p.file.size }, () => Promise.resolve(p.url)); }
+  const view = e.target.closest('[data-photo-view]'); if (view) return showAttachment(view.dataset.photoView, view);
+  const draftView = e.target.closest('[data-draft-view]');
+  if (draftView) {
+    const files = chatPhotos.get(thSel)?.files.filter(p => previewableImage(p.file.type)) || [];
+    const index = files.findIndex(p => p.id === draftView.dataset.draftView);
+    if (index >= 0) { const items = files.map(p => ({ meta: { name: p.file.name, size: p.file.size }, getSource: () => Promise.resolve(p.url) })); return openImageReview(items[index].meta, items[index].getSource, items, index); }
+  }
   const download = e.target.closest('[data-file-download]');
   if (download && !download.disabled) {
     const m = decodeAttachment(download.dataset.fileDownload); if (!m) return;
