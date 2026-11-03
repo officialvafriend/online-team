@@ -19,7 +19,9 @@ if (b.type === 'attachmentRead') return attachmentRead(b);
 
 ## 화면 설정
 
-- 대화방 제목과 뒤로가기는 스크롤해도 상단에 남습니다.
+- 대화방 제목과 뒤로가기, 고정 메시지 모아보기는 스크롤해도 상단에 남습니다.
+- 각 메시지를 고정·해제하고, 그 메시지에 쓰레드 답글을 달 수 있습니다. 고정과 답글은 대화방 구성원에게 공유되며 기존 실시간 메시지 경로로 갱신됩니다.
+- 사진은 최대 3개씩 병렬 전송하며 보낸 사람의 미리보기에는 이미 가진 원본을 재사용해 서버에서 다시 내려받지 않습니다.
 - 메신저의 팀원 카드에는 프로필의 최신 한 줄 상태가 표시됩니다.
 - **사용방법**에서 각 화면의 간단한 설명을 봅니다.
 - **즐겨찾기 → 편집**에서 자주 쓰는 화면과 첫 화면을 설정합니다. 설정은 이 기기의 사용자 이름별로 저장됩니다. 기본 첫 화면은 **나의 보드**입니다.
@@ -27,4 +29,4 @@ if (b.type === 'attachmentRead') return attachmentRead(b);
 
 검증: Playwright와 Chrome이 설치된 환경에서 `node tests/dashboard.cjs`. 실제 운영 대화방에 메시지를 쓰지 않고 저장 API를 모의하여 원본 바이트 보존, 재시도, 새로고침, 붙여넣기, 문서 첨부, PC·모바일, 뒤로가기, 화면 설정을 확인합니다.
 
-화면 코드를 수정한 뒤 `node build.mjs`를 실행하여 `chat-photos.css`, `chat-photos.js`, `image-review.js`, `dashboard-ui.js`를 `index.html`에 포함합니다. 배포 페이지는 별도 스크립트 요청 없이 열립니다.
+화면 코드를 수정한 뒤 `node build.mjs`를 실행하여 `chat-photos.css`, `chat-photos.js`, `image-review.js`, `message-threads.js`, `dashboard-ui.js`를 `index.html`에 포함합니다. 배포 페이지는 별도 스크립트 요청 없이 열립니다.

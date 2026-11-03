@@ -450,6 +450,38 @@ body{letter-spacing:-.01em;font-feature-settings:"tnum" 1}
 .attachment-drafts.multiple .photo-preview>[data-photo-remove]{min-width:32px;width:32px;padding:4px}
 @media(max-width:599px){.attachment-drafts.multiple{grid-template-columns:repeat(2,minmax(0,1fr))}.attachment-drafts{max-height:230px}.attachment-drafts.multiple .photo-preview img{height:80px}.attachment-drafts.multiple .photo-preview span{font-size:12px}}
 
+.message-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.message-actions button{min-height:36px;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;color:var(--ink2);background:var(--card)}
+.message-actions button[aria-pressed=true]{background:var(--ac-soft);color:var(--ac)}
+.message-pinbar{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:10px 14px;margin:0 0 12px;border-radius:10px;background:var(--card);color:var(--ink2);font-size:13px}
+.message-pinbar b{color:var(--ac)}
+.message-pinbar span:last-child{margin-left:auto;color:var(--ac);font-weight:600}
+.thread-heading{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.thread-parent{margin-top:18px;padding:14px;background:var(--bg);border-radius:12px}
+.thread-parent small,.message-reply small,.pinned-message small{display:block;color:var(--ink2);font-size:12px;margin-bottom:8px}
+.thread-parent-content{font-size:14px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+.thread-parent-content .attachment{width:100%;max-width:100%}
+.thread-parent-content .chat-photo img{max-height:220px}
+.message-reply{padding:16px 0;border-bottom:1px solid var(--line2);font-size:15px;line-height:1.6;overflow-wrap:anywhere;white-space:pre-wrap}
+.message-reply .thdel{display:block;padding:8px 0;font-size:12px}
+.thread-compose{position:sticky;bottom:-22px;margin-top:18px;padding:12px 0 0;background:var(--card)}
+.thread-compose .lbl{display:block;margin:0 0 8px}
+.thread-compose textarea{font-size:15px;min-height:72px}
+.thread-compose .btn{height:46px;margin-top:8px;font-size:15px}
+.pinned-message{padding:16px 0;border-bottom:1px solid var(--line2)}
+.pinned-message>button:first-child{display:block;width:100%;text-align:left}
+.pinned-message p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px;line-height:1.5}
+.pinned-message span{display:block;color:var(--ac);font-size:13px;font-weight:600;margin-top:8px}
+.message-highlight{outline:2px solid var(--ac);outline-offset:5px;border-radius:12px;scroll-margin-top:90px}
+@media(max-width:599px){.message-actions button{min-height:44px}.thread-compose{bottom:-22px}}
+
+#messagePinBar{flex-basis:100%;width:100%}
+.message-pinbar{margin-bottom:0}
+.thread-heading{position:sticky;top:-26px;z-index:2;padding:12px 0;background:var(--card)}
+.thread-parent-content{max-height:240px;overflow:auto;overscroll-behavior:contain;padding-right:4px}
+.thread-parent-content .chat-photo img{max-height:160px}
+@media(prefers-reduced-motion:reduce){.sheet{animation:none}}
+
 </style>
 <!-- /bundled:chat-photos.css -->
 </head>
@@ -604,9 +636,11 @@ function pumpOriginals() {
   while (originalLoads < 2 && originalQueue.length) { originalLoads++; originalQueue.shift()().finally(() => { originalLoads--; pumpOriginals(); }); }
 }
 const originalObserver = new IntersectionObserver(entries => { for (const e of entries) if (e.isIntersecting) { originalObserver.unobserve(e.target); loadVisibleOriginal(e.target.querySelector("img")); } }, { rootMargin: '100px' });
-new MutationObserver(() => {
+const attachmentObserver = new MutationObserver(() => {
   document.querySelectorAll('[data-file-image]:not([data-observed])').forEach(img => { img.dataset.observed = '1'; originalObserver.observe(img.closest('.chat-photo')); });
-}).observe(document.querySelector('#app'), { childList: true, subtree: true });
+});
+attachmentObserver.observe(document.querySelector('#app'), { childList: true, subtree: true });
+attachmentObserver.observe(document.querySelector('#sheet'), { childList: true, subtree: true });
 
 </script>
 <!-- /bundled:chat-photos.js -->
@@ -713,6 +747,107 @@ function openImageReview(meta, getSource) {
 
 </script>
 <!-- /bundled:image-review.js -->
+<!-- bundled:message-threads.js -->
+<script>
+// Keep replies and pin events in the room's existing log stream so all members
+// receive them through the same live endpoint, without a second polling loop.
+const MESSAGE_REPLY = /^\[\[메시지답글:([\w-]+)\]\]\n?/;
+const MESSAGE_PIN = /^\[\[메시지고정:([\w-]+)\|(0|1)\|(\d{13})\]\]$/;
+const messageDrafts = new Map(), messageBusy = new Set(), messagePendingReplies = new Map();
+let messagePanel = null;
+const replyParent = l => String(l.내용 || '').match(MESSAGE_REPLY)?.[1] || '';
+const pinEvent = l => String(l.내용 || '').match(MESSAGE_PIN);
+const replyText = l => String(l.내용 || '').replace(MESSAGE_REPLY, '');
+function messageThreadState(t) {
+  const counts = new Map(), pins = new Map();
+  for (const l of t.rs) {
+    const parent = replyParent(l); if (parent) counts.set(parent, (counts.get(parent) || 0) + 1);
+    const p = pinEvent(l);
+    if (p && (!pins.has(p[1]) || +p[3] >= pins.get(p[1]).at)) pins.set(p[1], { on: p[2] === '1', at: +p[3] });
+  }
+  return { counts, pins: new Set([...pins].filter(([, p]) => p.on).map(([id]) => id)) };
+}
+function visibleRoomMessages(t) {
+  const list = (t.첫글 ? [{ id: t.id, 안건id: t.id, 작성자: t.작성자, 시각: t.시각, 내용: t.첫글, _first: true }] : []).concat(t.rs.filter(l => !replyParent(l) && !pinEvent(l)));
+  const ids = new Set(list.map(l => l.id));
+  for (const l of t.rs) { const parent = replyParent(l); if (parent && !ids.has(parent)) { ids.add(parent); list.push({ id: parent, 안건id: t.id, 내용: '원본 메시지가 삭제되었어요', 작성자: '', 시각: l.시각, _missing: true }); } }
+  return list.sort((a, b) => String(a.시각).localeCompare(String(b.시각)));
+}
+function messageRoot(room, id) {
+  const t = thList().find(t => t.id === room);
+  return t && visibleRoomMessages(t).find(l => l.id === id);
+}
+function messageActions(l, room, state) {
+  if (!l.id || !/^[\w-]+$/.test(l.id) || !/^[\w-]+$/.test(room)) return '';
+  const n = state.counts.get(l.id) || 0, pinned = state.pins.has(l.id);
+  return `<div class="message-actions">${!l._missing ? `<button data-message-pin="${l.id}" data-message-room="${room}" aria-pressed="${pinned}">${pinned ? '고정 해제' : '메시지 고정'}</button>` : ''}<button data-message-thread="${l.id}" data-message-room="${room}">${n ? `답글 ${n}개` : '쓰레드 답글'}</button></div>`;
+}
+function messagePinBar(t) {
+  const state = messageThreadState(t), count = visibleRoomMessages(t).filter(l => state.pins.has(l.id)).length;
+  return `<button class="message-pinbar" data-message-pins="${t.id}"><span>고정 메시지</span><b>${count}</b><span>모아보기 ›</span></button>`;
+}
+function messageExcerpt(l) { return thPlain(replyText(l)).replace(MESSAGE_PIN, '').replace(/\s+/g, ' ').slice(0, 150) || '첨부파일'; }
+function openMessageThread(room, id) {
+  const root = messageRoot(room, id); if (!root) return toast('메시지를 찾을 수 없어요');
+  messagePanel = { kind: 'thread', room, id };
+  openSheet(`<div class="thread-heading"><h3>메시지 쓰레드</h3><button class="ic" data-x aria-label="쓰레드 닫기">닫기</button></div><div class="thread-parent"><small>${esc(root.작성자 ? PNAME(logWho(root)) : '')} · ${esc(root.시각)}</small><div class="thread-parent-content">${thBody(root.내용)}</div><button class="ic" data-message-jump="${id}">대화에서 보기</button></div><div id="messageReplies" aria-live="polite"></div><div class="thread-compose"><label class="lbl" for="messageReplyText">이 메시지에 답글</label><textarea class="in" id="messageReplyText" maxlength="10000" placeholder="이 메시지에 대한 의견을 남겨 주세요">${esc(messageDrafts.get(id) || '')}</textarea><button class="btn" data-message-reply-send>답글 보내기</button></div>`);
+  refreshMessagePanels();
+}
+function openPinnedMessages(room) {
+  messagePanel = { kind: 'pins', room };
+  openSheet('<div class="thread-heading"><h3>고정 메시지</h3><button class="ic" data-x aria-label="고정 메시지 닫기">닫기</button></div><p class="caption">이 대화방의 팀원 모두가 볼 수 있어요. 메시지를 누르면 답글을 이어갈 수 있어요.</p><div id="pinnedMessages"></div>');
+  refreshMessagePanels();
+}
+function refreshMessagePanels() {
+  if (!D || !messagePanel || !$('#dim')?.classList.contains('on')) return;
+  const { room, id, kind } = messagePanel, t = thList().find(t => t.id === room); if (!t) return;
+  if (kind === 'pins' && $('#pinnedMessages')) {
+    const pins = messageThreadState(t).pins, roots = visibleRoomMessages(t).filter(l => pins.has(l.id));
+    $('#pinnedMessages').innerHTML = roots.map(l => `<article class="pinned-message"><button data-message-thread="${l.id}" data-message-room="${room}"><small>${esc(l.작성자 ? PNAME(logWho(l)) : '')} · ${esc(l.시각)}</small><p>${esc(messageExcerpt(l))}</p><span>쓰레드 열기 ›</span></button><button class="ic" data-message-pin="${l.id}" data-message-room="${room}">고정 해제</button></article>`).join('') || '<div class="empty">메시지 아래 ‘메시지 고정’을 누르면 여기에 모여요.</div>';
+  }
+  if (kind === 'thread' && $('#messageReplies')) {
+    const replies = t.rs.filter(l => replyParent(l) === id);
+    const html = `<div class="lbl">답글 ${replies.length}개</div>` + (replies.map(l => `<article class="message-reply"><small>${esc(PNAME(logWho(l)))} · ${esc(l.시각)}</small><div>${thBody(replyText(l), l.id)}</div>${logWho(l) === who || isBoss() ? `<button class="thdel" data-thdel="${l.id}">지우기</button>` : ''}</article>`).join('') || '<div class="empty">첫 답글을 남겨 보세요.</div>');
+    if ($('#messageReplies').innerHTML !== html) $('#messageReplies').innerHTML = html;
+    const send = document.querySelector('[data-message-reply-send]'); if (send) send.disabled = messageBusy.has('reply_' + id);
+  }
+}
+async function toggleMessagePin(room, id) {
+  const t = thList().find(t => t.id === room), root = messageRoot(room, id), key = 'pin_' + id;
+  if (!who || !t || !root || root._missing || messageBusy.has(key)) return;
+  messageBusy.add(key);
+  const on = !messageThreadState(t).pins.has(id), log = { id: uid('l_pin_'), 안건id: room, 작성자: who, 시각: stamp(), 내용: `[[메시지고정:${id}|${on ? 1 : 0}|${Date.now()}]]` };
+  try { await post({ type: 'save', kind: 'log', data: log }); if (!D.logs.some(l => l.id === log.id)) D.logs.push(log); if (thSel === room) thMsgsUpdate([]); refreshMessagePanels(); toast(on ? '메시지를 고정했어요' : '고정을 해제했어요'); }
+  catch { toast('고정 상태를 저장하지 못했어요. 다시 눌러 주세요'); }
+  finally { messageBusy.delete(key); }
+}
+async function sendMessageReply() {
+  if (messagePanel?.kind !== 'thread' || !who) return;
+  const { room, id } = messagePanel, text = $('#messageReplyText')?.value.trim(), key = 'reply_' + id;
+  if (!text || messageBusy.has(key) || !messageRoot(room, id)) return;
+  messageBusy.add(key); refreshMessagePanels();
+  const log = { id: messagePendingReplies.get(id) || uid('l_reply_'), 안건id: room, 작성자: who, 시각: stamp(), 내용: `[[메시지답글:${id}]]\n${text}` };
+  // Keep the same ID across a lost response, without replacing the user's text.
+  messagePendingReplies.set(id, log.id);
+  try {
+    await post({ type: 'save', kind: 'log', data: log }); if (!D.logs.some(l => l.id === log.id)) D.logs.push(log);
+    if ($('#messageReplyText')?.value.trim() === text && messagePanel?.id === id) $('#messageReplyText').value = '';
+    messagePendingReplies.delete(id); if ((messageDrafts.get(id) || '').trim() === text) messageDrafts.delete(id); if (thSel === room) thMsgsUpdate([]); refreshMessagePanels(); toast('쓰레드에 답글을 남겼어요');
+  } catch { toast('답글을 보내지 못했어요. 쓴 내용은 유지했어요'); }
+  finally { messageBusy.delete(key); refreshMessagePanels(); }
+}
+document.addEventListener('input', e => { if (e.target.id === 'messageReplyText' && messagePanel) messageDrafts.set(messagePanel.id, e.target.value); });
+document.addEventListener('click', e => {
+  const pin = e.target.closest('[data-message-pin]'); if (pin) return toggleMessagePin(pin.dataset.messageRoom, pin.dataset.messagePin);
+  const thread = e.target.closest('[data-message-thread]'); if (thread) return openMessageThread(thread.dataset.messageRoom, thread.dataset.messageThread);
+  const pins = e.target.closest('[data-message-pins]'); if (pins) return openPinnedMessages(pins.dataset.messagePins);
+  if (e.target.closest('[data-message-reply-send]')) return sendMessageReply();
+  const jump = e.target.closest('[data-message-jump]'); if (jump) { closeSheet(); const target = document.querySelector(`[data-message-id="${jump.dataset.messageJump}"]`); if (target) { target.scrollIntoView({ block: 'center', behavior: 'smooth' }); target.classList.add('message-highlight'); setTimeout(() => target.classList.remove('message-highlight'), 2500); } }
+});
+document.addEventListener('keydown', e => { if (e.target.id === 'messageReplyText' && e.key === 'Enter' && !e.isComposing && (e.ctrlKey || e.metaKey)) { e.preventDefault(); sendMessageReply(); } });
+
+</script>
+<!-- /bundled:message-threads.js -->
 <!-- bundled:dashboard-ui.js -->
 <script>
 function initialBoardTab() {
@@ -744,6 +879,7 @@ function boardHelp() {
     ['사진·파일 보내기', '입력칸 왼쪽 클립 → 첨부파일 첨부하기로 골라요. 캡처는 입력칸에서 Ctrl+V(맥은 ⌘V)로 붙여넣고 보내기를 눌러요. 여러 파일을 한 번에 고를 수 있어요. 한 번에 30개, 파일당 20MB까지 원본 그대로 보관해요.'],
     ['사진 크게 보기', '대화 속 사진이나 보내기 전 미리보기를 누르면 전체 화면으로 열려요. +/−, 마우스 휠, 두 손가락으로 확대하고 끌어서 디테일을 확인해요. 100%는 원본 픽셀 크기, 원본 다운로드는 파일 저장이에요.'],
     ['안건·클로드', '클립 메뉴에서 안건을 공유해요. 클로드 아이콘은 대화 내용을 물어볼 때 써요.'],
+    ['메시지 고정·쓰레드', '메시지 아래에서 고정하거나 쓰레드 답글을 눌러요. 고정 메시지는 대화방 위에서 모아 볼 수 있고, 답글은 해당 메시지 안에서 이어집니다. 팀원 모두에게 공유돼요.'],
     ['돌아가기', '대화가 길어져도 상단 제목과 뒤로가기 버튼은 화면 위에 남아 있어요.'],
   ] : g === 'todo' ? [
     ['나의 보드', '내 일정과 할 일, 메모, 내가 올린 제안을 한곳에서 봐요.'],
@@ -1385,11 +1521,11 @@ async function thPin(id) { const n = thSet(), o = jp(n?.내용, {}), pin = o.pin
 // 안 읽은 메시지: 기기마다 방별로 마지막 본 시각. 처음 쓰는 기기는 지금까지 것을 다 읽은 걸로
 let thSeenM = null; // 기기에 저장 못 하는 곳(미리보기)에서도 이번 화면 동안은 기억
 function thSeen(id, at) { if (!thSeenM) { thSeenM = jp(ls.get("ot-thseen") || "", null); if (!thSeenM) { thSeenM = {}; if (D) thList().forEach((t) => (thSeenM[t.id] = t.last)); ls.set("ot-thseen", JSON.stringify(thSeenM)); } } if (at) { thSeenM[id] = at; ls.set("ot-thseen", JSON.stringify(thSeenM)); } return thSeenM[id] || ""; }
-const thUnread = (t) => t.rs.filter((l) => l.시각 > thSeen(t.id) && logWho(l) !== who && l.작성자 !== who).length;
+const thUnread = (t) => t.rs.filter((l) => !pinEvent(l) && l.시각 > thSeen(t.id) && logWho(l) !== who && l.작성자 !== who).length;
 const thUnreadAll = () => (who && D ? thList().reduce((a, t) => a + thUnread(t), 0) : 0);
 const isBot = (l) => /^클로드/.test(l.작성자 || "");
 const scrollEnd = () => setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 30);
-const thPlain = (t) => String(t || "").replace(PHOTO_PATTERN, "📎 첨부파일").replace(/^🤖\s*/, "").replace(/\n?\[\[되돌리기:[^\]]*\]\]/g, "").replace(/\[\[안건:[\w]+\]\]/g, "📌 안건").replace(/\[\[담당:[\w]+\|([^\]]*)\]\]/g, "👤 담당자 정함: $1");
+const thPlain = (t) => String(t || "").replace(MESSAGE_REPLY, "↪ 답글 ").replace(MESSAGE_PIN, "메시지 고정 변경").replace(PHOTO_PATTERN, "📎 첨부파일").replace(/^🤖\s*/, "").replace(/\n?\[\[되돌리기:[^\]]*\]\]/g, "").replace(/\[\[안건:[\w]+\]\]/g, "📌 안건").replace(/\[\[담당:[\w]+\|([^\]]*)\]\]/g, "👤 담당자 정함: $1");
 function thItemCard(id) {
   const x = D.items.find((y) => y.id === id); if (!x) return "";
   const own = peopleOf(x.담당자).map(PNAME).join(", "), sub = [own ? "담당 " + own : "담당 없음", x.마감 ? md(x.마감) + (x.시간 ? " " + x.시간 : "") + " " + ddayTxt(x.마감) : ""].filter(Boolean).join(", ");
@@ -1463,7 +1599,7 @@ function thView() {
   let top = "";
   if (t.kind === "rec") { const x = D.recs.find((y) => y.id === t.id), sm = jp(x.정리, {});
     top = `<div class="mini"><div class="eyebrow">📝 회의록</div><b>${esc(String(sm.결론 || "").replace(/^\?\s*:\s*/, ""))}</b><div class="minib"><button data-act="thmin">${thMin ? "회의록 접기" : "회의록 보기"}</button><button data-act="mnpdf">PDF 받기</button></div></div>${thMin ? minutesHtml(x) : ""}`; }
-  return `<div class="chead"><button class="ic" data-thback aria-label="목록">‹</button><h2>${esc(t.제목)}${t.kind === "dm" ? ' <small>1:1</small>' : ""}</h2>${isBoss() ? `<button class="ic" data-act="thpin">${thPins().includes(t.id) ? "고정 풀기" : "맨 위 고정"}</button>${t.kind === "dm" ? "" : '<button class="ic" data-act="thren">이름 바꾸기</button>'}${t.kind === "rec" ? "" : '<button class="ic" data-act="thkill">방 지우기</button>'}` : ""}</div>${t.mem && t.mem.length ? `<div class="caption" style="margin:-6px 4px 10px">${t.mem.map(PNAME).join(", ")}</div>` : ""}${top}
+  return `<div class="chead"><button class="ic" data-thback aria-label="목록">‹</button><h2>${esc(t.제목)}${t.kind === "dm" ? ' <small>1:1</small>' : ""}</h2>${isBoss() ? `<button class="ic" data-act="thpin">${thPins().includes(t.id) ? "고정 풀기" : "맨 위 고정"}</button>${t.kind === "dm" ? "" : '<button class="ic" data-act="thren">이름 바꾸기</button>'}${t.kind === "rec" ? "" : '<button class="ic" data-act="thkill">방 지우기</button>'}` : ""}<div id="messagePinBar">${messagePinBar(t)}</div></div>${t.mem && t.mem.length ? `<div class="caption" style="margin:-6px 4px 10px">${t.mem.map(PNAME).join(", ")}</div>` : ""}${top}
     <div class="msgs">${thMsgsHtml(t)}</div>
     <div class="cbox"><div id="photoPreview">${photoPreview()}</div><input id="chatPhotoInput" type="file" multiple aria-label="파일 첨부" hidden><button class="cb" data-act="cattach" aria-label="첨부하기"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5 12.6 20a5.5 5.5 0 0 1-7.8-7.8l8.5-8.5a3.7 3.7 0 0 1 5.2 5.2l-8.5 8.5a1.8 1.8 0 0 1-2.6-2.6l7.8-7.8"/></svg></button><textarea id="cText" rows="1" aria-label="메시지" placeholder="메시지 보내기">${esc(cDraft)}</textarea><button class="cb" data-act="cask" aria-label="클로드에게 묻기">${CMARK}</button><button class="send" data-act="csend" ${photoJobs.has(thSel) || photoSends.has(thSel) ? "disabled" : ""}>${photoSends.has(thSel) ? "보내는 중…" : "보내기"}</button></div>`;
 }
@@ -1475,7 +1611,7 @@ function thReadTxt(t, l, w) {
   return n >= others.length ? '<span class="rd all">모두 읽음</span>' : n ? `<span class="rd">${n}명 읽음</span>` : '<span class="rd">안 읽음</span>';
 }
 function thMsgsHtml(t, fresh = []) {
-  const list = (t.첫글 ? [{ id: "", 작성자: t.작성자, 시각: t.시각, 내용: t.첫글 }] : []).concat(t.rs);
+  const list = visibleRoomMessages(t), messageState = messageThreadState(t);
   let day = "", prev = "", html = "";
   for (const l of list) {
     const d = String(l.시각).slice(0, 10); if (d !== day) { day = d; prev = ""; html += `<div class="mday">${dayTxt(d)}</div>`; }
@@ -1483,7 +1619,7 @@ function thMsgsHtml(t, fresh = []) {
     const dm2 = String(l.내용).trim().match(/^\[\[담당:([\w]+)\|([^\]]*)\]\]$/);
     if (dm2) { const x = D.items.find((y) => y.id === dm2[1]); html += `<div class="csys">👤 ${esc(PNAME(w))}: "${esc(x ? x.제목 : "안건")}" 담당을 <b>${esc(dm2[2])}</b>(으)로 정했어요</div>`; prev = ""; continue; }
     const pop = l.id && (fresh.includes(l.id) || l.id === thPop) ? "pop" : "";
-    html += `<div class="msg ${mine ? "me" : ""} ${w === "클로드" ? "bot" : ""} ${cont ? "cont" : ""} ${pop}">${!cont ? avHtml(w, "sm") : ""}<div class="mb">${!mine && !cont ? `<div class="mwho">${esc(w === "클로드" ? "클로드" : PNAME(w))}</div>` : ""}<div class="bub">${thBody(l.내용, l.id)}</div><div class="mt">${esc(String(l.시각).slice(11, 16))}${thReadTxt(t, l, w)}${(mine || isBoss()) && l.id ? `<button class="thdel" data-thdel="${l.id}">지우기</button>` : ""}</div></div></div>`;
+    html += `<div data-message-id="${esc(l.id)}" class="msg ${mine ? "me" : ""} ${w === "클로드" ? "bot" : ""} ${cont ? "cont" : ""} ${pop}">${!cont ? avHtml(w, "sm") : ""}<div class="mb">${!mine && !cont ? `<div class="mwho">${esc(w === "클로드" ? "클로드" : PNAME(w))}</div>` : ""}<div class="bub">${thBody(l.내용, l.id)}</div><div class="mt">${esc(String(l.시각).slice(11, 16))}${thReadTxt(t, l, w)}${(mine || isBoss()) && l.id && !l._first && !l._missing ? `<button class="thdel" data-thdel="${l.id}">지우기</button>` : ""}</div>${messageActions(l, t.id, messageState)}</div></div>`;
   }
   for (const n of thTyping) html += `<div class="msg pop">${avHtml(n, "sm")}<div class="mb"><div class="mwho">${esc(PNAME(n))}</div><div class="bub dots"><i></i><i></i><i></i></div></div></div>`;
   if (thBusy === t.id) html += `<div class="msg bot pop">${avHtml("클로드", "sm")}<div class="mb"><div class="mwho">클로드</div><div class="bub dots"><i></i><i></i><i></i></div></div></div>`;
@@ -1495,7 +1631,9 @@ function thMsgsUpdate(fresh) {
   const box = $(".msgs"), t = thList().find((x) => x.id === thSel); if (!box || !t) return;
   const near = window.innerHeight + window.scrollY >= document.body.scrollHeight - 160;
   box.innerHTML = thMsgsHtml(t, fresh); if (t.rs.length) thSeen(t.id, t.rs.at(-1).시각);
-  if (near || fresh.length) scrollEnd();
+  const pins = $('#messagePinBar'); if (pins) pins.innerHTML = messagePinBar(t);
+  refreshMessagePanels();
+  if (!$('#dim').classList.contains('on') && (near || fresh.some(id => { const l = D.logs.find(l => l.id === id); return l && !replyParent(l) && !pinEvent(l); }))) scrollEnd();
 }
 async function thLive() {
   if (!D || DEMO || tab !== "chat" || !thSel || document.visibilityState !== "visible" || liveBusy) return;
@@ -1615,6 +1753,7 @@ document.addEventListener("input", (e) => { if (e.target.id === "cText") { cDraf
 // ── 그리기 ──
 function render() {
   if (!D) return;
+  queueMicrotask(refreshMessagePanels);
   { const k = (tab === "chat" && thSel) || (tab === "rec" && recSel) || ""; if (k && !navKey) navPush(); else if (!k && navKey) navBack(); navKey = k; }
   const pc = isPC();
   $("#nav").style.display = pc || (tab === "chat" && thSel) ? "none" : "";
@@ -1785,7 +1924,7 @@ document.addEventListener("input", (e) => {
   const p = parseQuick(v); h.textContent = `→ "${p.title || "?"}", 담당 ${(p.owners.length ? p.owners : [who]).join(", ")}, ${p.due ? "마감 " + md(p.due) + "(" + WDK[new Date(p.due + "T00:00:00").getDay()] + ")" : "마감 없음"}`;
 });
 document.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.id === "qText") { e.preventDefault(); document.querySelector('[data-act="qadd"]')?.click(); } });
-document.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.id === "pw") tryLogin(); if (e.key === "Enter" && e.target.id === "lText") document.querySelector('[data-act="ladd"]')?.click(); if (e.key === "Escape") closeSheet(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.id === "pw") tryLogin(); if (e.key === "Enter" && e.target.id === "lText") document.querySelector('[data-act="ladd"]')?.click(); if (e.key === "Escape" && !imageReview?.open) closeSheet(); });
 let wasPC = isPC(); addEventListener("resize", () => { if (isPC() !== wasPC) { wasPC = isPC(); if (D) render(); } });
 setInterval(() => { if (D && !$("#dim").classList.contains("on") && !edit) reload(true); }, 5 * 60 * 1000);
 // 쓰레드를 열어 두면 30초마다 새 댓글 확인 (댓글을 쓰는 중이면 건너뜀)

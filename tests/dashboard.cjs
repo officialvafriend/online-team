@@ -22,7 +22,7 @@ const files = new Map(); let failLog = false, uploadCount = 0, readCount = 0, ac
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   const browser = await chromium.launch({ headless: true, channel: "chrome" });
   try {
-    const page = await browser.newPage({ viewport: { width: 1254, height: 884 } });
+    const page = await browser.newPage({ reducedMotion: 'reduce', viewport: { width: 1254, height: 884 } });
     const errors = []; page.on('pageerror', e => { errors.push(e.message); console.error('PAGE:', e.message); });
     await page.addInitScript(() => { localStorage.setItem('ot-key', 'test-key'); localStorage.setItem('ot-who', '보혜'); });
     await page.route('https://cdn.jsdelivr.net/**', r => r.abort());
@@ -164,6 +164,44 @@ const files = new Map(); let failLog = false, uploadCount = 0, readCount = 0, ac
     assert.equal((state.logs[2].내용.match(/\[\[파일:/g) || []).length, 3);
     assert.ok(state.logs[2].내용.startsWith('시안 3장 한 번에 공유합니다'));
     assert.equal(await page.locator('.attachment-image').count(), 4);
+    // Pin and discuss the photo message without mixing replies into the main chat.
+    const rootMessage = state.logs[0].id;
+    await page.locator(`[data-message-pin="${rootMessage}"]`).click();
+    await page.waitForFunction(() => document.querySelector('.message-pinbar b').textContent === '1');
+    assert.equal(await page.locator('.msgs [data-message-id]').count(), 3);
+    await page.locator('[data-message-pins]').click();
+    await page.locator(`#pinnedMessages [data-message-thread="${rootMessage}"]`).click();
+    await page.locator('.thread-parent .chat-photo img:not([hidden])').waitFor();
+    await page.locator('#messageReplyText').fill('두 번째 시안 색상으로 진행해 주세요');
+    failLog = true;
+    await page.locator('[data-message-reply-send]').click();
+    await page.waitForFunction(() => !messageBusy.size);
+    assert.equal(await page.locator('#messageReplyText').inputValue(), '두 번째 시안 색상으로 진행해 주세요');
+    failLog = false;
+    await page.locator('[data-message-reply-send]').click();
+    await page.locator('.message-reply').waitFor();
+    assert.match(await page.locator('#messageReplies').innerText(), /두 번째 시안 색상으로 진행해 주세요/);
+    assert.equal(await page.locator('.msgs [data-message-id]').count(), 3);
+    // Simulate another teammate's reply arriving via the actual live update function.
+    state.logs.push({ id: 'l_reply_remote', 안건id: 'n_room1', 작성자: '시원', 시각: '2026-11-03 14:59', 내용: `[[메시지답글:${rootMessage}]]\n네, 수정해서 공유할게요` });
+    await page.evaluate(() => thLive());
+    await page.waitForFunction(() => document.querySelectorAll('.message-reply').length === 2);
+    await page.screenshot({ path: path.join(root, '../outputs/online-team-message-thread.png') });
+    await page.locator('[aria-label="쓰레드 닫기"]').click();
+    await page.waitForFunction(() => !sheetPushed && navSkip === 0);
+    assert.match(await page.locator(`[data-message-id="${rootMessage}"]`).innerText(), /답글 2개/);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.locator('.side [data-tab="chat"]').click(); await page.locator('[data-th="n_room1"]').click();
+    assert.equal(await page.locator('.message-pinbar b').innerText(), '1');
+    await page.locator(`[data-message-thread="${rootMessage}"]`).click();
+    assert.equal(await page.locator('.message-reply').count(), 2);
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.screenshot({ path: path.join(root, '../outputs/online-team-message-thread-mobile.png') });
+    await page.locator('[aria-label="쓰레드 닫기"]').click(); await page.waitForFunction(() => !sheetPushed && navSkip === 0);
+    await page.locator(`[data-message-pin="${rootMessage}"]`).click();
+    await page.waitForFunction(() => document.querySelector('.message-pinbar b').textContent === '0');
+    await page.setViewportSize({ width: 1254, height: 884 });
     // Long chat headers remain reachable after scrolling to the latest message.
     await page.evaluate(() => { for (let i = 0; i < 80; i++) D.logs.push({ id: 'long_' + i, 안건id: 'n_room1', 작성자: '진', 시각: '2026-11-03 14:01', 내용: '긴 대화 확인 ' + i }); render(); scrollTo(0, document.body.scrollHeight); });
     const head = await page.locator('.chead').boundingBox(); assert.ok(head.y >= -1 && head.y < 20, JSON.stringify(head));
@@ -200,7 +238,7 @@ const files = new Map(); let failLog = false, uploadCount = 0, readCount = 0, ac
     await page.setViewportSize({ width: 1254, height: 884 });
     await page.screenshot({ path: path.join(root, '../outputs/online-team-desktop.png') });
     assert.deepEqual(errors, []);
-    console.log('PASS: multi-select, append, individual removal, grouped send, batch retry, original byte integrity, large preview, fullscreen, 100%/200%, wheel zoom, drag pan, mobile pinch, viewer back, retry, reload, clipboard, document, sticky header, favorites, desktop/mobile');
+    console.log('PASS: message pins, threaded replies, reply retry, live teammate replies, reload, mobile threads, multi-select, append, individual removal, grouped send, batch retry, original byte integrity, large preview, fullscreen, 100%/200%, wheel zoom, drag pan, mobile pinch, viewer back, retry, reload, clipboard, document, sticky header, favorites, desktop/mobile');
   } finally { await browser.close(); server.close(); }
 })().catch(e => { console.error(e); server.close(); process.exitCode = 1; });
 

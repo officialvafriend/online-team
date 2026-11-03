@@ -140,6 +140,8 @@ function pumpOriginals() {
   while (originalLoads < 2 && originalQueue.length) { originalLoads++; originalQueue.shift()().finally(() => { originalLoads--; pumpOriginals(); }); }
 }
 const originalObserver = new IntersectionObserver(entries => { for (const e of entries) if (e.isIntersecting) { originalObserver.unobserve(e.target); loadVisibleOriginal(e.target.querySelector("img")); } }, { rootMargin: '100px' });
-new MutationObserver(() => {
+const attachmentObserver = new MutationObserver(() => {
   document.querySelectorAll('[data-file-image]:not([data-observed])').forEach(img => { img.dataset.observed = '1'; originalObserver.observe(img.closest('.chat-photo')); });
-}).observe(document.querySelector('#app'), { childList: true, subtree: true });
+});
+attachmentObserver.observe(document.querySelector('#app'), { childList: true, subtree: true });
+attachmentObserver.observe(document.querySelector('#sheet'), { childList: true, subtree: true });

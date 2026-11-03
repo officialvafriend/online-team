@@ -93,3 +93,35 @@
 .attachment-drafts.multiple .photo-preview{grid-template-columns:minmax(0,1fr) 32px;padding:8px;gap:6px}
 .attachment-drafts.multiple .photo-preview>[data-photo-remove]{min-width:32px;width:32px;padding:4px}
 @media(max-width:599px){.attachment-drafts.multiple{grid-template-columns:repeat(2,minmax(0,1fr))}.attachment-drafts{max-height:230px}.attachment-drafts.multiple .photo-preview img{height:80px}.attachment-drafts.multiple .photo-preview span{font-size:12px}}
+
+.message-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.message-actions button{min-height:36px;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;color:var(--ink2);background:var(--card)}
+.message-actions button[aria-pressed=true]{background:var(--ac-soft);color:var(--ac)}
+.message-pinbar{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:10px 14px;margin:0 0 12px;border-radius:10px;background:var(--card);color:var(--ink2);font-size:13px}
+.message-pinbar b{color:var(--ac)}
+.message-pinbar span:last-child{margin-left:auto;color:var(--ac);font-weight:600}
+.thread-heading{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.thread-parent{margin-top:18px;padding:14px;background:var(--bg);border-radius:12px}
+.thread-parent small,.message-reply small,.pinned-message small{display:block;color:var(--ink2);font-size:12px;margin-bottom:8px}
+.thread-parent-content{font-size:14px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+.thread-parent-content .attachment{width:100%;max-width:100%}
+.thread-parent-content .chat-photo img{max-height:220px}
+.message-reply{padding:16px 0;border-bottom:1px solid var(--line2);font-size:15px;line-height:1.6;overflow-wrap:anywhere;white-space:pre-wrap}
+.message-reply .thdel{display:block;padding:8px 0;font-size:12px}
+.thread-compose{position:sticky;bottom:-22px;margin-top:18px;padding:12px 0 0;background:var(--card)}
+.thread-compose .lbl{display:block;margin:0 0 8px}
+.thread-compose textarea{font-size:15px;min-height:72px}
+.thread-compose .btn{height:46px;margin-top:8px;font-size:15px}
+.pinned-message{padding:16px 0;border-bottom:1px solid var(--line2)}
+.pinned-message>button:first-child{display:block;width:100%;text-align:left}
+.pinned-message p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px;line-height:1.5}
+.pinned-message span{display:block;color:var(--ac);font-size:13px;font-weight:600;margin-top:8px}
+.message-highlight{outline:2px solid var(--ac);outline-offset:5px;border-radius:12px;scroll-margin-top:90px}
+@media(max-width:599px){.message-actions button{min-height:44px}.thread-compose{bottom:-22px}}
+
+#messagePinBar{flex-basis:100%;width:100%}
+.message-pinbar{margin-bottom:0}
+.thread-heading{position:sticky;top:-26px;z-index:2;padding:12px 0;background:var(--card)}
+.thread-parent-content{max-height:240px;overflow:auto;overscroll-behavior:contain;padding-right:4px}
+.thread-parent-content .chat-photo img{max-height:160px}
+@media(prefers-reduced-motion:reduce){.sheet{animation:none}}
