@@ -17,16 +17,17 @@ const state = { ok: true, at: '2026-11-03 14:00', meetings: [], items: [], recs:
   { id: 'n_room2', 종류: '쓰레드', 제목: '다른 대화방', 작성자: '보혜', 내용: '', 만든시각: '2026-11-03 12:00' },
   ...['한섭', '보혜', '시원', '진'].map((p, i) => ({ id: 'n_profile' + i, 종류: '프로필', 작성자: p, 제목: p + '의 한 줄 상태', 내용: '{}' })),
 ] };
-const files = new Map(); let failLog = false, uploadCount = 0, readCount = 0, activeUploads = 0, peakUploads = 0;
+const files = new Map(), readsById = new Map(); let failLog = false, uploadCount = 0, readCount = 0, activeUploads = 0, peakUploads = 0;
 (async () => {
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   const browser = await chromium.launch({ headless: true, channel: "chrome" });
   try {
-    const page = await browser.newPage({ reducedMotion: 'reduce', viewport: { width: 1254, height: 884 } });
+    const context = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1254, height: 884 } });
+    const page = await context.newPage();
     const errors = []; page.on('pageerror', e => { errors.push(e.message); console.error('PAGE:', e.message); });
     await page.addInitScript(() => { localStorage.setItem('ot-key', 'test-key'); localStorage.setItem('ot-who', '보혜'); });
-    await page.route('https://cdn.jsdelivr.net/**', r => r.abort());
-    await page.route('https://script.google.com/**', async route => {
+    await page.context().route('https://cdn.jsdelivr.net/**', r => r.abort());
+    const mockApi = async route => {
       const req = route.request(); let out = state;
       if (req.method() === 'POST') {
         const b = req.postDataJSON(); out = { ok: true };
@@ -37,14 +38,15 @@ const files = new Map(); let failLog = false, uploadCount = 0, readCount = 0, ac
           const file = { id: 'test_file_' + b.uploadId, name: b.name, mime: b.mime, size: bytes.length, sha256: b.sha256 };
           files.set(file.id, { ...file, b64: b.b64 }); out = { ok: true, file };
         }
-        if (b.type === 'attachmentRead') { readCount++; out = { ok: true, ...files.get(b.id) }; }
+        if (b.type === 'attachmentRead') { readCount++; readsById.set(b.id, (readsById.get(b.id) || 0) + 1); out = { ok: true, ...files.get(b.id) }; }
         if (b.type === 'save') {
           if (b.kind === 'log' && failLog) out = { ok: false, error: 'test_failure' };
           else { const list = state[b.kind === 'log' ? 'logs' : 'notes']; const i = list.findIndex(x => x.id === b.data.id); if (i < 0) list.push(b.data); else list[i] = b.data; }
         }
       } else if (req.url().includes('live=1')) out = { ok: true, logs: state.logs, seen: {}, typing: [] };
       await route.fulfill({ json: out });
-    });
+    };
+    await page.context().route('https://script.google.com/**', mockApi);
     const url = `http://127.0.0.1:${server.address().port}`;
     await page.goto(url);
     await page.getByRole('heading', { name: '나의 보드', exact: true }).waitFor();
@@ -120,10 +122,16 @@ const files = new Map(); let failLog = false, uploadCount = 0, readCount = 0, ac
     assert.deepEqual(fs.readFileSync(await download.path()), Buffer.from(original));
     await page.locator('.iv-close').click(); await page.waitForFunction(() => !imageReview && navSkip === 0);
     // The saved photo can be read after a complete reload, without local draft state.
-    await page.reload({ waitUntil: "domcontentloaded" }); await page.locator('.side [data-tab="chat"]').click();
-    await page.locator('[data-th="n_room1"]').click();
+    await page.locator('#cText').fill('새로고침해도 남아 있는 초안');
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.locator('#cText').waitFor();
+    assert.equal(await page.locator('#cText').inputValue(), '새로고침해도 남아 있는 초안');
+    await page.locator('#cText').fill('');
     await page.locator('.chat-photo img:not([hidden])').waitFor();
     assert.equal(await page.locator('.chat-photo img').evaluate(img => img.naturalWidth), 2400);
+    assert.equal(readCount, 0, 'reload must reuse the verified original from persistent cache');
+    const freshTab = await page.context().newPage(); await freshTab.goto(url);
+    await freshTab.getByRole('heading', { name: '나의 보드', exact: true }).waitFor(); await freshTab.close();
     // Clipboard screenshots preserve their PNG bytes too.
     await page.locator('#cText').evaluate((el, bytes) => {
       const dt = new DataTransfer(); dt.items.add(new File([new Uint8Array(bytes)], '캡처.png', { type: 'image/png' }));
@@ -212,6 +220,12 @@ const files = new Map(); let failLog = false, uploadCount = 0, readCount = 0, ac
     const galleryDownload = await galleryDownloadPromise;
     assert.equal(galleryDownload.suggestedFilename(), '시안 3.png');
     assert.deepEqual(fs.readFileSync(await galleryDownload.path()), Buffer.from(original));
+    const beforeGalleryReload = readCount;
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => document.querySelector('.iv-info')?.textContent.includes('2,400'));
+    assert.equal(await page.locator('.iv-gallery-count').innerText(), '2 / 3');
+    assert.equal(await page.locator('.iv-title strong').innerText(), '시안 3.png');
+    assert.equal(readCount, beforeGalleryReload, 'gallery reload should not fetch cached originals');
     await page.locator('.iv-close').click(); await page.waitForFunction(() => !imageReview && navSkip === 0);
     await page.setViewportSize({ width: 1254, height: 884 });
     // Pin and discuss the photo message without mixing replies into the main chat.
@@ -241,10 +255,15 @@ const files = new Map(); let failLog = false, uploadCount = 0, readCount = 0, ac
     await page.waitForFunction(() => !sheetPushed && navSkip === 0);
     assert.match(await page.locator(`[data-message-id="${rootMessage}"]`).innerText(), /답글 2개/);
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.locator('.side [data-tab="chat"]').click(); await page.locator('[data-th="n_room1"]').click();
+    await page.locator('#cText').waitFor();
     assert.equal(await page.locator('.message-pinbar b').innerText(), '1');
     await page.locator(`[data-message-thread="${rootMessage}"]`).click();
     assert.equal(await page.locator('.message-reply').count(), 2);
+    await page.locator('#messageReplyText').fill('쓰레드 초안도 유지');
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.locator('#messageReplyText').waitFor();
+    assert.equal(await page.locator('#messageReplyText').inputValue(), '쓰레드 초안도 유지');
+    await page.locator('#messageReplyText').fill('');
     await page.setViewportSize({ width: 390, height: 844 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.screenshot({ path: path.join(root, '../outputs/online-team-message-thread-mobile.png') });
@@ -287,8 +306,28 @@ const files = new Map(); let failLog = false, uploadCount = 0, readCount = 0, ac
     const mobileHead = await page.locator('.chead').boundingBox(); assert.ok(mobileHead.y >= -1 && mobileHead.y < 20);
     await page.setViewportSize({ width: 1254, height: 884 });
     await page.screenshot({ path: path.join(root, '../outputs/online-team-desktop.png') });
+    // A recipient with an empty cache should prefetch neighboring originals.
+    const recipient = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1254, height: 884 } });
+    await recipient.route('https://cdn.jsdelivr.net/**', r => r.abort()); await recipient.route('https://script.google.com/**', mockApi);
+    const recipientPage = await recipient.newPage();
+    await recipientPage.addInitScript(() => { localStorage.setItem('ot-key', 'test-key'); localStorage.setItem('ot-who', '시원'); });
+    await recipientPage.goto(url + '?view=chat'); await recipientPage.locator('[data-th="n_room1"]').click();
+    await recipientPage.locator(`[data-message-id="${galleryMessage}"] .chat-photo`).first().click();
+    const galleryIds = [...state.logs[2].내용.matchAll(/\[\[파일:([A-Za-z0-9+/=]+)\]\]/g)].map(m => JSON.parse(Buffer.from(m[1], 'base64').toString()).id);
+    await recipientPage.waitForFunction(ids => ids.every(id => attachmentCache.has(id)), galleryIds);
+    await recipientPage.evaluate(ids => Promise.all(ids.map(id => attachmentCache.get(id))), galleryIds);
+    const warmedCounts = galleryIds.map(id => readsById.get(id));
+    assert.ok(warmedCounts.every(n => n >= 1), 'neighbor originals must have been prefetched');
+    await recipientPage.locator('.iv-next').click();
+    await recipientPage.waitForFunction(() => document.querySelector('.iv-info')?.textContent.includes('2,400'));
+    assert.deepEqual(galleryIds.map(id => readsById.get(id)), warmedCounts, 'next image must reuse prefetch');
+    await recipientPage.reload({ waitUntil: 'domcontentloaded' });
+    await recipientPage.waitForFunction(() => document.querySelector('.iv-info')?.textContent.includes('2,400'));
+    assert.equal(await recipientPage.locator('.iv-gallery-count').innerText(), '2 / 3');
+    assert.deepEqual(galleryIds.map(id => readsById.get(id)), warmedCounts, 'recipient reload must reuse cached originals');
+    await recipient.close();
     assert.deepEqual(errors, []);
-    console.log('PASS: gallery buttons, arrow keys, touch swipes, draft gallery, zoomed pan isolation, current-image download, message pins, threaded replies, reply retry, live teammate replies, reload, mobile threads, multi-select, append, individual removal, grouped send, batch retry, original byte integrity, large preview, fullscreen, 100%/200%, wheel zoom, drag pan, mobile pinch, viewer back, retry, reload, clipboard, document, sticky header, favorites, desktop/mobile');
+    console.log('PASS: recipient neighbor prefetch, no-network cached navigation, room reload restore, thread/draft restore, gallery position restore, cached original reload, fresh-tab start preference, gallery buttons, arrow keys, touch swipes, draft gallery, zoomed pan isolation, current-image download, message pins, threaded replies, reply retry, live teammate replies, reload, mobile threads, multi-select, append, individual removal, grouped send, batch retry, original byte integrity, large preview, fullscreen, 100%/200%, wheel zoom, drag pan, mobile pinch, viewer back, retry, reload, clipboard, document, sticky header, favorites, desktop/mobile');
   } finally { await browser.close(); server.close(); }
 })().catch(e => { console.error(e); server.close(); process.exitCode = 1; });
 

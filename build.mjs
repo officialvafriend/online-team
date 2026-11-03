@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 const file = new URL('index.html', import.meta.url);
 let html = fs.readFileSync(file, 'utf8');
-for (const [source, tag] of [['chat-photos.css', 'style'], ['chat-photos.js', 'script'], ['image-review.js', 'script'], ['message-threads.js', 'script'], ['dashboard-ui.js', 'script']]) {
+for (const [source, tag] of [['chat-photos.css', 'style'], ['chat-photos.js', 'script'], ['original-cache.js', 'script'], ['image-review.js', 'script'], ['message-threads.js', 'script'], ['dashboard-ui.js', 'script'], ['view-state.js', 'script']]) {
   const text = fs.readFileSync(new URL(source, import.meta.url), 'utf8');
   const block = `<!-- bundled:${source} -->\n<${tag}>\n${text}\n</${tag}>\n<!-- /bundled:${source} -->`;
   const escaped = source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

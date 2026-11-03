@@ -1,5 +1,6 @@
 function initialBoardTab() {
   const allowed = ['me', 'chat', 'todo', 'meet', 'idea', 'ho', 'rec', 'fix', 'home'];
+  const restored = reloadBoardView(); if (restored) return restored.tab;
   const linked = new URLSearchParams(location.search).get('view');
   if (allowed.includes(linked)) return linked;
   try { const start = localStorage.getItem('ot-start-' + (localStorage.getItem('ot-who') || '')); return allowed.includes(start) ? start : 'me'; }

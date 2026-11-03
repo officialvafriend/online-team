@@ -547,14 +547,17 @@ function selectChatFiles(files) {
   if (rejected) toast('파일당 20MB, 한 번에 30개까지 첨부할 수 있어요. 나머지 파일은 선택 목록에 유지했어요');
 }
 async function digestFile(bytes) { return [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(b => b.toString(16).padStart(2, '0')).join(''); }
-async function loadAttachment(m) {
+async function loadAttachment(m, { priority = true } = {}) {
+  if (priority) prioritizeOriginal(m.id);
   if (attachmentCache.has(m.id)) return attachmentCache.get(m.id);
   const job = (async () => {
-    const r = await post({ type: 'attachmentRead', id: m.id });
+    const cached = await cachedOriginalFile(m); if (cached) return URL.createObjectURL(cached);
+    const r = await originalNetworkRead(m.id, () => post({ type: 'attachmentRead', id: m.id }), priority);
     if (typeof r.b64 !== 'string' || r.b64.length > 27962028) throw new Error('file');
     const bytes = Uint8Array.from(atob(r.b64), c => c.charCodeAt(0));
     if (bytes.length !== m.size || await digestFile(bytes) !== m.sha256) throw new Error('checksum');
-    return URL.createObjectURL(new Blob([bytes], { type: m.mime }));
+    const blob = new Blob([bytes], { type: m.mime }); await cacheOriginalFile(m, blob);
+    return URL.createObjectURL(blob);
   })();
   attachmentCache.set(m.id, job);
   try { return await job; } catch (e) { attachmentCache.delete(m.id); throw e; }
@@ -585,7 +588,7 @@ async function sendChatPhoto(text) {
             photo.meta = result.file;
           }
           // The sender already holds the verified original. Never download it again.
-          attachmentCache.set(photo.meta.id, Promise.resolve(photo.url)); completed++; progress();
+          attachmentCache.set(photo.meta.id, Promise.resolve(photo.url)); await cacheOriginalFile(photo.meta, photo.file); completed++; progress();
         } catch (e) { uploadError = e; }
       }
     }
@@ -608,7 +611,7 @@ function showAttachment(token, origin) {
   const container = origin?.closest('.bub,.thread-parent-content,.message-reply');
   const metas = container ? [...container.querySelectorAll('[data-file-token]')].map(el => decodeAttachment(el.dataset.fileToken)).filter(meta => meta && previewableImage(meta.mime)) : [m];
   const unique = metas.filter((meta, i) => metas.findIndex(other => other.id === meta.id) === i);
-  const items = unique.length ? unique.map(meta => ({ meta, getSource: () => loadAttachment(meta) })) : [{ meta: m, getSource: () => loadAttachment(m) }];
+  const items = unique.length ? unique.map(meta => ({ meta, getSource: (priority = true) => loadAttachment(meta, { priority }) })) : [{ meta: m, getSource: () => loadAttachment(m) }];
   return openImageReview(m, () => loadAttachment(m), items, Math.max(0, items.findIndex(item => item.meta.id === m.id)));
 }
 document.addEventListener('change', e => { if (e.target.id === 'chatPhotoInput') { selectChatFiles([...e.target.files]); e.target.value = ''; } });
@@ -646,7 +649,7 @@ let originalLoads = 0; const originalQueue = [];
 async function loadVisibleOriginal(img) {
   const card = img.closest('[data-file-token]'), m = card && decodeAttachment(card.dataset.fileToken); if (!m) return;
   originalQueue.push(async () => {
-    try { const url = await loadAttachment(m); if (img.isConnected) { img.onload = () => { const label = card.querySelector('.attachment-resolution'); if (label) label.textContent = `${img.naturalWidth.toLocaleString()} × ${img.naturalHeight.toLocaleString()} px · ${fileSize(m.size)} · 원본`; }; img.src = url; img.hidden = false; card.querySelector('.photo-loading')?.remove(); } }
+    try { const pending = loadAttachment(m); prefetchAttachmentNeighbors(card); const url = await pending; if (img.isConnected) { img.onload = () => { const label = card.querySelector('.attachment-resolution'); if (label) label.textContent = `${img.naturalWidth.toLocaleString()} × ${img.naturalHeight.toLocaleString()} px · ${fileSize(m.size)} · 원본`; }; img.src = url; img.hidden = false; card.querySelector('.photo-loading')?.remove(); } }
     catch { if (card.isConnected) card.querySelector('.photo-loading').textContent = '눌러서 원본 보기'; }
   });
   pumpOriginals();
@@ -663,6 +666,84 @@ attachmentObserver.observe(document.querySelector('#sheet'), { childList: true, 
 
 </script>
 <!-- /bundled:chat-photos.js -->
+<!-- bundled:original-cache.js -->
+<script>
+// Cache verified original Blobs, never resized previews. IndexedDB is optional.
+let originalDatabase, originalCacheIdentity = '', originalCacheScope;
+const originalReadQueue = []; let originalReadActive = 0;
+function originalDatabaseOpen() {
+  if (!originalDatabase) originalDatabase = new Promise(resolve => {
+    try {
+      const request = indexedDB.open('online-team-originals', 1);
+      request.onupgradeneeded = () => request.result.createObjectStore('files', { keyPath: 'key' });
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = request.onblocked = () => resolve(null);
+    } catch { resolve(null); }
+  });
+  return originalDatabase;
+}
+async function originalScopedKey(id) {
+  const identity = KEY + '|' + who;
+  if (identity !== originalCacheIdentity) { originalCacheIdentity = identity; originalCacheScope = digestFile(new TextEncoder().encode(identity)); }
+  return (await originalCacheScope) + '|' + id;
+}
+async function cachedOriginalFile(meta) {
+  try {
+    const db = await originalDatabaseOpen(); if (!db) return null;
+    const key = await originalScopedKey(meta.id);
+    const entry = await new Promise(resolve => { const r = db.transaction('files').objectStore('files').get(key); r.onsuccess = () => resolve(r.result); r.onerror = () => resolve(null); });
+    if (!entry || entry.sha256 !== meta.sha256 || entry.blob.size !== meta.size || Date.now() - entry.at > 30 * 864e5) return null;
+    if (await digestFile(await entry.blob.arrayBuffer()) !== meta.sha256) return null;
+    return entry.blob;
+  } catch { return null; }
+}
+async function cacheOriginalFile(meta, blob) {
+  try {
+    const db = await originalDatabaseOpen(); if (!db) return;
+    const key = await originalScopedKey(meta.id);
+    await new Promise(resolve => {
+      const tx = db.transaction('files', 'readwrite');
+      tx.objectStore('files').put({ key, blob, sha256: meta.sha256, at: Date.now() });
+      tx.oncomplete = tx.onerror = tx.onabort = resolve;
+    });
+    const tx = db.transaction('files', 'readwrite'), store = tx.objectStore('files'), list = store.getAll();
+    list.onsuccess = () => {
+      let size = 0, count = 0;
+      for (const entry of list.result.sort((a, b) => b.at - a.at)) {
+        size += entry.blob.size; count++;
+        if (count > 80 || size > 200 * 1024 * 1024 || Date.now() - entry.at > 30 * 864e5) store.delete(entry.key);
+      }
+    };
+  } catch {} // Private browsing or a full disk must not block viewing/sending.
+}
+function originalNetworkRead(id, read, priority = true) {
+  return new Promise((resolve, reject) => {
+    const job = { id, read, resolve, reject };
+    priority ? originalReadQueue.unshift(job) : originalReadQueue.push(job);
+    pumpOriginalReads();
+  });
+}
+function prioritizeOriginal(id) {
+  const at = originalReadQueue.findIndex(job => job.id === id);
+  if (at > 0) originalReadQueue.unshift(originalReadQueue.splice(at, 1)[0]);
+}
+function pumpOriginalReads() {
+  while (originalReadActive < 3 && originalReadQueue.length) {
+    const job = originalReadQueue.shift(); originalReadActive++;
+    Promise.resolve().then(job.read).then(job.resolve, job.reject).finally(() => { originalReadActive--; pumpOriginalReads(); });
+  }
+}
+function prefetchAttachmentNeighbors(card) {
+  const container = card?.closest('.bub,.thread-parent-content,.message-reply'); if (!container) return;
+  const cards = [...container.querySelectorAll('.attachment-image[data-file-token]')], at = cards.indexOf(card);
+  for (const index of [at + 1, at + 2, at - 1, at - 2]) {
+    const meta = cards[index] && decodeAttachment(cards[index].dataset.fileToken);
+    if (meta) loadAttachment(meta, { priority: false }).catch(() => {});
+  }
+}
+
+</script>
+<!-- /bundled:original-cache.js -->
 <!-- bundled:image-review.js -->
 <script>
 // Image review uses the original Blob throughout, including the draft preview.
@@ -762,6 +843,7 @@ function openImageReview(meta, getSource, gallery = null, startIndex = 0) {
   dialog.querySelectorAll('[data-iv]:not([data-iv="background"])').forEach(b => b.disabled = true);
   async function loadSource() {
     const version = ++loadVersion, current = items[index]; meta = current.meta; getSource = current.getSource;
+    if (items.every(item => item.meta.id && item.meta.sha256)) dialog.dataset.restoreGallery = JSON.stringify({ tokens: items.map(item => encodeAttachment(item.meta)), index });
     ready = false; source = ''; canvas.hidden = true; loading.hidden = false; loading.textContent = '원본 불러오는 중…';
     dialog.querySelector('.iv-title strong').textContent = meta.name; img.alt = meta.name;
     dialog.querySelector('.iv-gallery-count').textContent = items.length > 1 ? `${index + 1} / ${items.length}` : '';
@@ -769,7 +851,9 @@ function openImageReview(meta, getSource, gallery = null, startIndex = 0) {
     dialog.querySelector('.iv-download').disabled = true;
     info.textContent = '원본 이미지를 불러오고 있어요'; output.value = '—';
     try {
-      const url = await current.getSource(); if (!dialog.open || version !== loadVersion) return;
+      const pending = current.getSource(true);
+      for (const nearby of [index + 1, index + 2, index - 1, index - 2]) if (items[nearby]) Promise.resolve(items[nearby].getSource(false)).catch(() => {});
+      const url = await pending; if (!dialog.open || version !== loadVersion) return;
       source = url; img.src = source; await img.decode(); if (!dialog.open || version !== loadVersion) return;
       ready = true; canvas.hidden = false; loading.hidden = true;
       info.textContent = `${img.naturalWidth.toLocaleString()} × ${img.naturalHeight.toLocaleString()} px · ${fileSize(meta.size)} · 원본`;
@@ -894,6 +978,7 @@ document.addEventListener('keydown', e => { if (e.target.id === 'messageReplyTex
 <script>
 function initialBoardTab() {
   const allowed = ['me', 'chat', 'todo', 'meet', 'idea', 'ho', 'rec', 'fix', 'home'];
+  const restored = reloadBoardView(); if (restored) return restored.tab;
   const linked = new URLSearchParams(location.search).get('view');
   if (allowed.includes(linked)) return linked;
   try { const start = localStorage.getItem('ot-start-' + (localStorage.getItem('ot-who') || '')); return allowed.includes(start) ? start : 'me'; }
@@ -946,6 +1031,92 @@ document.addEventListener('click', e => {
 
 </script>
 <!-- /bundled:dashboard-ui.js -->
+<!-- bundled:view-state.js -->
+<script>
+// Restore this tab on reload, while fresh visits still use the selected start page.
+let boardRestoreAttempted = false, boardRestoring = false, boardPersistTimer;
+function boardViewKey() {
+  let user = ''; try { user = localStorage.getItem('ot-who') || ''; } catch {}
+  user = ({ 정한섭: '한섭', 안보혜: '보혜', 김시원: '시원', 김진: '진' })[user] || user;
+  return 'ot-last-view-v1-' + (/[?&]demo=1/.test(location.search) || window.PREVIEW_DATA ? 'demo-' : 'live-') + user;
+}
+function reloadBoardView() {
+  try {
+    const kind = performance.getEntriesByType('navigation')[0]?.type;
+    if (!['reload', 'back_forward'].includes(kind)) return null;
+    const saved = JSON.parse(sessionStorage.getItem(boardViewKey()) || 'null');
+    return saved?.version === 1 && ['me', 'chat', 'todo', 'meet', 'idea', 'ho', 'rec', 'fix', 'home'].includes(saved.tab) ? saved : null;
+  } catch { return null; }
+}
+function persistBoardView() {
+  if (boardRestoring || !D || !PEOPLE.includes(who)) return;
+  try {
+    const panel = $('#dim')?.classList.contains('on') && messagePanel && ($('#messageReplies') || $('#pinnedMessages')) ? { ...messagePanel, scroll: $('#sheet').scrollTop, draft: $('#messageReplyText')?.value || '' } : null;
+    const header = document.querySelector('.chead')?.getBoundingClientRect().bottom || 0;
+    const file = [...document.querySelectorAll('.msgs [data-file-image]')].find(img => { const r = img.closest('.attachment').getBoundingClientRect(); return r.bottom > header && r.top < innerHeight; });
+    const message = [...document.querySelectorAll('.msgs [data-message-id]')].find(el => { const r = el.getBoundingClientRect(); return r.bottom > header && r.top < innerHeight; });
+    const anchor = file?.closest('.attachment') || message;
+    sessionStorage.setItem(boardViewKey(), JSON.stringify({ version: 1, tab, th: tab === 'chat' ? thSel : '', rec: tab === 'rec' ? recSel : '', meet: meetSel, panel, gallery: imageReview?.open && imageReview.dataset.restoreGallery ? JSON.parse(imageReview.dataset.restoreGallery) : null,
+      draft: tab === 'chat' && thSel ? ($('#cText')?.value || cDraft || '').slice(0, 10000) : '',
+      scroll: { y: scrollY, file: file?.dataset.fileImage || '', message: message?.dataset.messageId || '', offset: anchor?.getBoundingClientRect().top || 0 } }));
+  } catch {}
+}
+function scheduleBoardViewSave() { clearTimeout(boardPersistTimer); boardPersistTimer = setTimeout(persistBoardView, 80); }
+function resumeBoardScreen() {
+  if (boardRestoreAttempted) { render(); return needWho(); }
+  boardRestoreAttempted = true;
+  if (FULL[who]) { who = FULL[who]; ls.set('ot-who', who); }
+  const saved = reloadBoardView(); boardRestoring = !!saved;
+  if (saved && PEOPLE.includes(who)) {
+    tab = saved.tab;
+    if (tab === 'chat') { thSel = thList().some(t => t.id === saved.th) ? saved.th : ''; cDraft = thSel && typeof saved.draft === 'string' ? saved.draft : ''; }
+    if (tab === 'rec') recSel = D.recs.some(r => r.id === saved.rec) ? saved.rec : '';
+    if (D.meetings.some(m => m.id === saved.meet)) meetSel = saved.meet;
+  }
+  render(); needWho();
+  requestAnimationFrame(() => {
+    if (saved && thSel && saved.panel?.room === thSel) {
+      if (saved.panel.kind === 'pins') openPinnedMessages(thSel);
+      else if (saved.panel.kind === 'thread' && messageRoot(thSel, saved.panel.id)) {
+        if (typeof saved.panel.draft === 'string') messageDrafts.set(saved.panel.id, saved.panel.draft.slice(0, 10000));
+        openMessageThread(thSel, saved.panel.id);
+      }
+      if ($('#dim').classList.contains('on')) $('#sheet').scrollTop = Math.max(0, saved.panel.scroll || 0);
+    }
+    if (thSel && Array.isArray(saved?.gallery?.tokens) && saved.gallery.tokens.length <= 30) {
+      const t = thList().find(t => t.id === thSel), content = t && [t.첫글, ...t.rs.map(l => l.내용)].join('\n');
+      const tokens = saved.gallery.tokens;
+      if (content && tokens.every(token => typeof token === 'string' && decodeAttachment(token) && content.includes('[[파일:' + token + ']]'))) {
+        const items = tokens.map(token => { const meta = decodeAttachment(token); return { meta, getSource: (priority = true) => loadAttachment(meta, { priority }) }; });
+        const index = Math.max(0, Math.min(items.length - 1, +saved.gallery.index || 0));
+        if (items.length) openImageReview(items[index].meta, items[index].getSource, items, index);
+      }
+    }
+    boardRestoring = false;
+    if (saved?.scroll) restoreBoardScroll(saved.scroll);
+    persistBoardView();
+  });
+}
+function restoreBoardScroll(position) {
+  const valid = id => typeof id === 'string' && /^[\w-]{1,200}$/.test(id);
+  const target = () => valid(position.file) && document.querySelector(`[data-file-image="${position.file}"]`)?.closest('.attachment') || valid(position.message) && document.querySelector(`[data-message-id="${position.message}"]`);
+  const restore = () => { const el = target(); scrollTo(0, el ? scrollY + el.getBoundingClientRect().top - (position.offset || 0) : Math.max(0, position.y || 0)); };
+  // Image heights can change after the room appears; keep the saved anchor until
+  // the user acts, rather than jumping to the newest message on every load.
+  const events = new AbortController(), stop = () => events.abort();
+  for (const name of ['wheel', 'pointerdown', 'keydown']) window.addEventListener(name, stop, { once: true, passive: true, signal: events.signal });
+  $('#app').addEventListener('load', restore, { capture: true, signal: events.signal });
+  setTimeout(stop, 15000); restore();
+}
+document.addEventListener('click', () => queueMicrotask(scheduleBoardViewSave));
+document.addEventListener('input', scheduleBoardViewSave);
+window.addEventListener('scroll', scheduleBoardViewSave, { passive: true });
+window.addEventListener('pagehide', persistBoardView);
+window.addEventListener('beforeunload', persistBoardView);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') persistBoardView(); });
+
+</script>
+<!-- /bundled:view-state.js -->
 <script>
 // 온라인팀 회의 보드 — 데이터는 구글시트(회의, 안건, 기록 탭), Apps Script(비밀번호)로 읽고 씀. 비밀번호는 이 기기에만 저장
 const APPS_URL = "https://script.google.com/macros/s/AKfycbxjg-ChnaEq4HTy-6K4mhEv8y840A7DPDUIL3BFFKla-N4NT4iVd_suGQ3jaYaG8SG59g/exec";
@@ -1037,7 +1208,7 @@ function renderLogin(msg) {
 async function tryLogin() {
   const pw = $("#pw").value.trim(); if (!pw && !DEMO) return;
   $("#go").disabled = true; $("#go").textContent = "여는 중…";
-  try { D = await load(pw); KEY = pw; if ($("#remember").checked) ls.set("ot-key", pw); render(); needWho(); }
+  try { D = await load(pw); KEY = pw; if ($("#remember").checked) ls.set("ot-key", pw); resumeBoardScreen(); }
   catch (e) { renderLogin({ key: "비밀번호가 맞지 않아요", setup: "시트 연결 준비 중이에요 (Apps Script 배포 후 열려요)" }[e.code] || "불러오지 못했어요. 인터넷을 확인해 주세요"); }
 }
 
@@ -1796,6 +1967,7 @@ document.addEventListener("input", (e) => { if (e.target.id === "cText") { cDraf
 function render() {
   if (!D) return;
   queueMicrotask(refreshMessagePanels);
+  queueMicrotask(scheduleBoardViewSave);
   { const k = (tab === "chat" && thSel) || (tab === "rec" && recSel) || ""; if (k && !navKey) navPush(); else if (!k && navKey) navBack(); navKey = k; }
   const pc = isPC();
   $("#nav").style.display = pc || (tab === "chat" && thSel) ? "none" : "";
@@ -1983,9 +2155,9 @@ function demoData() {
 }
 const needWho = () => { if (FULL[who]) { who = FULL[who]; ls.set("ot-who", who); } if (!PEOPLE.includes(who)) askWho(); };
 (async () => {
-  if (DEMO) { D = demoData(); KEY = "demo"; render(); return needWho(); }
+  if (DEMO) { D = demoData(); KEY = "demo"; return resumeBoardScreen(); }
   if (!KEY) return renderLogin();
-  try { D = await load(KEY); render(); needWho(); } catch (e) { KEY = ""; ls.set("ot-key", null); renderLogin(e.code === "key" ? "비밀번호가 바뀌었어요. 다시 넣어 주세요" : e.code === "setup" ? "시트 연결 준비 중이에요" : "불러오지 못했어요. 인터넷을 확인해 주세요"); }
+  try { D = await load(KEY); resumeBoardScreen(); } catch (e) { KEY = ""; ls.set("ot-key", null); renderLogin(e.code === "key" ? "비밀번호가 바뀌었어요. 다시 넣어 주세요" : e.code === "setup" ? "시트 연결 준비 중이에요" : "불러오지 못했어요. 인터넷을 확인해 주세요"); }
 })();
 </script>
 </body>

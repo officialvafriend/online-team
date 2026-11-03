@@ -41,14 +41,17 @@ function selectChatFiles(files) {
   if (rejected) toast('파일당 20MB, 한 번에 30개까지 첨부할 수 있어요. 나머지 파일은 선택 목록에 유지했어요');
 }
 async function digestFile(bytes) { return [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(b => b.toString(16).padStart(2, '0')).join(''); }
-async function loadAttachment(m) {
+async function loadAttachment(m, { priority = true } = {}) {
+  if (priority) prioritizeOriginal(m.id);
   if (attachmentCache.has(m.id)) return attachmentCache.get(m.id);
   const job = (async () => {
-    const r = await post({ type: 'attachmentRead', id: m.id });
+    const cached = await cachedOriginalFile(m); if (cached) return URL.createObjectURL(cached);
+    const r = await originalNetworkRead(m.id, () => post({ type: 'attachmentRead', id: m.id }), priority);
     if (typeof r.b64 !== 'string' || r.b64.length > 27962028) throw new Error('file');
     const bytes = Uint8Array.from(atob(r.b64), c => c.charCodeAt(0));
     if (bytes.length !== m.size || await digestFile(bytes) !== m.sha256) throw new Error('checksum');
-    return URL.createObjectURL(new Blob([bytes], { type: m.mime }));
+    const blob = new Blob([bytes], { type: m.mime }); await cacheOriginalFile(m, blob);
+    return URL.createObjectURL(blob);
   })();
   attachmentCache.set(m.id, job);
   try { return await job; } catch (e) { attachmentCache.delete(m.id); throw e; }
@@ -79,7 +82,7 @@ async function sendChatPhoto(text) {
             photo.meta = result.file;
           }
           // The sender already holds the verified original. Never download it again.
-          attachmentCache.set(photo.meta.id, Promise.resolve(photo.url)); completed++; progress();
+          attachmentCache.set(photo.meta.id, Promise.resolve(photo.url)); await cacheOriginalFile(photo.meta, photo.file); completed++; progress();
         } catch (e) { uploadError = e; }
       }
     }
@@ -102,7 +105,7 @@ function showAttachment(token, origin) {
   const container = origin?.closest('.bub,.thread-parent-content,.message-reply');
   const metas = container ? [...container.querySelectorAll('[data-file-token]')].map(el => decodeAttachment(el.dataset.fileToken)).filter(meta => meta && previewableImage(meta.mime)) : [m];
   const unique = metas.filter((meta, i) => metas.findIndex(other => other.id === meta.id) === i);
-  const items = unique.length ? unique.map(meta => ({ meta, getSource: () => loadAttachment(meta) })) : [{ meta: m, getSource: () => loadAttachment(m) }];
+  const items = unique.length ? unique.map(meta => ({ meta, getSource: (priority = true) => loadAttachment(meta, { priority }) })) : [{ meta: m, getSource: () => loadAttachment(m) }];
   return openImageReview(m, () => loadAttachment(m), items, Math.max(0, items.findIndex(item => item.meta.id === m.id)));
 }
 document.addEventListener('change', e => { if (e.target.id === 'chatPhotoInput') { selectChatFiles([...e.target.files]); e.target.value = ''; } });
@@ -140,7 +143,7 @@ let originalLoads = 0; const originalQueue = [];
 async function loadVisibleOriginal(img) {
   const card = img.closest('[data-file-token]'), m = card && decodeAttachment(card.dataset.fileToken); if (!m) return;
   originalQueue.push(async () => {
-    try { const url = await loadAttachment(m); if (img.isConnected) { img.onload = () => { const label = card.querySelector('.attachment-resolution'); if (label) label.textContent = `${img.naturalWidth.toLocaleString()} × ${img.naturalHeight.toLocaleString()} px · ${fileSize(m.size)} · 원본`; }; img.src = url; img.hidden = false; card.querySelector('.photo-loading')?.remove(); } }
+    try { const pending = loadAttachment(m); prefetchAttachmentNeighbors(card); const url = await pending; if (img.isConnected) { img.onload = () => { const label = card.querySelector('.attachment-resolution'); if (label) label.textContent = `${img.naturalWidth.toLocaleString()} × ${img.naturalHeight.toLocaleString()} px · ${fileSize(m.size)} · 원본`; }; img.src = url; img.hidden = false; card.querySelector('.photo-loading')?.remove(); } }
     catch { if (card.isConnected) card.querySelector('.photo-loading').textContent = '눌러서 원본 보기'; }
   });
   pumpOriginals();

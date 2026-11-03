@@ -95,6 +95,7 @@ function openImageReview(meta, getSource, gallery = null, startIndex = 0) {
   dialog.querySelectorAll('[data-iv]:not([data-iv="background"])').forEach(b => b.disabled = true);
   async function loadSource() {
     const version = ++loadVersion, current = items[index]; meta = current.meta; getSource = current.getSource;
+    if (items.every(item => item.meta.id && item.meta.sha256)) dialog.dataset.restoreGallery = JSON.stringify({ tokens: items.map(item => encodeAttachment(item.meta)), index });
     ready = false; source = ''; canvas.hidden = true; loading.hidden = false; loading.textContent = '원본 불러오는 중…';
     dialog.querySelector('.iv-title strong').textContent = meta.name; img.alt = meta.name;
     dialog.querySelector('.iv-gallery-count').textContent = items.length > 1 ? `${index + 1} / ${items.length}` : '';
@@ -102,7 +103,9 @@ function openImageReview(meta, getSource, gallery = null, startIndex = 0) {
     dialog.querySelector('.iv-download').disabled = true;
     info.textContent = '원본 이미지를 불러오고 있어요'; output.value = '—';
     try {
-      const url = await current.getSource(); if (!dialog.open || version !== loadVersion) return;
+      const pending = current.getSource(true);
+      for (const nearby of [index + 1, index + 2, index - 1, index - 2]) if (items[nearby]) Promise.resolve(items[nearby].getSource(false)).catch(() => {});
+      const url = await pending; if (!dialog.open || version !== loadVersion) return;
       source = url; img.src = source; await img.decode(); if (!dialog.open || version !== loadVersion) return;
       ready = true; canvas.hidden = false; loading.hidden = true;
       info.textContent = `${img.naturalWidth.toLocaleString()} × ${img.naturalHeight.toLocaleString()} px · ${fileSize(meta.size)} · 원본`;
