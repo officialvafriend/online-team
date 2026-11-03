@@ -26,3 +26,5 @@ if (b.type === 'attachmentRead') return attachmentRead(b);
 - `?view=me` 링크는 나의 보드를 바로 엽니다.
 
 검증: Playwright와 Chrome이 설치된 환경에서 `node tests/dashboard.cjs`. 실제 운영 대화방에 메시지를 쓰지 않고 저장 API를 모의하여 원본 바이트 보존, 재시도, 새로고침, 붙여넣기, 문서 첨부, PC·모바일, 뒤로가기, 화면 설정을 확인합니다.
+
+화면 코드를 수정한 뒤 `node build.mjs`를 실행하여 `chat-photos.css`, `chat-photos.js`, `dashboard-ui.js`를 `index.html`에 포함합니다. 배포 페이지는 별도 스크립트 요청 없이 열립니다.

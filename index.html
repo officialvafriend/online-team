@@ -352,7 +352,60 @@ body{letter-spacing:-.01em;font-feature-settings:"tnum" 1}
     #app > .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px} #app > .chips::-webkit-scrollbar{display:none} #app > .chips .chip{flex:none}
   }
 </style>
-<link rel="stylesheet" href="chat-photos.css">
+<!-- bundled:chat-photos.css -->
+<style>
+.cbox{flex-wrap:wrap}
+#photoPreview{flex:0 0 100%;min-width:0}
+#photoPreview:empty{display:none}
+.photo-preview{display:flex;align-items:center;gap:12px;padding:8px;background:var(--line);border-radius:12px;width:100%}
+.photo-preview img{width:64px;height:64px;object-fit:cover;border-radius:8px}
+.photo-preview span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.photo-preview button{flex:none;min-width:44px;min-height:44px;border-radius:8px}
+.chat-photo{display:block;max-width:100%;margin:4px 0;line-height:0}
+.chat-photo img{display:block;width:260px;max-width:100%;height:auto;max-height:320px;object-fit:contain;border-radius:10px}
+.photo-full{display:block;width:100%;height:auto;margin:16px 0;border-radius:12px}
+.cbox .photo-pick{display:grid;place-items:center;cursor:pointer;flex:none;width:44px;height:44px;border-radius:50%}
+.photo-pick:focus-within{outline:2px solid var(--ac);outline-offset:2px}
+.photo-input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+.msgs{padding-bottom:160px}
+@media(min-width:900px){.msgs{padding-bottom:8px}}
+.photo-preview small{display:block;color:var(--sub);margin-top:4px}
+.attachment{display:flex;flex-direction:column;gap:6px;min-width:150px;max-width:280px;white-space:normal}
+.attachment .file-name{font-size:13px;font-weight:700;overflow-wrap:anywhere}
+.attachment small{font-size:12px;opacity:.8}
+.file-download{min-height:44px;padding:8px 12px;border-radius:10px;background:var(--ac-soft);color:var(--ac);font-size:13px;font-weight:700;text-align:center}
+.photo-loading{display:grid;place-items:center;min-height:100px;min-width:150px;font-size:13px;line-height:1.5}
+.chat-photo img[hidden]{display:none}
+.file-icon{font-size:28px}
+.attachment-pick{background:var(--ac-soft);border-radius:14px;margin-top:16px}
+.photo-zoom{display:block;overflow:auto;width:100%;max-height:65vh;cursor:zoom-in}
+.photo-zoom.original-size{cursor:zoom-out}
+.photo-zoom.original-size img{width:auto;max-width:none}
+.sheet:has(.photo-zoom){width:min(1100px,100%)}
+.chead{position:sticky;top:0;z-index:24;background:var(--bg);padding:10px 0;margin-top:0;border-bottom:1px solid var(--line2)}
+.chead .ic:first-child{min-width:44px;min-height:44px}
+.favorite-head{display:flex;align-items:center;justify-content:space-between;margin:20px 8px 2px;color:var(--sub);font-size:12px;font-weight:700}
+.favorite-star{font-size:22px}
+.favorite-choices{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.favorite-choices label{display:flex;align-items:center;gap:8px;min-height:44px;background:var(--line);border-radius:10px;padding:8px 12px}
+.favorite-choices input{width:18px;height:18px;accent-color:var(--ac)}
+.board-help{margin-left:auto;white-space:nowrap;color:var(--ink2);font-size:13px}
+.pchead{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.mobile-help{display:flex;justify-content:flex-end;margin:-10px 0 4px}
+.team-status-heading{font-size:13px;font-weight:700;margin:4px 2px 10px;color:var(--ink2)}
+.team-status-heading small{font-size:12px;font-weight:400;color:var(--sub);margin-left:6px}
+.team-status{align-items:stretch;gap:10px;padding:4px 2px 8px}
+.status-person{box-sizing:border-box;width:132px;padding:12px 10px;background:var(--card);border:1px solid var(--line2);border-radius:14px;text-align:center;justify-content:flex-start}
+.status-person small{font-size:12px;font-weight:400;line-height:1.5;white-space:normal;overflow-wrap:anywhere;color:var(--ink2)}
+.status-new{justify-content:center;padding:0 8px}
+.help-section{margin-top:20px}
+.help-section h4{font-size:15px;margin-bottom:6px}
+.help-section p{font-size:14px;line-height:1.7;color:var(--ink2)}
+@media(max-width:899px){.favorite-head{margin-top:8px}.chead{top:0}.team-status .status-person{width:122px}.cbox{gap:3px}.cbox .send{padding:0 12px}.cbox .cb{width:40px;min-width:40px}.cbox .photo-pick{width:40px}.side{overflow-y:auto}}
+@media(min-width:900px){.side{overflow-y:auto}.side .foot{position:static;margin-top:auto}.chead{top:0}.cbox{bottom:16px}}
+
+</style>
+<!-- /bundled:chat-photos.css -->
 </head>
 <body>
 <div class="wrap" id="app"></div>
@@ -361,8 +414,191 @@ body{letter-spacing:-.01em;font-feature-settings:"tnum" 1}
 </div></nav>
 <div class="dim" id="dim"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast"></div>
-<script src="chat-photos.js"></script>
-<script src="dashboard-ui.js"></script>
+<!-- bundled:chat-photos.js -->
+<script>
+// Original bytes live privately in Drive. Messages contain only validated metadata.
+const chatPhotos = new Map(), photoJobs = new Set(), photoSends = new Set();
+const PHOTO_PATTERN = /\[\[파일:([A-Za-z0-9+/=]+)\]\]/g;
+const attachmentCache = new Map();
+const previewableImage = mime => /^image\/(jpeg|png|webp|gif|avif|bmp)$/.test(mime);
+const fileSize = n => n < 1048576 ? `${Math.ceil(n / 1024)} KB` : `${(n / 1048576).toFixed(1)} MB`;
+function encodeAttachment(meta) { return btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(meta)))); }
+function decodeAttachment(token) {
+  try {
+    if (token.length > 4000) return null;
+    const m = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(token), c => c.charCodeAt(0))));
+    return /^[A-Za-z0-9_-]{10,200}$/.test(m.id) && typeof m.name === 'string' && m.name.length <= 240 && /^[\w.+-]+\/[\w.+-]+$/.test(m.mime) && Number.isInteger(m.size) && m.size > 0 && m.size <= 20 * 1024 * 1024 && /^[a-f0-9]{64}$/.test(m.sha256) ? m : null;
+  } catch { return null; }
+}
+function attachmentHtml(token) {
+  const m = decodeAttachment(token); if (!m) return esc('첨부파일 정보를 읽을 수 없어요');
+  return `<div class="attachment" data-file-token="${token}">${previewableImage(m.mime) ? `<button class="chat-photo" data-photo-view="${token}" aria-label="사진 크게 보기"><span class="photo-loading">사진 불러오는 중…</span><img data-file-image="${m.id}" alt="${esc(m.name)}" hidden></button>` : '<span class="file-icon" aria-hidden="true">📄</span>'}<span class="file-name">${esc(m.name)}</span><small>${fileSize(m.size)} · 원본</small><button class="file-download" data-file-download="${token}">원본 다운로드</button></div>`;
+}
+function photoPreview() {
+  const p = chatPhotos.get(thSel), busy = photoJobs.has(thSel) || photoSends.has(thSel);
+  return p || busy ? `<div class="photo-preview">${p ? `${previewableImage(p.file.type) ? `<img src="${p.url}" alt="보낼 사진">` : '<span class="file-icon">📄</span>'}<span>${esc(p.file.name)}<small>${fileSize(p.file.size)} · 원본 그대로</small></span>` : '<span>파일을 준비하고 있어요…</span>'}<button type="button" data-photo-remove ${busy ? 'disabled' : ''} aria-label="첨부 파일 빼기">✕</button></div>` : '';
+}
+function updatePhotoPreview() {
+  const el = $('#photoPreview'); if (el) el.innerHTML = photoPreview();
+  const send = document.querySelector('[data-act="csend"]');
+  if (send) { send.disabled = photoJobs.has(thSel) || photoSends.has(thSel); send.textContent = photoSends.has(thSel) ? '보내는 중…' : '보내기'; }
+}
+function selectChatFile(file) {
+  const room = thSel;
+  if (!file || !room || photoSends.has(room)) return;
+  if (!file.size) return toast('빈 파일은 첨부할 수 없어요');
+  if (file.size > 20 * 1024 * 1024) return toast('파일당 20MB까지 원본으로 첨부할 수 있어요');
+  const old = chatPhotos.get(room); if (old) URL.revokeObjectURL(old.url);
+  chatPhotos.set(room, { file, url: URL.createObjectURL(file), id: uid('l_file_') });
+  cDraft = $('#cText')?.value || ''; updatePhotoPreview();
+}
+async function digestFile(bytes) { return [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(b => b.toString(16).padStart(2, '0')).join(''); }
+async function loadAttachment(m) {
+  if (attachmentCache.has(m.id)) return attachmentCache.get(m.id);
+  const job = (async () => {
+    const r = await post({ type: 'attachmentRead', id: m.id });
+    if (typeof r.b64 !== 'string' || r.b64.length > 27962028) throw new Error('file');
+    const bytes = Uint8Array.from(atob(r.b64), c => c.charCodeAt(0));
+    if (bytes.length !== m.size || await digestFile(bytes) !== m.sha256) throw new Error('checksum');
+    return URL.createObjectURL(new Blob([bytes], { type: m.mime }));
+  })();
+  attachmentCache.set(m.id, job);
+  try { return await job; } catch (e) { attachmentCache.delete(m.id); throw e; }
+}
+async function sendChatPhoto(text) {
+  const room = thSel, photo = chatPhotos.get(room);
+  if (!photo || photoSends.has(room)) return;
+  if (text.length > 4000) return toast('파일과 함께 보내는 글은 4,000자까지 적어 주세요');
+  const author = who;
+  photoSends.add(room); updatePhotoPreview();
+  try {
+    if (!photo.meta) {
+      const bytes = await photo.file.arrayBuffer(), sha256 = await digestFile(bytes);
+      if (DEMO) {
+        photo.meta = { id: 'demo_' + photo.id, name: photo.file.name.slice(0, 240), mime: photo.file.type || 'application/octet-stream', size: photo.file.size, sha256 };
+        attachmentCache.set(photo.meta.id, Promise.resolve(photo.url));
+      } else {
+        const result = await post({ type: 'attachmentUpload', uploadId: photo.id, name: photo.file.name, mime: photo.file.type || 'application/octet-stream', b64: await b64(photo.file), sha256 });
+        if (!result.file || result.file.sha256 !== sha256 || result.file.size !== photo.file.size) throw new Error('checksum');
+        photo.meta = result.file;
+      }
+    }
+    const token = encodeAttachment(photo.meta);
+    if (!decodeAttachment(token)) throw new Error('file');
+    const log = { id: photo.id, 안건id: room, 시각: stamp(), 작성자: author, 내용: (text ? text + '\n' : '') + '[[파일:' + token + ']]' };
+    await post({ type: 'save', kind: 'log', data: log });
+    if (!D.logs.some(l => l.id === log.id)) D.logs.push(log);
+    chatPhotos.delete(room); if (!DEMO) URL.revokeObjectURL(photo.url);
+    if (thSel === room) { const current = $('#cText')?.value || ''; cDraft = current.trim() === text ? '' : current; render(); scrollEnd(); }
+    toast(DEMO ? '예시 화면에 첨부했어요' : '원본 파일을 보냈어요');
+  } catch (e) { toast('보내지 못했어요. 첨부한 파일은 그대로 있으니 다시 보내 주세요'); }
+  finally { photoSends.delete(room); updatePhotoPreview(); }
+}
+async function showAttachment(token) {
+  const m = decodeAttachment(token); if (!m) return;
+  openSheet(`<h3>${esc(m.name)}</h3><p class="caption">원본 화질 · ${fileSize(m.size)}</p><div id="originalPhoto"><p class="caption">원본을 불러오고 있어요…</p></div><div class="btns"><button class="btn sec2" data-file-download="${token}">원본 다운로드</button><button class="btn gray" data-photo-close>닫기</button></div>`);
+  const holder = $('#originalPhoto');
+  try { const url = await loadAttachment(m); if (holder.isConnected) holder.innerHTML = `<button class="photo-zoom" aria-label="사진 100% 크기로 보기"><img class="photo-full" src="${url}" alt="${esc(m.name)}"></button><p class="caption">사진을 누르면 100% 크기로 볼 수 있어요</p>`; }
+  catch { if (holder.isConnected) holder.innerHTML = '<p class="warn">원본을 불러오지 못했어요. 닫고 다시 열어 주세요</p>'; }
+}
+document.addEventListener('change', e => { if (e.target.id === 'chatPhotoInput') { selectChatFile(e.target.files[0]); e.target.value = ''; } });
+document.addEventListener('paste', e => {
+  if (!e.target.closest('.cbox')) return;
+  const image = [...(e.clipboardData?.items || [])].find(i => i.kind === 'file' && i.type.startsWith('image/'));
+  if (image) { e.preventDefault(); selectChatFile(image.getAsFile()); }
+});
+document.addEventListener('dragover', e => { if (e.target.closest('.cbox') && e.dataTransfer?.types.includes('Files')) e.preventDefault(); });
+document.addEventListener('drop', e => { if (e.target.closest('.cbox') && e.dataTransfer?.files.length) { e.preventDefault(); selectChatFile(e.dataTransfer.files[0]); } });
+document.addEventListener('click', async e => {
+  if (e.target.closest('[data-photo-remove]') && !photoSends.has(thSel)) { const p = chatPhotos.get(thSel); if (p) URL.revokeObjectURL(p.url); chatPhotos.delete(thSel); updatePhotoPreview(); }
+  const pick = e.target.closest('[data-pick-file]'); if (pick) { closeSheet(); $('#chatPhotoInput')?.click(); }
+  const view = e.target.closest('[data-photo-view]'); if (view) return showAttachment(view.dataset.photoView);
+  const zoom = e.target.closest('.photo-zoom'); if (zoom) { const big = zoom.classList.toggle('original-size'); zoom.setAttribute('aria-label', big ? '사진을 화면에 맞추기' : '사진 100% 크기로 보기'); }
+  const download = e.target.closest('[data-file-download]');
+  if (download && !download.disabled) {
+    const m = decodeAttachment(download.dataset.fileDownload); if (!m) return;
+    download.disabled = true;
+    try { const a = document.createElement('a'); a.href = await loadAttachment(m); a.download = m.name; a.click(); }
+    catch { toast('다운로드하지 못했어요. 다시 눌러 주세요'); }
+    finally { download.disabled = false; }
+  }
+  if (e.target.closest('[data-photo-close]')) closeSheet();
+});
+// Load only visible images, without putting image bytes into the board or its logs.
+let originalLoads = 0; const originalQueue = [];
+async function loadVisibleOriginal(img) {
+  const card = img.closest('[data-file-token]'), m = card && decodeAttachment(card.dataset.fileToken); if (!m) return;
+  originalQueue.push(async () => {
+    try { const url = await loadAttachment(m); if (img.isConnected) { img.src = url; img.hidden = false; card.querySelector('.photo-loading')?.remove(); } }
+    catch { if (card.isConnected) card.querySelector('.photo-loading').textContent = '눌러서 원본 보기'; }
+  });
+  pumpOriginals();
+}
+function pumpOriginals() {
+  while (originalLoads < 2 && originalQueue.length) { originalLoads++; originalQueue.shift()().finally(() => { originalLoads--; pumpOriginals(); }); }
+}
+const originalObserver = new IntersectionObserver(entries => { for (const e of entries) if (e.isIntersecting) { originalObserver.unobserve(e.target); loadVisibleOriginal(e.target.querySelector("img")); } }, { rootMargin: '100px' });
+new MutationObserver(() => {
+  document.querySelectorAll('[data-file-image]:not([data-observed])').forEach(img => { img.dataset.observed = '1'; originalObserver.observe(img.closest('.chat-photo')); });
+}).observe(document.querySelector('#app'), { childList: true, subtree: true });
+
+</script>
+<!-- /bundled:chat-photos.js -->
+<!-- bundled:dashboard-ui.js -->
+<script>
+function initialBoardTab() {
+  const allowed = ['me', 'chat', 'todo', 'meet', 'idea', 'ho', 'rec', 'fix', 'home'];
+  const linked = new URLSearchParams(location.search).get('view');
+  if (allowed.includes(linked)) return linked;
+  try { const start = localStorage.getItem('ot-start-' + (localStorage.getItem('ot-who') || '')); return allowed.includes(start) ? start : 'me'; }
+  catch { return 'me'; }
+}
+function boardFavorites() {
+  const local = jp(ls.get('ot-favorites-' + who), null);
+  return (Array.isArray(local) ? local : ['me', ...profOf(who).f]).filter((k, i, a) => a.indexOf(k) === i && TABS.some(([t]) => t === k)).slice(0, 6);
+}
+function favoriteLinks() {
+  return `<div class="favorite-head"><span>즐겨찾기</span><button class="ic" data-board-prefs aria-label="즐겨찾기 설정">편집</button></div>${boardFavorites().map(k => `<button class="navb ${tab === k ? 'on' : ''}" data-tab="${k}"><span class="favorite-star">☆</span>${esc(tabName(k))}</button>`).join('')}`;
+}
+function boardHelpButton() { return `<button class="ic board-help" data-board-help>ⓘ 사용방법</button>`; }
+function teamStatusHtml() {
+  return `<div class="team-status-heading">팀원 한 줄 상태 <small>프로필에서 수정할 수 있어요</small></div><div class="dmrow team-status">${PEOPLE.map(p => `<button class="dmb status-person" ${p === who ? 'data-act="prof"' : `data-dm="${p}"`} aria-label="${esc(PNAME(p))}: ${esc(profOf(p).s || '한 줄 상태 없음')}">${avHtml(p, 'md')}<span>${esc(PNAME(p))}${p === who ? ' · 나' : ''}</span><small>${esc(profOf(p).s || '아직 한 줄 상태가 없어요')}</small></button>`).join('')}<button class="dmb status-new" data-act="thnew"><span class="dmplus">＋</span><span>새 방</span></button></div>`;
+}
+function boardPrefs() {
+  const chosen = boardFavorites(), start = ls.get('ot-start-' + who) || 'me';
+  openSheet(`<h3>즐겨찾기와 첫 화면</h3><p class="caption">이 기기에서 내 이름별로 기억해요.</p><div class="lbl">즐겨찾기 <small>최대 6개</small></div><div class="favorite-choices">${TABS.map(([k, n]) => `<label><input type="checkbox" name="boardFavorite" value="${k}" ${chosen.includes(k) ? 'checked' : ''}> ${esc(n)}</label>`).join('')}</div><div class="lbl">처음 열리는 화면</div><select class="in" id="boardStart">${TABS.map(([k, n]) => `<option value="${k}" ${start === k ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select><div class="btns"><button class="btn" data-board-prefs-save>저장</button></div><p class="caption">브라우저 즐겨찾기에 나의 보드를 바로 넣으려면 <a href="?view=me">나의 보드 바로가기</a>를 열고 즐겨찾기에 추가하세요.</p>`);
+}
+function boardHelp() {
+  const g = groupOf(tab);
+  const text = g === 'chat' ? [
+    ['대화방', '팀원 프로필을 누르면 1:1 대화, ＋ 새 방을 누르면 여러 명이 대화할 방을 만들어요. 프로필 아래에는 각자의 한 줄 상태가 보여요.'],
+    ['사진·파일 보내기', '입력칸 왼쪽 클립 → 첨부파일 첨부하기로 골라요. 캡처는 입력칸에서 Ctrl+V(맥은 ⌘V)로 붙여넣고 보내기를 눌러요. 파일당 20MB까지 원본 그대로 보관해요.'],
+    ['사진 크게 보기', '대화 속 사진을 누르면 크게 볼 수 있어요. 한 번 더 누르면 100% 크기로 확인하고, 원본 다운로드로 저장해요.'],
+    ['안건·클로드', '클립 메뉴에서 안건을 공유해요. 클로드 아이콘은 대화 내용을 물어볼 때 써요.'],
+    ['돌아가기', '대화가 길어져도 상단 제목과 뒤로가기 버튼은 화면 위에 남아 있어요.'],
+  ] : g === 'todo' ? [
+    ['나의 보드', '내 일정과 할 일, 메모, 내가 올린 제안을 한곳에서 봐요.'],
+    ['할 일 넣기', '한 줄 입력칸에 할 일을 적어요. 담당자와 날짜를 함께 적으면 자동으로 정리돼요.'],
+    ['즐겨찾기', '메뉴의 즐겨찾기 편집에서 자주 쓰는 칸과 처음 열리는 화면을 골라요.'],
+  ] : [
+    ['회의', '회의를 만들고 안건과 담당자, 마감일을 함께 정해요.'],
+    ['녹음·회의록', '회의 녹음을 정리하고, 회의록 대화방에서 이어서 이야기할 수 있어요.'],
+  ];
+  openSheet(`<h3>${g === 'chat' ? '메신저' : g === 'todo' ? '할 일' : '회의'} 사용방법</h3>${text.map(([title, body]) => `<div class="help-section"><h4>${title}</h4><p>${body}</p></div>`).join('')}<div class="btns"><button class="btn gray" data-x>닫기</button></div>`);
+}
+document.addEventListener('click', e => {
+  if (e.target.closest('[data-board-prefs]')) return boardPrefs();
+  if (e.target.closest('[data-board-help]')) return boardHelp();
+  if (e.target.closest('[data-board-prefs-save]')) {
+    const values = [...document.querySelectorAll('[name="boardFavorite"]:checked')].map(x => x.value);
+    if (values.length > 6) return toast('즐겨찾기는 6개까지 골라 주세요');
+    ls.set('ot-favorites-' + who, JSON.stringify(values)); ls.set('ot-start-' + who, $('#boardStart').value);
+    closeSheet(); render(); return toast('즐겨찾기와 첫 화면을 저장했어요');
+  }
+});
+
+</script>
+<!-- /bundled:dashboard-ui.js -->
 <script>
 // 온라인팀 회의 보드 — 데이터는 구글시트(회의, 안건, 기록 탭), Apps Script(비밀번호)로 읽고 씀. 비밀번호는 이 기기에만 저장
 const APPS_URL = "https://script.google.com/macros/s/AKfycbxjg-ChnaEq4HTy-6K4mhEv8y840A7DPDUIL3BFFKla-N4NT4iVd_suGQ3jaYaG8SG59g/exec";
