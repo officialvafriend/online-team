@@ -82,3 +82,14 @@
 .help-section p{font-size:14px;line-height:1.7;color:var(--ink2)}
 @media(max-width:899px){.favorite-head{margin-top:8px}.chead{top:0}.team-status .status-person{width:122px}.cbox{gap:3px}.cbox .send{padding:0 12px}.cbox .cb{width:40px;min-width:40px}.cbox .photo-pick{width:40px}.side{overflow-y:auto}}
 @media(min-width:900px){.side{overflow-y:auto}.side .foot{position:static;margin-top:auto}.chead{top:0}.cbox{bottom:16px}}
+
+.attachment-batch-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 8px;font-size:13px}
+.attachment-batch-head span{color:var(--ink2);flex:1}
+.attachment-batch-head button{min-height:44px;padding:8px 12px;color:var(--ac);font-weight:700}
+.attachment-drafts{max-height:290px;overflow:auto;overscroll-behavior:contain}
+.attachment-drafts.multiple{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+.attachment-drafts.multiple .draft-image-open{width:100%}
+.attachment-drafts.multiple .photo-preview img{height:100px;max-height:100px;object-fit:contain}
+.attachment-drafts.multiple .photo-preview{grid-template-columns:minmax(0,1fr) 32px;padding:8px;gap:6px}
+.attachment-drafts.multiple .photo-preview>[data-photo-remove]{min-width:32px;width:32px;padding:4px}
+@media(max-width:599px){.attachment-drafts.multiple{grid-template-columns:repeat(2,minmax(0,1fr))}.attachment-drafts{max-height:230px}.attachment-drafts.multiple .photo-preview img{height:80px}.attachment-drafts.multiple .photo-preview span{font-size:12px}}

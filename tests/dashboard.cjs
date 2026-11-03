@@ -133,6 +133,34 @@ const files = new Map(); let failLog = false, uploadCount = 0;
     await page.locator('[data-act="csend"]').click();
     await page.waitForFunction(() => document.querySelector('#photoPreview').childElementCount === 0);
     assert.equal(state.logs.length, 2);
+    // Multiple selections append, removing one does not drop the rest, and a
+    // failed group save retries existing uploads as one message.
+    assert.equal(await page.locator('#chatPhotoInput').getAttribute('multiple'), '');
+    await page.locator('#chatPhotoInput').setInputFiles([file, { ...file, name: '시안 2.png' }]);
+    await page.locator('#chatPhotoInput').setInputFiles([{ ...file, name: '시안 3.png' }, { ...file, name: '시안 4.png' }]);
+    assert.equal(await page.locator('[data-photo-remove]').count(), 4);
+    await page.locator('[data-photo-remove]').nth(1).click();
+    assert.equal(await page.locator('[data-photo-remove]').count(), 3);
+    await page.screenshot({ path: path.join(root, '../outputs/online-team-multiple-attachments.png') });
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert.equal(await page.locator('[data-photo-remove]').count(), 3);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.setViewportSize({ width: 1254, height: 884 });
+    const beforeBatchUpload = uploadCount;
+    await page.locator('#cText').fill('시안 3장 한 번에 공유합니다');
+    failLog = true;
+    await page.locator('[data-act="csend"]').click();
+    await page.waitForFunction(() => !photoSends.has(thSel));
+    assert.equal(uploadCount, beforeBatchUpload + 3);
+    assert.equal(await page.locator('[data-photo-remove]').count(), 3);
+    failLog = false;
+    await page.locator('[data-act="csend"]').click();
+    await page.waitForFunction(() => document.querySelector('#photoPreview').childElementCount === 0);
+    assert.equal(uploadCount, beforeBatchUpload + 3, 'batch retry must not upload again');
+    assert.equal(state.logs.length, 3, 'multiple files should be sent as one message');
+    assert.equal((state.logs[2].내용.match(/\[\[파일:/g) || []).length, 3);
+    assert.ok(state.logs[2].내용.startsWith('시안 3장 한 번에 공유합니다'));
+    assert.equal(await page.locator('.attachment-image').count(), 4);
     // Long chat headers remain reachable after scrolling to the latest message.
     await page.evaluate(() => { for (let i = 0; i < 80; i++) D.logs.push({ id: 'long_' + i, 안건id: 'n_room1', 작성자: '진', 시각: '2026-11-03 14:01', 내용: '긴 대화 확인 ' + i }); render(); scrollTo(0, document.body.scrollHeight); });
     const head = await page.locator('.chead').boundingBox(); assert.ok(head.y >= -1 && head.y < 20, JSON.stringify(head));
@@ -169,7 +197,7 @@ const files = new Map(); let failLog = false, uploadCount = 0;
     await page.setViewportSize({ width: 1254, height: 884 });
     await page.screenshot({ path: path.join(root, '../outputs/online-team-desktop.png') });
     assert.deepEqual(errors, []);
-    console.log('PASS: original byte integrity, large preview, fullscreen, 100%/200%, wheel zoom, drag pan, mobile pinch, viewer back, retry, reload, clipboard, document, sticky header, favorites, desktop/mobile');
+    console.log('PASS: multi-select, append, individual removal, grouped send, batch retry, original byte integrity, large preview, fullscreen, 100%/200%, wheel zoom, drag pan, mobile pinch, viewer back, retry, reload, clipboard, document, sticky header, favorites, desktop/mobile');
   } finally { await browser.close(); server.close(); }
 })().catch(e => { console.error(e); server.close(); process.exitCode = 1; });
 
