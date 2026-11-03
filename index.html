@@ -58,7 +58,7 @@
   .lbl{font-size:14px;font-weight:600;color:var(--sub);margin:22px 0 10px} .lbl small{font-weight:500}
   .in{width:100%;height:54px;border-radius:14px;border:0;background:var(--line);padding:0 16px;font-size:17px;outline:none} .in:focus{box-shadow:inset 0 0 0 2px var(--ac)}
   textarea.in{height:auto;min-height:96px;padding:14px 16px;line-height:1.5;resize:vertical}
-  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px} .row2 .in{min-width:0;width:100%}
   .chips{display:flex;flex-wrap:wrap;gap:8px}
   .chip{height:40px;padding:0 15px;border-radius:12px;background:var(--line);font-size:15px;font-weight:600;color:var(--ink2)} .chip.on{background:var(--ac);color:#fff}
   .chip.sm{height:34px;padding:0 12px;font-size:13px;border-radius:10px}
@@ -174,7 +174,7 @@
   .mwho{font-size:13px;font-weight:700;color:var(--ink2)} .bub{background:var(--card);border-radius:4px 18px 18px 18px;padding:9px 13px;font-size:15px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
   .msg.me{align-self:flex-end;flex-direction:row-reverse} .msg.me.cont{padding-left:0;padding-right:42px} .msg.me .bub{background:var(--ac);color:#fff;border-radius:18px 4px 18px 18px} .msg.me .cmention{color:#fff;text-decoration:underline} .msg.me .mt{justify-content:flex-end}
   .msg.bot .bub{background:rgba(217,119,87,.10);border:1px solid rgba(217,119,87,.28)} .bub .ccard{white-space:normal;margin:6px 0 2px;color:var(--ink);display:block}
-  .mt{display:flex;gap:8px;align-items:center;font-size:11px;color:var(--sub);padding:0 4px} .mt .thdel{margin:0}
+  .mt{display:flex;gap:8px;align-items:center;font-size:11px;color:var(--sub);padding:0 4px} .mt .thdel{margin:0} .rd{font-weight:700;color:var(--amber)} .rd.all{color:var(--sub);font-weight:600}
   .msg.pop{animation:mpop .24s ease-out} @keyframes mpop{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:none}}
   .bub.dots{display:flex;gap:4px;padding:13px 14px} .bub.dots i{width:7px;height:7px;border-radius:50%;background:var(--sub);animation:dbounce 1.1s infinite} .bub.dots i:nth-child(2){animation-delay:.15s} .bub.dots i:nth-child(3){animation-delay:.3s}
   @keyframes dbounce{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-5px);opacity:1}}
@@ -188,6 +188,22 @@
   .icard .ict{font-size:14px;font-weight:700;line-height:1.4} .icard .ics{grid-column:1;font-size:12px;color:var(--sub)} .icard .icgo{grid-row:1/3;grid-column:2;align-self:center;color:var(--sub);font-size:18px}
   .msg.me .icard{background:rgba(255,255,255,.92)} .bub .csys2{display:block;margin-top:2px}
   .msgs .csys{margin:6px 0;padding:0 20px;line-height:1.5}
+  .mebar{display:flex;align-items:center;gap:12px;margin:0 2px 14px} .mebar button{all:unset;cursor:pointer} .mebar b{display:block;font-size:20px;font-weight:800} .mebar span{font-size:14px;color:var(--sub)}
+  .cal{padding:16px 16px 14px} .calh{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:12px} .calh b{font-size:16px;font-weight:800;margin:0 4px} .calh .seg.sm button{height:30px;padding:0 12px;font-size:13px}
+  .calg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px} .cald{background:var(--bg);border-radius:14px;padding:6px;min-height:150px;display:flex;flex-direction:column;gap:4px;min-width:0}
+  .cald.we{background:var(--line)} .cald.today{background:var(--ac-soft);box-shadow:inset 0 0 0 2px var(--ac)}
+  .calt{all:unset;cursor:pointer;display:flex;align-items:baseline;gap:5px;padding:2px 4px 4px} .calt span{font-size:12px;color:var(--sub);font-weight:700} .calt b{font-size:17px;font-weight:800} .calt i{margin-left:auto;font-style:normal;color:var(--sub);font-weight:800;opacity:.5} .calt:hover i{opacity:1;color:var(--ac)}
+  .cald.today .calt b{color:var(--ac)}
+  .cev{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:4px;width:100%;background:var(--card);border-radius:9px;padding:6px 7px;font-size:12.5px;line-height:1.3;border-left:3px solid var(--ac)}
+  .cev.boss{border-left-color:var(--red)} .cev b{font-size:12px;color:var(--ac);flex:none} .cev span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .cev .pav{flex:none}
+  .calstrip{display:grid;grid-template-columns:repeat(7,1fr);gap:4px} .calstrip button{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 0;border-radius:12px}
+  .calstrip span{font-size:11px;color:var(--sub);font-weight:700} .calstrip b{font-size:16px;font-weight:800} .calstrip i{font-style:normal;font-size:10px;color:var(--ac);height:10px;line-height:10px}
+  .calstrip button.today b{color:var(--ac)} .calstrip button.on{background:var(--ac);} .calstrip button.on span,.calstrip button.on b,.calstrip button.on i{color:#fff}
+  .callist{display:flex;flex-direction:column;gap:6px;margin-top:10px} .callist .cev{font-size:14.5px;padding:10px 12px} .callist .cev b{font-size:14px}
+  .tlist{padding:4px 0} .trow{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) 92px 50px;gap:10px;align-items:center;width:100%;padding:12px 16px;border-top:1px solid var(--line)} .trow:first-child{border-top:0} .trow:hover{background:var(--press)}
+  .trow .tt b{display:block;font-size:15px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .trow .tt small{display:block;font-size:12.5px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+  .trow .td{font-size:13.5px;font-weight:700;text-align:right;line-height:1.3} .trow .td small{display:block;font-size:11.5px;font-weight:600;color:inherit;opacity:.8} .trow .ts{text-align:right}
+  .mgrid{margin-top:4px;align-items:start} .mgrid > div > .sec:first-child{margin-top:18px}
   .cundo{all:unset;cursor:pointer;display:block;margin-top:8px;font-size:13px;font-weight:700;color:var(--sub);text-decoration:underline}
   .cwho{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
   .pav .pimg{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
@@ -258,6 +274,83 @@
     .gwrap{grid-template-columns:360px minmax(0,1fr);align-items:start;gap:20px} .gside{position:sticky;top:20px;display:grid;gap:12px}
     .board{grid-template-columns:repeat(5,minmax(0,1fr));align-items:start} .board.ppl4{grid-template-columns:repeat(4,minmax(0,1fr))} .pgrid{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);align-items:start} .note:hover{background:var(--press)}
   }
+/* ── 11/3 점검 뒤 정리: 색과 면은 시안, 대비와 크기는 규칙에 맞춤 ── */
+/* 시안: 고급스럽게 다듬기 (정식 화면에는 아직 안 넣음)
+   색: 종이 회색 바탕 + 흰 면 + 진한 소나무색 하나. 그림자 대신 얇은 선. 둥근 정도는 크기에 따라 다르게 */
+:root{--bg:#F3F4F2;--card:#FFFFFF;--ink:#15191D;--ink2:#3F474F;--sub:#5F6770;--line:#ECEEEB;--line2:#E1E4E0;
+  --ac:#1F5C55;--ac-soft:#E8F0ED;--m2:#D5E3DE;--m3:#BCD3CB;--m4:#7FA79B;--red:#C8443B;--red-soft:#F8EAE8;--amber:#A86A12;--amber-soft:#F6EEDD;--green:#2E7D4F;--green-soft:#E6F1EA;--press:#F7F8F6}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121514;--card:#1A1E1D;--ink:#ECEFEC;--ink2:#C2C8C4;--sub:#8C948F;--line:#242927;--line2:#2E3431;--ac:#7FC2B3;--ac-soft:#1E2D29;--press:#202523}}
+body{letter-spacing:-.01em;font-feature-settings:"tnum" 1}
+/* 면: 그림자 빼고 얇은 선, 큰 면은 14, 작은 것은 10 */
+.card,.list,.thlist,.mini,.mn,.notes .note,.icard,.cal,.cbox{box-shadow:none!important}
+.card,.list,.thlist,.mini,.cal{border:1px solid var(--line2);border-radius:14px}
+.notes .note{border:1px solid var(--line2);border-radius:12px}
+.item,.throw,.trow{border-top-color:var(--line)!important}
+.headline{font-weight:700;letter-spacing:-.03em} .pchead h1{font-size:26px;font-weight:700;letter-spacing:-.04em}
+.sec{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-.02em;margin:26px 2px 10px} .sec small{font-weight:500}
+.eyebrow{font-weight:600;color:var(--sub);letter-spacing:0}
+/* 왼쪽 메뉴: 흰 바탕, 고른 메뉴는 색 칠하기 대신 왼쪽 선 */
+.side{background:var(--card);border-right:1px solid var(--line2);padding-top:28px}
+.side .logo{font-size:17px;font-weight:700;letter-spacing:-.03em;padding-bottom:30px} .side .logo b{color:var(--ac)}
+.navb{border-radius:8px;height:44px;font-weight:600;color:var(--ink2);position:relative}
+.navb.on{background:transparent;color:var(--ink)} .navb.on::before{content:"";position:absolute;left:-16px;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--ac)}
+.navb.on svg{color:var(--ac)} .navb:hover{background:var(--press)}
+/* 위 칸 고르기: 알약 모양 대신 밑줄 탭 */
+.seg.subbar{background:transparent;border-bottom:1px solid var(--line2);border-radius:0;padding:0;gap:22px;justify-content:flex-start;margin-bottom:20px}
+.seg.subbar button{flex:0 0 auto;height:40px;padding:0 2px;border-radius:0;font-size:15px;color:var(--sub);box-shadow:none!important;background:transparent!important;border-bottom:2px solid transparent;margin-bottom:-1px}
+.seg.subbar button.on{color:var(--ink);border-bottom-color:var(--ink)}
+.seg{background:var(--line);border-radius:10px} .seg button{border-radius:7px}
+/* 버튼과 칩: 차분하게 */
+.btn{border-radius:10px;font-weight:600;letter-spacing:-.01em} .btn.sec2{background:var(--ac-soft);color:var(--ac)} .btn.gray{background:var(--line)}
+.chip{border-radius:8px;height:36px;font-size:14px;background:transparent;border:1px solid var(--line2)} .chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.ic{border-radius:8px}
+.st{border-radius:6px!important;font-weight:600!important;font-size:13px!important;padding:2px 8px!important;background:transparent!important;border:1px solid currentColor;opacity:.9}
+.st.확정{color:var(--ac)!important} .st.확인필요{color:var(--amber)!important} .st.시도{color:#5B5FC7!important} .st.완료{color:var(--sub)!important} .st.보류,.st.제외,.st.후보{color:var(--sub)!important}
+.ndot,.thun{background:var(--red)}
+/* 메신저: 내 말풍선은 소나무색, 남 말풍선은 흰 면에 얇은 선 */
+.msgs{gap:5px} .bub{border:1px solid var(--line2);border-radius:4px 16px 16px 16px;font-size:15px}
+.msg.me .bub{background:var(--ac);border-color:var(--ac);border-radius:16px 4px 16px 16px}
+.msg.bot .bub{background:var(--card);border-color:var(--line2);border-left:3px solid var(--ac)}
+.mday{background:transparent;color:var(--sub);font-weight:600;padding:0;margin:16px 0 6px;display:flex;align-items:center;gap:10px;align-self:stretch}
+.mday::before,.mday::after{content:"";flex:1;height:1px;background:var(--line2)}
+.mwho{font-weight:600;font-size:12.5px;color:var(--sub)}
+.icard{background:var(--press);border:1px solid var(--line2);border-radius:10px} .msg.me .icard{background:#fff;border-color:transparent}
+.cbox{border-top:1px solid var(--line2)} .cbox textarea{background:var(--bg);border-radius:12px} .cbox .send{border-radius:12px;background:var(--ink)}
+@media (min-width:900px){.cbox{border:1px solid var(--line2);border-radius:14px}}
+.throw.pin{background:var(--press)} .throw .tx b{font-weight:600} .thic{background:var(--bg);border-radius:10px}
+.dmb{color:var(--sub);font-weight:600} .dmplus{background:var(--card);border:1px dashed var(--line2)}
+.minib button{border-radius:10px;font-weight:600} .minib button:first-child{background:var(--ink)}
+/* 회의록 */
+.mn{border:1px solid var(--line2);border-radius:14px} .mn header{border-bottom:1px solid var(--ink)} .mn-kicker{color:var(--sub);letter-spacing:0}
+.mn h2{font-weight:700;letter-spacing:-.03em} .mn h3{font-weight:700;border-bottom-color:var(--line2)} .mn-concl{background:var(--ac-soft);border-radius:10px;font-weight:600}
+.mn-item h4 span{background:var(--ink)} .mn-item li b{color:var(--ac)}
+/* 내 것: 캘린더는 칸 대신 얇은 선 격자 */
+.mebar b{font-weight:700;letter-spacing:-.03em}
+.cal{padding:18px 18px 14px} .calg{gap:0;border:1px solid var(--line2);border-radius:10px;overflow:hidden}
+.cald{background:var(--card)!important;border-radius:0;border-left:1px solid var(--line);min-height:140px;padding:8px 6px} .cald:first-child{border-left:0}
+.cald.we{background:var(--press)!important} .cald.today{box-shadow:inset 0 3px 0 var(--ac)!important}
+.calt b{font-weight:700} .cald.today .calt b{color:var(--ac)}
+.cev{background:var(--bg);border-left-width:2px;border-radius:6px} .cev.boss{border-left-color:var(--red)}
+.calstrip button.on{background:var(--ink)}
+.trow .tt b{font-weight:600}
+.mehead,.mstats .mstat{box-shadow:none}
+.toast{border-radius:10px;background:var(--ink)}
+.sheet{border-radius:16px 16px 0 0} @media (min-width:900px){.sheet{border-radius:16px}}
+.navb.me-btn.pfoot{background:var(--press)!important;border:1px solid var(--line2)}
+
+  button:focus-visible,a:focus-visible,.chip:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+  #app small,.mt,.ics,.thmeta,.mday,.qhint,.st,.tag,.rst,.ist,.mwho,.csys,.caption,.calt span,.calstrip span,.trow .td small,.eyebrow{font-size:max(13px,1em)}
+  .mt{font-size:13px} .ics,.icard .ics,.thdel,.rst,.ppl i,.ppl .pe,.imeta span,.imeta,.val .t-warn,.val .t-bad,.val span{font-size:13px} @media not (prefers-color-scheme: dark){:root{--amber:#8F5A0C;--red:#B5382F}} .calstrip i{font-size:12px;height:12px;line-height:12px} .ndot,.thun,.pb{font-size:12px}
+  .sheet{overflow-x:hidden} .board{align-items:stretch}
+  .thun{color:#fff!important} #app .t-warn,#app .t-bad,.rst,.thmeta,.ppl i,.thmeta em{font-size:13px!important}
+  @media (max-width:899px){
+    .seg button{height:44px} .top .ic,.topme,.top [data-act="noti"],.chead .ic,.calh .ic{min-height:44px;min-width:44px}
+    .calh .seg button{height:40px} .chip{min-height:44px} .cev{min-height:44px} .throw{min-height:66px}
+    .mt .thdel{padding:12px 10px;margin:-12px -10px -12px -4px}
+    .seg.subbar button,.seg.sm button,.calh .seg button,.calh .seg.sm button{height:44px} .iact button,.compose .btn{min-height:44px} .ic,.fbbtn{min-height:44px} .cbox .cb,.cbox .send{height:44px;min-width:44px} .cbox textarea{height:44px}
+    .mt .thdel{padding:15px 10px;margin:-15px -10px -15px -4px} .sheet .list{margin-left:-18px;margin-right:-18px}
+    #app > .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px} #app > .chips::-webkit-scrollbar{display:none} #app > .chips .chip{flex:none}
+  }
 </style>
 </head>
 <body>
@@ -287,7 +380,7 @@ const PBADGE = ["☕", "💤", "🎯", "💰", "📦", "🧾", "🛵", "🎉", "
 const PBOSS = ["👑", "🏆", "🖋️", "💼", "⛳", "📛", "🪑", "🦸"]; // 이사님 전용
 const profNote = (n) => (D && D.notes ? D.notes.find((x) => x.종류 === "프로필" && x.작성자 === n) : null);
 const profOf = (n) => { const x = profNote(n); let j = {}; try { j = x ? JSON.parse(x.내용 || "{}") : {}; } catch (e) {} return { e: j.e || "", b: j.b || "", c: PCOLORS[j.c] ? j.c : "민트", s: x ? x.제목 || "" : "", f: Array.isArray(j.f) ? j.f : [], i: typeof j.i === "string" && j.i.startsWith("data:image/") ? j.i : "" }; };
-const pimg = (i) => `<img class="pimg" src="${esc(i)}" alt="">`;
+const pimg = (i) => `<img class="pimg" src="${esc(i)}" alt="프로필 사진">`;
 const CMARK = '<svg class="cmark" viewBox="0 11 640 640" aria-hidden="true"><path fill="#D97757" d="M80 132h480v160h80v81h-80v82H80v-82H0v-81h80zM120 455h40v78h-40zM200 455h40v78h-40zM400 455h40v78h-40zM480 455h40v78h-40z"/><path fill="#fff" d="M160 215h40v77h-40zM440 215h40v77h-40z"/></svg>';
 const avHtml = (n, cls = "") => { if (n === "클로드") return `<span class="pav ${cls}" style="background:#fff">${CMARK}</span>`; const p = profOf(n); return `<span class="pav ${cls}" style="background:${PCOLORS[p.c]}">${p.i ? pimg(p.i) : p.e ? `<span class="pe1">${esc(p.e)}</span>` : `<span class="pn">${esc(/xl/.test(cls) ? n : [...n][0])}</span>`}${p.b ? `<span class="pb">${esc(p.b)}</span>` : ""}</span>`; };
 const sameSet = (a, b) => a.length === b.length && a.every((v) => b.includes(v));
@@ -343,7 +436,7 @@ async function del(kind, id) {
 }
 async function reload(quiet) {
   try { D = await load(KEY); if (!$("#dim").classList.contains("on")) render(); if (!quiet) toast("새로 불러왔어요"); }
-  catch (e) { if (!quiet) toast("불러오지 못했어요"); }
+  catch (e) { if (!quiet) toast("불러오지 못했어요. 인터넷을 확인하고 ↻를 눌러 주세요"); }
 }
 
 // ── 로그인 ──
@@ -396,8 +489,20 @@ const fields = () => [...new Set([...FIELDS0, ...D.items.map((x) => x.분야).fi
 const sortDue = (a, b) => (a.마감 || "9999") < (b.마감 || "9999") ? -1 : (a.마감 || "9999") > (b.마감 || "9999") ? 1 : 0;
 const isPC = () => matchMedia("(min-width:900px)").matches;
 const usePanel = () => isPC() && tab === "home" && $("#panel");
-const openSheet = (h) => { if (usePanel()) { panelKeep = h; $("#panel").innerHTML = h; $("#panel").scrollTop = 0; return; } $("#sheet").innerHTML = h; $("#dim").classList.add("on"); };
-const closeSheet = () => { edit = null; $("#dim").classList.remove("on"); if (usePanel()) { panelKeep = ""; $("#panel").innerHTML = panelDefault(); } };
+// 폰 뒤로 가기: 창이나 대화방을 열면 기록을 하나 쌓고, 뒤로 가기를 누르면 앱이 닫히는 대신 그걸 닫음
+let navSkip = 0, sheetPushed = false, navKey = "";
+const navPush = () => { try { history.pushState({ ob: 1 }, ""); } catch (e) {} };
+const navBack = () => { if (history.state && history.state.ob) { navSkip++; history.back(); } };
+const openSheet = (h) => { if (usePanel()) { panelKeep = h; $("#panel").innerHTML = h; $("#panel").scrollTop = 0; return; } $("#sheet").innerHTML = h; $("#dim").classList.add("on"); if (!sheetPushed) { sheetPushed = true; navPush(); } };
+const closeSheet = (fromPop) => { const was = $("#dim").classList.contains("on"); edit = null; $("#dim").classList.remove("on"); if (usePanel()) { panelKeep = ""; $("#panel").innerHTML = panelDefault(); }
+  if (fromPop === true) { sheetPushed = false; return; }
+  if (was && sheetPushed) setTimeout(() => { if (!$("#dim").classList.contains("on") && sheetPushed) { sheetPushed = false; navBack(); } }, 0); };
+window.addEventListener("popstate", () => {
+  if (navSkip) { navSkip--; return; }
+  if ($("#dim").classList.contains("on")) return closeSheet(true);
+  if (tab === "chat" && thSel) { navKey = ""; thSel = ""; return render(); }
+  if (tab === "rec" && recSel) { navKey = ""; recSel = ""; return render(); }
+});
 function itemRow(x, sub) {
   const m = meetOf(x.회의id), late = ACTIVE.includes(x.상태) && x.마감 && days(x.마감) < 0;
   return `<button class="item" data-item="${x.id}"><div class="tx"><b>${esc(x.제목)}</b><span>${esc(sub ?? [m ? m.제목 : "회의 밖 할 일", x.분야].filter(Boolean).join(", "))}</span></div>
@@ -462,9 +567,8 @@ function meetHtml() {
   const ms = byBrand([...D.meetings]).sort((a, b) => (a.날짜 < b.날짜 ? 1 : a.날짜 > b.날짜 ? -1 : 0));
   if (meetSel && !D.meetings.some((m) => m.id === meetSel)) meetSel = "";
   const sel = meetSel ? meetOf(meetSel) : null;
-  const side = `${REC ? "" : `<button class="recbig" data-act="recnow"><span class="rdot"></span><b>오늘 회의 녹음 시작</b><small>${D.meetings.some((x) => x.날짜 === today()) ? "오늘 회의에 녹음해요" : "오늘 회의를 만들고 바로 녹음해요"}</small></button>`}<div class="card"><div class="eyebrow">회의</div><div class="headline">회의마다 안건을 적고<br>상태를 정해요</div><div class="caption">확정한 안건은 확정 탭, 담당자나 마감이 있는 건 할 일 탭에 모여요</div>
-      <div class="btns" style="margin-top:16px"><button class="btn" data-act="mnew" style="height:50px;font-size:16px">＋ 새 회의</button></div></div>
-    ${brandChips()}<div class="list">${ms.length ? ms.map((m) => { const its = D.items.filter((x) => x.회의id === m.id); return `<button class="item" data-msel="${m.id}" style="${m.id === meetSel ? "background:var(--ac-soft)" : ""}"><div class="av ${m.id === meetSel ? "ac" : ""}" style="font-size:13px;line-height:1.1">${md(m.날짜)}</div><div class="tx"><b>${esc(m.제목)}</b><span>${esc(m.브랜드 || "공통")}, 안건 ${its.length}개, 확정 ${its.filter((x) => x.상태 === "확정" || x.상태 === "완료").length}개</span></div><span class="chev">›</span></button>`; }).join("") : '<div class="empty">아직 회의가 없어요</div>'}</div>`;
+  const side = `${REC ? "" : `<button class="recbig" data-act="recnow"><span class="rdot"></span><b>오늘 회의 녹음 시작</b><small>${D.meetings.some((x) => x.날짜 === today()) ? "오늘 회의에 녹음해요" : "오늘 회의를 만들고 바로 녹음해요"}</small></button>`}<div class="btns" style="margin:0 0 14px"><button class="btn sec2" data-act="mnew" style="height:48px;font-size:16px">＋ 새 회의</button></div>
+    ${brandChips()}<div class="list">${ms.length ? ms.map((m) => { const its = D.items.filter((x) => x.회의id === m.id); return `<button class="item" data-msel="${m.id}" style="${m.id === meetSel ? "background:var(--ac-soft)" : ""}"><div class="av ${m.id === meetSel ? "ac" : ""}" style="font-size:13px;line-height:1.1">${md(m.날짜)}</div><div class="tx"><b>${esc(m.제목)}</b><span>${esc(m.브랜드 || "공통")}, 안건 ${its.length}개, 확정 ${its.filter((x) => x.상태 === "확정" || x.상태 === "완료").length}개</span></div><span class="chev">›</span></button>`; }).join("") : '<div class="empty">아직 회의가 없어요. 위 ＋ 새 회의로 만들어요</div>'}</div>`;
   if (!sel) return `<div class="gwrap"><div class="gside">${side}</div><div class="gmain">${isPC() ? '<div class="card"><div class="caption" style="margin:0">왼쪽에서 회의를 고르거나 새 회의를 만들어요</div></div>' : ""}</div></div>`;
   const its = D.items.filter((x) => x.회의id === sel.id).sort((a, b) => (+a.순서 || 0) - (+b.순서 || 0));
   const cnt = STATUS.map((s) => [s, its.filter((x) => x.상태 === s).length]).filter(([, n]) => n);
@@ -481,8 +585,8 @@ function meetHtml() {
       ${peopleOf(sel.참석).length ? `<div class="ppl" style="justify-content:flex-start;margin-top:8px">${peopleOf(sel.참석).map((n) => `<i class="${n === who ? "me" : ""}">${esc(n)}</i>`).join("")}</div>` : ""}
       <div class="caption">${sel.브랜드 ? `<span class="tag">${esc(sel.브랜드)}</span>` : ""}${sel.메모 ? esc(sel.메모) : "메모 없음"}</div>
       <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${cnt.map(([s, n]) => `<span class="st ${s}">${s} ${n}</span>`).join("")}</div></div>
-      <div class="mbtns"><button class="ic" data-act="medit">✏️ 회의 고치기</button>${(() => { const r0 = D.recs.filter((x) => x.회의id === sel.id && jp(x.정리, {}).결론).sort((p, q) => (p.세션 < q.세션 ? 1 : -1))[0];
-        return r0 ? `<button class="ic" data-mnroom="${r0.id}">📝 회의록 보기</button><button class="ic" data-mnpdfid="${r0.id}">🖨 PDF 받기</button>` : ""; })()}</div></div>
+      <div class="mbtns"><button class="ic" data-act="medit">회의 고치기</button>${(() => { const r0 = D.recs.filter((x) => x.회의id === sel.id && jp(x.정리, {}).결론).sort((p, q) => (p.세션 < q.세션 ? 1 : -1))[0];
+        return r0 ? `<button class="ic" data-mnroom="${r0.id}">회의록 보기</button><button class="ic" data-mnpdfid="${r0.id}">PDF 받기</button>` : ""; })()}</div></div>
       ${D.recs.filter((x) => x.회의id === sel.id).map((x) => `<button class="recln" data-tab="rec" data-recgo="${x.id}">🎙 ${esc(sessTxt(x.세션))} 녹음, ${esc(RST[x.상태] || x.상태)} ›</button>`).join("")}
       ${REC && REC.meet === sel.id ? "" : `<button class="recbtn" data-act="recstart" ${REC ? "disabled" : ""}><span class="rdot"></span>${REC ? "다른 회의 녹음 중" : "녹음 시작"}</button>`}</div>
     ${seg}${meetView === "person" ? byPerson : byItem}
@@ -498,7 +602,7 @@ function sheetMeeting() {
     <div class="lbl">참석 <small>(여러 명 고를 수 있어요)</small></div>${pickHtml(m._who, "mwho")}
     <div class="lbl">브랜드</div><div class="chips">${BRANDS.map((b) => `<button class="chip ${m.브랜드 === b ? "on" : ""}" data-mbrand="${b}">${b}</button>`).join("")}</div>
     <div class="lbl">메모 <small>(선택)</small></div><textarea class="in" id="mMemo" maxlength="500" placeholder="회의 배경이나 결론 한 줄">${esc(m.메모)}</textarea>
-    <div class="btns">${isNew ? '<button class="btn gray" data-x style="flex:0 0 96px">닫기</button>' : '<button class="btn red" data-act="mdel" style="flex:0 0 96px">삭제</button>'}<button class="btn" data-act="msave">저장</button></div>`);
+    <div class="btns">${isNew ? '<button class="btn gray" data-x style="flex:0 0 96px">닫기</button>' : '<button class="btn red" data-act="mdel" style="flex:0 0 96px">지우기</button>'}<button class="btn" data-act="msave">저장</button></div>`);
 }
 function sheetItem() {
   const x = edit, isNew = !D.items.some((i) => i.id === x.id), m = meetOf(x.회의id), logs = D.logs.filter((l) => l.안건id === x.id).sort((a, b) => (a.시각 < b.시각 ? 1 : -1));
@@ -509,15 +613,16 @@ function sheetItem() {
       <div><div class="lbl">분야</div><input class="in" id="iField" list="fieldList" maxlength="30" placeholder="예) 마케팅-바이럴" value="${esc(x.분야)}"><datalist id="fieldList">${fields().map((f) => `<option value="${esc(f)}">`).join("")}</datalist></div></div>
     <div class="lbl">담당자 <small>(여러 명 고를 수 있어요)</small></div>${pickHtml(x._own, "iown")}
     <div class="row2"><div><div class="lbl">마감</div><input class="in" type="date" id="iDue" value="${esc(x.마감)}"></div>
-      <div><div class="lbl">시작 <small>(선택)</small></div><input class="in" type="date" id="iStart" value="${esc(x.시작)}"></div></div>
+      <div><div class="lbl">시간 <small>(선택)</small></div><input class="in" type="time" id="iTime" value="${esc(x.시간 || "")}"></div></div>
+    <div class="lbl">시작 <small>(선택)</small></div><input class="in" type="date" id="iStart" value="${esc(x.시작)}">
     <div class="lbl">확인할 것 <small>(선택)</small></div><input class="in" id="iChk" maxlength="120" placeholder="예) 광고 심의 되는지, 단가" value="${esc(x.확인할것)}">
     <div class="lbl">메모 <small>(선택)</small></div><textarea class="in" id="iMemo" maxlength="1000" placeholder="회의에서 나온 얘기">${esc(x.메모)}</textarea>
-    ${isNew ? "" : '<button class="btn gray" data-act="ishare" style="margin-top:14px">💬 대화방에 공유하기</button>'}
+    ${isNew ? "" : '<button class="btn gray" data-act="ishare" style="margin-top:14px">대화방에 공유하기</button>'}
     ${isNew ? "" : askBox("item", x.id)}
     ${isNew ? "" : `<div class="lbl">기록 <small>회의 때마다 덧붙여요</small></div>
       <div class="mline"><input class="in" id="lText" maxlength="300" placeholder="${who ? who + ": 새 기록" : "이름을 먼저 정해요"}"><button class="btn" data-act="ladd">남기기</button></div>
       <div style="margin-top:8px">${logs.length ? logs.map((l) => `<div class="log ${isIdea(l) ? "idea" : ""}"><small>${esc(l.시각)}${l.작성자 ? ", " + esc(isIdea(l) ? "💡 " + l.작성자 : logWho(l)) : ""} <button data-ldel="${l.id}" style="color:var(--sub);margin-left:6px">지우기</button></small>${linkify(l.내용)}</div>`).join("") : '<div class="caption" style="margin:0">아직 기록이 없어요</div>'}</div>`}
-    <div class="btns">${isNew ? '<button class="btn gray" data-x style="flex:0 0 96px">닫기</button>' : '<button class="btn red" data-act="idel" style="flex:0 0 96px">삭제</button>'}<button class="btn" data-act="isave">저장</button></div>`);
+    <div class="btns">${isNew ? '<button class="btn gray" data-x style="flex:0 0 96px">닫기</button>' : '<button class="btn red" data-act="idel" style="flex:0 0 96px">지우기</button>'}<button class="btn" data-act="isave">저장</button></div>`);
 }
 function sheetBulk() {
   openSheet(`<h3>여러 줄 한번에</h3><div class="caption">한 줄이 안건 하나예요. 앞의 번호는 빼고 넣어요. 줄 끝에 확실, 확인필요, 시도, X 라고 적혀 있으면 상태로 읽어요</div>
@@ -544,7 +649,7 @@ function todoHtml() {
   const late = list.filter((x) => x.마감 && days(x.마감) < 0), soon = list.filter((x) => x.마감 && days(x.마감) >= 0), none = list.filter((x) => !x.마감);
   const blk = (t, l) => (l.length ? `<div class="sec">${t} <small>${l.length}개</small></div><div class="list">${l.map((x) => itemRow(x)).join("")}</div>` : "");
   const add = `${quickBox("예) 시원 다음주 월요일 메타 광고 시안")}<div style="margin:-4px 0 14px;text-align:right"><button class="ic" data-act="tnew">자세히 넣기 ›</button></div>`;
-  const chips = `<div class="chips" style="margin-bottom:14px"><button class="chip ${!todoF ? "on" : ""}" data-todof="">모두</button>${names.map((n) => `<button class="chip ${todoF === n ? "on" : ""} ${n === who && todoF !== n ? "me-btn" : ""}" data-todof="${esc(n)}">${esc(n)}</button>`).join("")}<button class="chip ${todoF === "미정" ? "on" : ""}" data-todof="미정">담당자 없음</button><button class="chip ${todoF === "확인필요" ? "on" : ""}" data-todof="확인필요">확인필요만</button></div>`;
+  const chips = `<div class="chips" style="margin-bottom:14px"><button class="chip ${!todoF ? "on" : ""}" data-todof="">모두</button>${names.map((n) => `<button class="chip ${todoF === n ? "on" : ""}" data-todof="${esc(n)}">${esc(n)}${n === who ? " (나)" : ""}</button>`).join("")}<button class="chip ${todoF === "미정" ? "on" : ""}" data-todof="미정">담당자 없음</button><button class="chip ${todoF === "확인필요" ? "on" : ""}" data-todof="확인필요">확인필요만</button></div>`;
   // PC에서 "모두"일 때는 사람별 칸으로 나란히 (여러 명이 맡은 건 각 칸에 다 나옴)
   if (isPC() && !todoF) {
     // 칸 안에서는 제목 한 줄 + 작은 글씨 한 줄(마감, 확정 아닌 상태, 같이 하는 사람)만. 담당자 없음 칸은 6개까지
@@ -555,8 +660,8 @@ function todoHtml() {
       return `<div class="col ${n === who ? "me" : ""}"><h4>${PEOPLE.includes(n) ? avHtml(n, "xs") + " " : ""}${esc(n)} <small>${l.length}개</small></h4>${l.slice(0, cut).map((x) => card(x, n)).join("") || '<div class="empty">없음</div>'}${cut < l.length ? `<button class="bmore" data-todof="미정">${l.length - cut}개 더 보기 ›</button>` : ""}</div>`; };
     return `${brandChips()}${chips}${add}<div class="board">${[...names, "담당자 없음"].map(col).join("")}</div>`;
   }
-  return `${brandChips()}${chips}${add}
-    ${list.length ? blk("늦음", late) + blk("마감 있음", soon) + blk("마감 없음", none) : '<div class="list"><div class="empty">할 일이 없어요. 확인필요, 시도, 확정 상태의 안건이 여기에 모여요</div></div>'}`;
+  return `${brandChips()}${chips}
+    ${list.length ? blk("늦음", late) + blk("마감 있음", soon) + blk("마감 없음", none) : '<div class="list"><div class="empty">할 일이 없어요. 아래 칸에 한 줄로 넣어 보세요</div></div>'}<div style="margin-top:18px">${add}</div>`;
 }
 
 // ── 한 줄 할 일 ── 이름(한섭, 보혜, 시원, 진, 이사님, 성 포함), 날짜(오늘, 내일, 모레, 월~일요일, 다음주 X요일, 11/3, 3일)를 알아서 읽음
@@ -578,7 +683,7 @@ function parseQuick(t) {
   const title = text.replace(/\s+/g, " ").replace(/^(까지|에|은|는)\s/, "").trim();
   return { title, owners: [...new Set(owners)], due };
 }
-const quickBox = (ph) => `<div class="quick"><input class="in" id="qText" maxlength="120" placeholder="${ph}"><button class="btn" data-act="qadd">넣기</button></div><div class="qhint" id="qHint">이름과 날짜를 같이 쓰면 담당자와 마감이 알아서 들어가요</div>`;
+const quickBox = (ph) => `<label class="lbl" for="qText" style="margin-top:0">한 줄로 할 일 넣기</label><div class="quick"><input class="in" id="qText" maxlength="120" placeholder="${ph}"><button class="btn" data-act="qadd">넣기</button></div><div class="qhint" id="qHint">이름과 날짜를 같이 쓰면 담당자와 마감이 알아서 들어가요</div>`;
 
 // ── 내 보드, 제안함, 인수인계 ── 노트 탭: 종류(메모/인수인계/제안), 작성자, 받는사람, 상태, 좋아요, 브랜드, 제목, 내용, 답. 제안 댓글은 기록 탭(안건id = 노트 id)
 const PNAME = (n) => (n === "한섭" ? "한섭 이사님" : n);
@@ -599,21 +704,75 @@ function unreadIdeas() {
   const s = seenIdea(), mineIds = ideas().filter((n) => n.작성자 === who).map((n) => n.id);
   return ideas().filter((n) => n.작성자 !== who && (n.만든시각 || "") > s).length + D.logs.filter((l) => mineIds.includes(l.안건id) && logWho(l) !== who && l.시각 > s).length;
 }
+let calOff = 0, calTeam = false, calDay = "";
+const ymdAdd = (d, n) => { const x = new Date(d + "T00:00:00"); x.setDate(x.getDate() + n); return ymd(x); };
+const weekStart = () => { const t = new Date(today() + "T00:00:00"), k = (t.getDay() + 6) % 7; return ymdAdd(today(), -k + calOff * 7); };
+const timeOf = (x) => String(x.시간 || "").replace(/^'/, "");
+function calHtml() {
+  const st = weekStart(), days7 = [...Array(7)].map((_, i) => ymdAdd(st, i)), td = today();
+  const its = D.items.filter((x) => x.마감 && ACTIVE.includes(x.상태) && (calTeam || hasP(x.담당자, who)));
+  const on = (d) => its.filter((x) => x.마감 === d).sort((p, q) => (timeOf(p) || "99") < (timeOf(q) || "99") ? -1 : 1);
+  const chip = (x) => `<button class="cev ${x.메모 === "이사님 지시" ? "boss" : ""}" data-item="${x.id}">${timeOf(x) ? `<b>${esc(timeOf(x))}</b>` : ""}${calTeam ? peopleOf(x.담당자).slice(0, 2).map((p) => avHtml(p, "xs")).join("") : ""}<span>${esc(x.제목)}</span></button>`;
+  const wd = "월화수목금토일", e = new Date(st + "T00:00:00"), z = new Date(days7[6] + "T00:00:00");
+  const head = `<div class="calh"><button class="ic" data-cal="-1">‹</button><b>${calOff === 0 ? "이번 주" : calOff === 1 ? "다음 주" : calOff === -1 ? "지난주" : ""} ${e.getMonth() + 1}/${e.getDate()} ~ ${z.getMonth() + 1}/${z.getDate()}</b><button class="ic" data-cal="1">›</button>${calOff ? '<button class="ic" data-cal="0">오늘</button>' : ""}
+    <div class="seg sm" style="margin-left:auto"><button class="${calTeam ? "" : "on"}" data-calteam="0">내 일정</button><button class="${calTeam ? "on" : ""}" data-calteam="1">팀 일정</button></div></div>`;
+  if (isPC()) return `<div class="card cal">${head}<div class="calg">${days7.map((d, i) => `<div class="cald ${d === td ? "today" : ""} ${i > 4 ? "we" : ""}"><button class="calt" data-calnew="${d}"><span>${wd[i]}</span><b>${+d.slice(8)}</b><i>＋</i></button>${on(d).map(chip).join("")}</div>`).join("")}</div>
+    <div class="caption" style="margin:10px 2px 0">${isBoss() ? "날짜의 ＋를 누르면 팀원에게 일정을 보낼 수 있어요" : "날짜의 ＋를 누르면 그날 할 일을 넣어요"}</div></div>`;
+  const sel = days7.includes(calDay) ? calDay : days7.includes(td) ? td : st, list = on(sel);
+  return `<div class="card cal">${head}<div class="calstrip">${days7.map((d, i) => `<button class="${d === sel ? "on" : ""} ${d === td ? "today" : ""}" data-calday="${d}"><span>${wd[i]}</span><b>${+d.slice(8)}</b><i>${on(d).length ? "•".repeat(Math.min(3, on(d).length)) : ""}</i></button>`).join("")}</div>
+    <div class="callist">${list.map(chip).join("") || '<div class="caption" style="margin:4px 2px">일정이 없어요</div>'}</div><button class="btn sec2" data-calnew="${sel}" style="height:44px;font-size:15px;margin-top:8px">＋ ${isBoss() ? "일정 보내기" : "이날 할 일 넣기"}</button></div>`;
+}
 function meHtml() {
   if (!who) return `<div class="list"><div class="empty">이름을 먼저 골라요 <button class="ic me-btn" data-act="who">이름 고르기</button></div></div>`;
   const mine = D.items.filter((x) => ACTIVE.includes(x.상태) && hasP(x.담당자, who)).sort(sortDue);
   const late = mine.filter((x) => x.마감 && days(x.마감) < 0).length, myIdeas = ideas().filter((n) => n.작성자 === who).sort(byMade);
   const memos = D.notes.filter((n) => n.종류 === "메모" && n.작성자 === who).sort(byTime);
-  const stat = (n, t, cls, act) => `<button class="mstat" ${act}><b class="${cls}">${n}</b><span>${t}</span></button>`;
-  const doing = `<div class="sec">내 할 일 <small>${mine.length}개</small></div>
-    <div class="list">${mine.map((x) => { const l = lastLog(x.id); return `${itemRow(x)}<div class="prog">${l ? `📍 ${esc(l.내용)} <small>${esc(ago(l.시각))}</small>` : '<span class="t-sub">어디까지 했는지 눌러서 남겨요</span>'}</div>`; }).join("")}
-      </div>${quickBox("예) 금요일까지 체험단 견적 받기")}`;
-  const ideaSec = myIdeas.length ? `<div class="sec">내가 올린 제안 <small>${myIdeas.length}개</small></div><div class="list">${myIdeas.map((n) => `<button class="item" data-idea="${n.id}"><div class="tx"><b>${esc(n.제목)}</b><span>${n.답 ? "💬 " + esc(n.답) : `👍 ${likes(n).length}, 댓글 ${cmts(n.id).length}`}</span></div><div class="val">${stBadge(n.상태)}</div></button>`).join("")}</div>` : "";
+  const row = (x) => { const l = lastLog(x.id), dd = x.마감 ? days(x.마감) : null;
+    return `<button class="trow" data-item="${x.id}"><span class="tt"><b>${esc(x.제목)}</b><small>${l ? "📍 " + esc(l.내용) : esc(meetOf(x.회의id)?.제목 || "회의 밖 할 일")}</small></span>
+      <span class="td ${dd != null && dd < 0 ? "t-bad" : dd != null && dd <= 2 ? "t-warn" : ""}">${x.마감 ? `${md(x.마감)}${timeOf(x) ? " " + esc(timeOf(x)) : ""}<small>${ddayTxt(x.마감)}</small>` : '<small>마감 없음</small>'}</span><span class="ts"><span class="st ${x.상태}">${x.상태}</span></span></button>`; };
+  const doing = `<div class="sec">내 할 일 <small>${mine.length}개${late ? `, 늦음 ${late}개` : ""}</small></div>
+    <div class="list tlist">${mine.map(row).join("") || '<div class="empty">할 일이 없어요. 아래 칸에 한 줄로 넣어 보세요</div>'}</div>${quickBox("예) 금요일까지 체험단 견적 받기")}`;
+  const ideaSec = `<div class="sec">내가 올린 제안 <small>${myIdeas.length}개</small></div><div class="list">${myIdeas.map((n) => `<button class="item" data-idea="${n.id}"><div class="tx"><b>${esc(n.제목)}</b><span>${n.답 ? "💬 " + esc(n.답) : `👍 ${likes(n).length}, 댓글 ${cmts(n.id).length}`}</span></div></button>`).join("") || '<div class="empty">아직 올린 제안이 없어요. 위 제안함 칸에서 올려요</div>'}</div>`;
   const memoSec = `<div class="sec">내 메모 <small>${memos.length}개</small><span class="rt"><button class="ic" data-nnew="메모" style="height:30px">＋ 메모</button></span></div><div class="notes">${memos.map((n) => noteCard(n)).join("") || '<div class="list"><div class="empty">나만 보는 메모장이에요</div></div>'}</div>`;
-  return `<div class="card mehead"><button data-act="prof" aria-label="내 프로필 꾸미기">${avHtml(who, "xl")}</button><div style="flex:1;min-width:0"><div class="headline">${esc(PNAME(who))}님, 할 일 ${mine.length}개</div>${profOf(who).s ? `<div class="pstat">${esc(profOf(who).s)}</div>` : ""}<div class="caption" style="margin-top:2px">${late ? `<span class="t-bad">마감 지난 것 ${late}개</span>` : "마감 지난 것 없음"}</div></div></div>
-    <div class="mstats">${stat(mine.length, "할 일", "", 'data-tab="todo" data-todof="' + who + '"')}${stat(late, "늦음", late ? "t-bad" : "", 'data-tab="todo" data-todof="' + who + '"')}${stat(myIdeas.length, "내 제안", "", 'data-tab="idea"')}</div>
-    <div class="pgrid"><div>${doing}</div><div>${ideaSec}${memoSec}<button class="fbbtn" data-act="fb" style="margin-top:12px">🛠 보드 쓰다 불편한 점 올리기</button></div></div>`;
+  return `<div class="mebar"><button data-act="prof" aria-label="내 프로필">${avHtml(who, "md")}</button><div><b>${esc(/님$/.test(PNAME(who)) ? PNAME(who) : PNAME(who) + "님")}</b><span>${profOf(who).s ? esc(profOf(who).s) : "할 일 " + mine.length + "개"}</span></div></div>
+    ${calHtml()}
+    <div class="pgrid mgrid"><div>${doing}</div><div>${memoSec}${ideaSec}<button class="fbbtn" data-act="fb" style="margin-top:12px">🛠 보드 쓰다 불편한 점 올리기</button></div></div>`;
 }
+// 일정 넣기: 이사님은 팀원에게 보내고(1:1 방에 카드), 다른 사람은 자기 할 일
+let calPick = [];
+function calNew(d, keep) {
+  if (!who) return askWho();
+  if (!keep) calPick = isBoss() ? [] : [who];
+  const t0 = val("#cvT"), d0 = val("#cvD") || d, h0 = val("#cvH");
+  openSheet(`<h3>${isBoss() ? "일정 보내기" : "할 일 넣기"}</h3>
+    ${isBoss() ? `<div class="lbl">누구에게</div><div class="chips">${PEOPLE.map((p) => `<button class="chip ${calPick.includes(p) ? "on" : ""}" data-cvp="${p}">${avHtml(p, "xs")} ${esc(PNAME(p))}</button>`).join("")}</div>` : ""}
+    <div class="lbl">할 일</div><input class="in" id="cvT" maxlength="80" placeholder="예) 버프 상세페이지 시안 2개 보여 주기">
+    <div class="row2"><div><div class="lbl">날짜</div><input class="in" type="date" id="cvD"></div><div><div class="lbl">시간 <small>(선택)</small></div><input class="in" type="time" id="cvH"></div></div>
+    <div class="btns"><button class="btn" data-act="cvsave">${isBoss() ? "보내기" : "넣기"}</button></div>`);
+  $("#cvT").value = t0; $("#cvD").value = d0; $("#cvH").value = h0; if (!keep) setTimeout(() => $("#cvT")?.focus(), 50);
+}
+async function dmRoom(p) {
+  const pair = [who, p].sort().join(","), n = D.notes.find((x) => x.종류 === "쓰레드" && x.제목 === "1:1" && thMembers(x).sort().join(",") === pair); if (n) return n.id;
+  const id = uid("n_"); await save("note", { id, 종류: "쓰레드", 작성자: who, 받는사람: pair, 상태: "", 좋아요: "", 브랜드: "", 제목: "1:1", 내용: "", 답: "", 만든시각: stamp() }); return id;
+}
+async function calSave() {
+  const 제목 = val("#cvT"), 마감 = val("#cvD"), 시간 = val("#cvH"); if (!제목) return toast("할 일을 적어 주세요"); if (!마감) return toast("날짜를 골라 주세요");
+  const own = isBoss() ? calPick : [who]; if (!own.length) return toast("누구에게 보낼지 골라 주세요");
+  closeSheet(); const id = uid("i_");
+  await save("item", { id, 회의id: "", 순서: D.items.filter((x) => !x.회의id).length + 1, 제목, 상태: "확정", 브랜드: "", 분야: "", 담당자: own.join(", "), 시작: "", 마감, 시간, 메모: isBoss() ? "이사님 지시" : "", 확인할것: "" });
+  if (isBoss()) for (const p of own.filter((q) => q !== who)) { const th = await dmRoom(p); await save("log", { id: uid("l_"), 안건id: th, 시각: stamp(), 작성자: who, 내용: "📅 일정 보내요\n[[안건:" + id + "]]" }); }
+  toast(isBoss() ? "일정을 보냈어요" : "할 일을 넣었어요");
+}
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-cal],[data-calteam],[data-calday],[data-calnew],[data-cvp],[data-act='cvsave']"); if (!t) return;
+  const d = t.dataset;
+  if (d.cal != null) { calOff = d.cal === "0" ? 0 : calOff + Number(d.cal); calDay = ""; return render(); }
+  if (d.calteam != null) { calTeam = d.calteam === "1"; return render(); }
+  if (d.calday) { calDay = d.calday; return render(); }
+  if (d.calnew) return calNew(d.calnew);
+  if (d.cvp) { calPick = calPick.includes(d.cvp) ? calPick.filter((x) => x !== d.cvp) : [...calPick, d.cvp]; return calNew("", true); }
+  if (d.act === "cvsave") return calSave();
+});
 function ideaHtml() {
   const list = ideas().filter((n) => (ideaF === "boss" ? n.받는사람 === "이사님" : ideaF === "ok" ? n.상태 === "채택" : true)).sort(byMade);
   const card = (n) => { const c = cmts(n.id), lk = likes(n); return `<div class="icard"><button class="ibody" data-idea="${n.id}"><div class="imeta"><span>${avHtml(n.작성자, "xs")} ${esc(PNAME(n.작성자))}, ${esc(ago(n.만든시각 || n.고친시각))} → ${esc(n.받는사람 === "이사님" ? "이사님께" : "팀 전체")}</span>${stBadge(n.상태)}</div><b>${esc(n.제목)}</b>${n.내용 ? `<p>${esc(n.내용)}</p>` : ""}${n.답 ? `<div class="reply"><b>${esc(PNAME("한섭"))}</b> ${esc(n.답)}</div>` : ""}</button>
@@ -638,7 +797,7 @@ function noteSheet() {
     <div class="row2"><div><div class="lbl">제목</div><input class="in" id="nTitle" maxlength="80" placeholder="${n.종류 === "인수인계" ? "예) 액상덕후 주문 처리 순서" : "예) 이번 주 할 것"}" value="${esc(n.제목)}"></div>
       <div><div class="lbl">브랜드 <small>(선택)</small></div><select class="in" id="nBrand">${["", ...BRANDS].map((b) => `<option value="${b}" ${n.브랜드 === b ? "selected" : ""}>${b || "없음"}</option>`).join("")}</select></div></div>
     <div class="lbl">내용</div><textarea class="in" id="nBody" style="min-height:260px" placeholder="${n.종류 === "인수인계" ? "순서대로 적어요. 1) … 2) …" : "자유롭게 적어요"}">${esc(n.내용)}</textarea>
-    <div class="btns">${isNew ? '<button class="btn gray" data-x style="flex:0 0 96px">닫기</button>' : '<button class="btn red" data-act="ndel" style="flex:0 0 96px">삭제</button>'}<button class="btn" data-act="nsave">저장</button></div>`);
+    <div class="btns">${isNew ? '<button class="btn gray" data-x style="flex:0 0 96px">닫기</button>' : '<button class="btn red" data-act="ndel" style="flex:0 0 96px">지우기</button>'}<button class="btn" data-act="nsave">저장</button></div>`);
 }
 const grabNote = () => ({ 제목: val("#nTitle"), 브랜드: val("#nBrand"), 내용: $("#nBody") ? $("#nBody").value.replace(/\s+$/, "") : "" });
 function ideaSheet() {
@@ -652,7 +811,7 @@ function ideaSheet() {
     <div class="lbl">댓글 <small>${c.length}개</small></div>
     <div>${c.map((l) => `<div class="log ${isIdea(l) ? "idea" : ""}"><small>${isIdea(l) ? "💡 " : avHtml(logWho(l), "xs") + " "}${esc(PNAME(logWho(l)))}, ${esc(ago(l.시각))} ${logWho(l) === who ? `<button data-ldel2="${l.id}" style="color:var(--sub);margin-left:6px">지우기</button>` : ""}</small>${linkify(l.내용)}</div>`).join("") || '<div class="caption" style="margin:0">첫 댓글을 남겨요</div>'}</div>
     <div class="mline"><input class="in" id="xCmt" maxlength="300" placeholder="예) 이 아이디어 좋은 것 같아요!"><button class="btn" data-act="icmt">남기기</button></div>
-    <div class="btns">${mine ? '<button class="btn red" data-act="idel2" style="flex:0 0 96px">삭제</button>' : ""}<button class="btn gray" data-x>닫기</button><button class="btn" data-act="isave2">저장</button></div>`);
+    <div class="btns">${mine ? '<button class="btn red" data-act="idel2" style="flex:0 0 96px">지우기</button>' : ""}<button class="btn gray" data-x>닫기</button><button class="btn" data-act="isave2">저장</button></div>`);
 }
 const grabIdea = () => { const o = { 답: val("#xReply") }; if ($("#xTitle")) { o.제목 = val("#xTitle"); o.내용 = $("#xBody").value.replace(/\s+$/, ""); } return o; };
 
@@ -713,7 +872,7 @@ const RST = { "녹음 중": "🔴 녹음 중", "녹음 끝": "⏳ 받아쓰기 �
 function recHtml() {
   if (recSel) return recDetail();
   const list = [...D.recs].sort((a, b) => (a.세션 < b.세션 ? 1 : -1));
-  return `<div class="card"><div class="eyebrow">🎙 녹음</div><div class="headline">녹음하면 여기 모여요</div><div class="caption">PC 바탕화면 "회의 받아쓰기"를 누르면 받아쓰고, 클로드가 줄마다 누가, 무슨 말인지 먼저 정리해 둬요. 확인하고 "보드에 넣기"만 누르면 돼요</div></div>
+  return `<div class="card"><div class="eyebrow">🎙 녹음</div><div class="headline">녹음하면 여기 모여요</div><div class="caption">PC 바탕화면 "회의 받아쓰기"를 켜 두면 받아쓰고 정리해요. 정리가 끝나면 할 일과 회의록이 메신저에 저절로 올라가요</div></div>
     <div class="list">${list.map((x) => { const m = meetOf(x.회의id); return `<button class="item" data-recsel="${x.id}"><div class="av" style="font-size:20px">🎙</div><div class="tx"><b>${esc(m ? m.제목 : "회의 없음")}</b><span>${esc(sessTxt(x.세션))}${x.길이 ? ", " + esc(x.길이) : ""}</span></div><div class="val"><span class="rst">${esc(RST[x.상태] || x.상태)}</span></div><span class="chev">›</span></button>`; }).join("") || '<div class="empty">아직 녹음이 없어요. 회의 탭 맨 위 "오늘 회의 녹음 시작"으로 녹음해요</div>'}</div>`;
 }
 function recDetail() {
@@ -724,7 +883,7 @@ function recDetail() {
   const opts = (v) => `<option value="">안건 없음</option>${its.map((i) => `<option value="${i.id}" ${v === i.id ? "selected" : ""}>${esc(i.제목.slice(0, 24))}</option>`).join("")}${v && v.startsWith("new:") ? `<option value="${esc(v)}" selected>새 안건: ${esc(v.slice(4, 28))}</option>` : ""}`;
   const head = `<button class="ic" data-recback style="margin-bottom:8px">‹ 녹음 목록</button>
     <div class="card"><div class="eyebrow">${esc(sessTxt(x.세션))}${x.길이 ? ", " + esc(x.길이) : ""}, ${esc(RST[x.상태] || x.상태)}</div><div class="headline">${esc(m ? m.제목 : "회의 없음")}</div>
-      <div class="btns" style="margin-top:14px">${lines.length ? `<button class="btn sec2" data-act="recorg" style="height:48px;font-size:15px">${CMARK} ${sum.결론 ? "다시 정리" : "클로드 정리"}</button><button class="btn" data-act="recapply" style="height:48px;font-size:15px">보드에 넣기</button>` : `<div class="caption" style="margin:0">아직 받아쓰기 전이에요. PC 바탕화면 "회의 받아쓰기"를 켜 두면 회의하면서 같이 받아써요</div>`}</div></div>`;
+      <div class="btns" style="margin-top:14px">${lines.length ? `<button class="btn sec2" data-act="recorg" style="height:48px;font-size:15px">${CMARK} ${sum.결론 ? "다시 정리" : "클로드 정리"}</button>${x.상태 === "보드에 넣음" ? "" : '<button class="btn" data-act="recapply" style="height:48px;font-size:15px">할 일로 넣기</button>'}` : `<div class="caption" style="margin:0">아직 받아쓰기 전이에요. PC 바탕화면 "회의 받아쓰기"를 켜 두면 회의하면서 같이 받아써요</div>`}</div></div>`;
   const fold = lines.length > 200 && !recOpen;
   const rows = (fold ? [] : lines).map((l, i) => { const c = recCls.rows[i]; return `<div class="rline k-${c.kind}"><div class="rt"><small>${esc(l[0])}</small> ${esc(l[1])}</div>
       <div class="rctl"><select data-rc="who" data-ri="${i}">${[...PEOPLE, "?"].map((p) => `<option value="${p}" ${c.who === p ? "selected" : ""}>${p === "?" ? "누구?" : (profOf(p).e ? profOf(p).e + " " : "") + p}</option>`).join("")}</select>
@@ -825,7 +984,7 @@ const scrollEnd = () => setTimeout(() => window.scrollTo(0, document.body.scroll
 const thPlain = (t) => String(t || "").replace(/^🤖\s*/, "").replace(/\n?\[\[되돌리기:[^\]]*\]\]/g, "").replace(/\[\[안건:[\w]+\]\]/g, "📌 안건").replace(/\[\[담당:[\w]+\|([^\]]*)\]\]/g, "👤 담당자 정함: $1");
 function thItemCard(id) {
   const x = D.items.find((y) => y.id === id); if (!x) return "";
-  const own = peopleOf(x.담당자).map(PNAME).join(", "), sub = [own ? "담당 " + own : "담당 없음", x.마감 ? md(x.마감) + " " + ddayTxt(x.마감) : ""].filter(Boolean).join(", ");
+  const own = peopleOf(x.담당자).map(PNAME).join(", "), sub = [own ? "담당 " + own : "담당 없음", x.마감 ? md(x.마감) + (x.시간 ? " " + x.시간 : "") + " " + ddayTxt(x.마감) : ""].filter(Boolean).join(", ");
   return `<button class="icard" data-copen="${x.id}"><span class="ict">📌 ${esc(x.제목)}</span><span class="ics">${esc(sub)}</span><span class="icgo">›</span></button>`;
 }
 const thBody = (t, lid) => esc(String(t || "").replace(/^🤖\s*/, "")).replace(/\n?\[\[되돌리기:[^\]]*\]\]/g, lid ? `<button class="cundo" data-undo="${lid}">↩️ 잘못 넣었으면 되돌리기</button>` : "").replace(/@(이사님|한섭|보혜|시원|시워니|진이|진)/g, '<span class="cmention">@$1</span>')
@@ -851,7 +1010,7 @@ function thHtml() {
     const prev = z ? `${t.kind === "dm" ? "" : esc(isBot(z) ? "클로드" : PNAME(logWho(z))) + ": "}${esc(thPlain(z.내용).replace(/\n/g, " ").slice(0, 60))}` : esc(thPlain(t.첫글).replace(/\n/g, " ").slice(0, 60)) || "아직 메시지가 없어요";
     return `<button class="throw ${thPins().includes(t.id) ? "pin" : ""}" data-th="${t.id}">${ic}<div class="tx"><b>${thPins().includes(t.id) ? "📌 " : ""}${esc(t.제목)}${t.mem && t.mem.length ? ` <small>${t.mem.length}명</small>` : ""}</b><span>${prev}</span></div><div class="thmeta">${esc(ago(t.last))}${n ? `<em class="thun">${n}</em>` : ""}</div></button>`; };
   return `${who ? `<div class="dmrow">${others.map((p) => `<button class="dmb" data-dm="${p}">${avHtml(p, "md")}<span>${esc(PNAME(p))}</span></button>`).join("")}<button class="dmb" data-act="thnew"><span class="dmplus">＋</span><span>새 방</span></button></div>` : ""}
-    <div class="thlist">${l.map(row).join("") || '<div class="empty">아직 대화방이 없어요</div>'}</div>`;
+    <div class="thlist">${l.map(row).join("") || '<div class="empty">아직 대화방이 없어요. 위 ＋ 새 방으로 만들어요</div>'}</div>`;
 }
 function minutesHtml(x) {
   const sm = jp(x.정리, {}), m = meetOf(x.회의id), its = D.items.filter((i) => i.회의id === x.회의id);
@@ -873,10 +1032,10 @@ function minutesHtml(x) {
     ${(sm.정한것 || []).length ? `<h3>정한 것</h3>${ol(sm.정한것)}` : ""}
     ${(sm.못정한것 || []).length ? `<h3>다음에 정할 것</h3>${ol(sm.못정한것)}` : ""}
     <footer>클로드가 회의 녹음을 받아써서 정리했어요. 누가 한 말인지는 짐작이라 틀릴 수 있어요.</footer></article>
-    <div class="mn-btns"><button data-recgo2="${x.id}">📝 받아쓴 글 보기</button><button data-act="mnprint">🖨 PDF로 저장</button></div>`;
+    <div class="mn-btns"><button data-recgo2="${x.id}">받아쓴 글 보기</button><button data-act="mnprint">PDF 받기</button></div>`;
 }
 async function mnPdf(btn) {
-  const src = btn.closest(".mn-btns")?.previousElementSibling; if (!src || !src.classList.contains("mn")) return toast("회의록을 못 찾았어요");
+  const src = btn.closest(".mn-btns")?.previousElementSibling; if (!src || !src.classList.contains("mn")) return toast("회의록을 못 찾았어요. ↻를 눌러 새로 불러와 주세요");
   toast("PDF 만드는 중이에요…");
   if (!window.html2pdf) await new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); }).catch(() => null);
   if (!window.html2pdf) return toast("PDF 도구를 못 불러왔어요. 인터넷을 확인해 주세요");
@@ -885,7 +1044,7 @@ async function mnPdf(btn) {
   el.querySelectorAll(".mn-meta button").forEach((b) => b.remove());
   const name = (el.querySelector("h2")?.textContent || "회의록").trim().replace(/[\\/:*?"<>|]/g, "");
   try { await html2pdf().set({ margin: [14, 14, 14, 14], filename: name + " 회의록.pdf", image: { type: "jpeg", quality: 0.95 }, html2canvas: { scale: 2, backgroundColor: "#ffffff", scrollX: 0, scrollY: 0 }, jsPDF: { unit: "mm", format: "a4" }, pagebreak: { mode: ["css", "legacy"], avoid: [".mn-item", "h3", "li"] } }).from(el).save(); toast("PDF를 받았어요"); }
-  catch (e) { toast("PDF를 만들지 못했어요"); }
+  catch (e) { toast("PDF를 만들지 못했어요. 잠시 뒤 다시 눌러 주세요"); }
 }
 let thMin = false, thBusy = "", cDraft = "";
 const dayTxt = (d) => { const x = new Date(String(d).slice(0, 10) + "T00:00:00"); return isNaN(x) ? "" : `${x.getMonth() + 1}월 ${x.getDate()}일 (${"일월화수목금토"[x.getDay()]})`; };
@@ -894,12 +1053,18 @@ function thView() {
   if (t.rs.length) thSeen(t.id, t.rs.at(-1).시각);
   let top = "";
   if (t.kind === "rec") { const x = D.recs.find((y) => y.id === t.id), sm = jp(x.정리, {});
-    top = `<div class="mini"><div class="eyebrow">📝 회의록</div><b>${esc(String(sm.결론 || "").replace(/^\?\s*:\s*/, ""))}</b><div class="minib"><button data-act="thmin">📝 ${thMin ? "회의록 접기" : "회의록 보기"}</button><button data-act="mnpdf">🖨 PDF 받기</button></div></div>${thMin ? minutesHtml(x) : ""}`; }
-  return `<div class="chead"><button class="ic" data-thback aria-label="목록">‹</button><h2>${esc(t.제목)}${t.kind === "dm" ? ' <small>1:1</small>' : ""}</h2>${isBoss() ? `<button class="ic" data-act="thpin">${thPins().includes(t.id) ? "📌 고정 풀기" : "📌 고정"}</button>${t.kind === "dm" ? "" : '<button class="ic" data-act="thren">✏️ 이름</button>'}${t.kind === "rec" ? "" : '<button class="ic" data-act="thkill">🗑 지우기</button>'}` : ""}</div>${t.mem && t.mem.length ? `<div class="caption" style="margin:-6px 4px 10px">${t.mem.map(PNAME).join(", ")}</div>` : ""}${top}
+    top = `<div class="mini"><div class="eyebrow">📝 회의록</div><b>${esc(String(sm.결론 || "").replace(/^\?\s*:\s*/, ""))}</b><div class="minib"><button data-act="thmin">${thMin ? "회의록 접기" : "회의록 보기"}</button><button data-act="mnpdf">PDF 받기</button></div></div>${thMin ? minutesHtml(x) : ""}`; }
+  return `<div class="chead"><button class="ic" data-thback aria-label="목록">‹</button><h2>${esc(t.제목)}${t.kind === "dm" ? ' <small>1:1</small>' : ""}</h2>${isBoss() ? `<button class="ic" data-act="thpin">${thPins().includes(t.id) ? "고정 풀기" : "맨 위 고정"}</button>${t.kind === "dm" ? "" : '<button class="ic" data-act="thren">이름 바꾸기</button>'}${t.kind === "rec" ? "" : '<button class="ic" data-act="thkill">방 지우기</button>'}` : ""}</div>${t.mem && t.mem.length ? `<div class="caption" style="margin:-6px 4px 10px">${t.mem.map(PNAME).join(", ")}</div>` : ""}${top}
     <div class="msgs">${thMsgsHtml(t)}</div>
-    <div class="cbox"><button class="cb" data-act="cattach" aria-label="안건 공유">📎</button><textarea id="cText" rows="1" placeholder="메시지 보내기">${esc(cDraft)}</textarea><button class="cb" data-act="cask" aria-label="클로드에게 묻기">${CMARK}</button><button class="send" data-act="csend">보내기</button></div>`;
+    <div class="cbox"><button class="cb" data-act="cattach" aria-label="안건 공유"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5 12.6 20a5.5 5.5 0 0 1-7.8-7.8l8.5-8.5a3.7 3.7 0 0 1 5.2 5.2l-8.5 8.5a1.8 1.8 0 0 1-2.6-2.6l7.8-7.8"/></svg></button><textarea id="cText" rows="1" aria-label="메시지" placeholder="메시지 보내기">${esc(cDraft)}</textarea><button class="cb" data-act="cask" aria-label="클로드에게 묻기">${CMARK}</button><button class="send" data-act="csend">보내기</button></div>`;
 }
-let thPop = "", thTyping = [];
+let thPop = "", thTyping = [], thReadMap = {};
+function thReadTxt(t, l, w) {
+  const seen = thReadMap[t.id]; if (!seen || !l.id || w === "클로드") return "";
+  const mem = t.kind === "dm" ? [who, t.other] : t.mem && t.mem.length ? t.mem : PEOPLE, others = mem.filter((m) => m !== w); if (!others.length) return "";
+  const n = others.filter((m) => m === who || (seen[m] || "") >= l.시각).length;
+  return n >= others.length ? '<span class="rd all">모두 읽음</span>' : n ? `<span class="rd">${n}명 읽음</span>` : '<span class="rd">안 읽음</span>';
+}
 function thMsgsHtml(t, fresh = []) {
   const list = (t.첫글 ? [{ id: "", 작성자: t.작성자, 시각: t.시각, 내용: t.첫글 }] : []).concat(t.rs);
   let day = "", prev = "", html = "";
@@ -909,7 +1074,7 @@ function thMsgsHtml(t, fresh = []) {
     const dm2 = String(l.내용).trim().match(/^\[\[담당:([\w]+)\|([^\]]*)\]\]$/);
     if (dm2) { const x = D.items.find((y) => y.id === dm2[1]); html += `<div class="csys">👤 ${esc(PNAME(w))}: "${esc(x ? x.제목 : "안건")}" 담당을 <b>${esc(dm2[2])}</b>(으)로 정했어요</div>`; prev = ""; continue; }
     const pop = l.id && (fresh.includes(l.id) || l.id === thPop) ? "pop" : "";
-    html += `<div class="msg ${mine ? "me" : ""} ${w === "클로드" ? "bot" : ""} ${cont ? "cont" : ""} ${pop}">${!cont ? avHtml(w, "sm") : ""}<div class="mb">${!mine && !cont ? `<div class="mwho">${esc(w === "클로드" ? "클로드" : PNAME(w))}</div>` : ""}<div class="bub">${thBody(l.내용, l.id)}</div><div class="mt">${esc(String(l.시각).slice(11, 16))}${(mine || isBoss()) && l.id ? `<button class="thdel" data-thdel="${l.id}">지우기</button>` : ""}</div></div></div>`;
+    html += `<div class="msg ${mine ? "me" : ""} ${w === "클로드" ? "bot" : ""} ${cont ? "cont" : ""} ${pop}">${!cont ? avHtml(w, "sm") : ""}<div class="mb">${!mine && !cont ? `<div class="mwho">${esc(w === "클로드" ? "클로드" : PNAME(w))}</div>` : ""}<div class="bub">${thBody(l.내용, l.id)}</div><div class="mt">${esc(String(l.시각).slice(11, 16))}${thReadTxt(t, l, w)}${(mine || isBoss()) && l.id ? `<button class="thdel" data-thdel="${l.id}">지우기</button>` : ""}</div></div></div>`;
   }
   for (const n of thTyping) html += `<div class="msg pop">${avHtml(n, "sm")}<div class="mb"><div class="mwho">${esc(PNAME(n))}</div><div class="bub dots"><i></i><i></i><i></i></div></div></div>`;
   if (thBusy === t.id) html += `<div class="msg bot pop">${avHtml("클로드", "sm")}<div class="mb"><div class="mwho">클로드</div><div class="bub dots"><i></i><i></i><i></i></div></div></div>`;
@@ -928,11 +1093,12 @@ async function thLive() {
   liveBusy = true; const th = thSel;
   try {
     const t = thList().find((x) => x.id === th), since = t && t.rs.length ? t.rs.at(-1).시각 : "";
-    const res = await (await fetch(`${APPS_URL}?k=${encodeURIComponent(KEY)}&live=1&th=${encodeURIComponent(th)}&since=${encodeURIComponent(since)}&t=${Date.now()}`, { cache: "no-store" })).json();
+    const res = await (await fetch(`${APPS_URL}?k=${encodeURIComponent(KEY)}&live=1&who=${encodeURIComponent(who || "")}&th=${encodeURIComponent(th)}&since=${encodeURIComponent(since)}&t=${Date.now()}`, { cache: "no-store" })).json();
     if (!res.ok || th !== thSel) return;
     const add = (res.logs || []).filter((l) => !D.logs.some((y) => y.id === l.id)); add.forEach((l) => D.logs.push(l));
     const ty = (res.typing || []).filter((n) => n !== who);
-    if (add.length || ty.join() !== thTyping.join()) { thTyping = ty; thMsgsUpdate(add.map((l) => l.id)); }
+    const sj = JSON.stringify(res.seen || {}), seenCh = sj !== JSON.stringify(thReadMap[th] || null); if (seenCh) thReadMap[th] = res.seen || {};
+    if (add.length || seenCh || ty.join() !== thTyping.join()) { thTyping = ty; thMsgsUpdate(add.map((l) => l.id)); }
   } catch (e) {} finally { liveBusy = false; }
 }
 setInterval(thLive, 2500);
@@ -951,11 +1117,7 @@ async function thAsk(q) {
   } catch (e) { toast(e.message === "limit" ? "오늘 물어보기를 다 썼어요" : "답을 못 받았어요. 다시 해 봐요"); }
   thBusy = ""; render(); scrollEnd();
 }
-async function thDM(p) {
-  const pair = [who, p].sort().join(","), n = D.notes.find((x) => x.종류 === "쓰레드" && x.제목 === "1:1" && thMembers(x).sort().join(",") === pair);
-  if (n) { thSel = n.id; render(); return scrollEnd(); }
-  const id = uid("n_"); await save("note", { id, 종류: "쓰레드", 작성자: who, 받는사람: pair, 상태: "", 좋아요: "", 브랜드: "", 제목: "1:1", 내용: "", 답: "", 만든시각: stamp() }); thSel = id; render();
-}
+async function thDM(p) { thSel = await dmRoom(p); render(); scrollEnd(); thLive(); }
 function thShare(id) { openSheet(`<h3>대화방에 공유하기</h3><div class="caption">고른 방에 이 안건이 카드로 올라가요</div><div class="list">${thList().map((t) => `<button class="item" data-shto="${t.id}" data-shit="${id}"><div class="tx"><b>${esc(t.제목)}</b><span>${t.kind === "dm" ? "1:1" : t.kind === "rec" ? "회의록 방" : "단체방"}</span></div><span class="chev">›</span></button>`).join("")}</div>`); }
 async function thReply(내용, auto = true) {
   const th = thSel, id = uid("l_"); cDraft = ""; thPop = id; setTimeout(() => { if (thPop === id) thPop = ""; }, 800); await save("log", { id, 안건id: th, 시각: stamp(), 작성자: who, 내용 }); scrollEnd();
@@ -964,7 +1126,7 @@ async function thReply(내용, auto = true) {
 }
 async function thUndo(lid) {
   const l = D.logs.find((y) => y.id === lid), m = l && String(l.내용).match(/\[\[되돌리기:([^\]]*)\]\]/); if (!m) return;
-  let u = []; try { u = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(m[1]), (c) => c.charCodeAt(0)))); } catch (e) { return toast("되돌리지 못했어요"); }
+  let u = []; try { u = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(m[1]), (c) => c.charCodeAt(0)))); } catch (e) { return toast("되돌리지 못했어요. 안건을 열어 직접 고쳐 주세요"); }
   if (!confirm("클로드가 넣은 걸 되돌릴까요?")) return;
   for (const a of u) { const x = D.items.find((y) => y.id === a.id); if (!x) continue; if (a.n) await del("item", a.id); else if (a.o) await save("item", { ...x, ...a.o }); }
   await save("log", { ...l, 내용: String(l.내용).replace(/\n?\[\[되돌리기:[^\]]*\]\]/, "") + "\n↩️ 되돌렸어요" }); toast("되돌렸어요");
@@ -998,7 +1160,7 @@ document.addEventListener("click", async (e) => {
   const t = e.target.closest("[data-mnroom],[data-mnpdfid],[data-act='mnpdf'],[data-nmem],[data-act='thpin'],[data-act='thkill'],[data-dm],[data-qq],[data-shto],[data-act='cask'],[data-act='caskgo'],[data-act='thmin'],[data-act='ishare'],[data-undo],[data-act='cwrite'],[data-act='thren'],[data-act='threnok'],[data-cat],[data-act='csend'],[data-act='cattach'],[data-act='cownsave'],[data-act='thnew'],[data-act='thmake'],[data-act='recopen'],[data-act='mnprint'],[data-csend],[data-copen],[data-cown],[data-cpick],[data-th],[data-thback],[data-thdel],[data-recgo2]"); if (!t) return;
   const act = t.dataset.act;
   if (act === "recopen") { recOpen = true; return render(); }
-  if (t.dataset.th) { thSel = t.dataset.th; thMin = false; cDraft = ""; render(); return scrollEnd(); }
+  if (t.dataset.th) { thSel = t.dataset.th; thMin = false; cDraft = ""; render(); scrollEnd(); return thLive(); }
   if (act === "thmin") { thMin = !thMin; return render(); }
   if (t.dataset.qq) { const a = $("#qAsk"); if (a) { a.value = t.dataset.qq; a.focus(); } return; }
   if (t.hasAttribute("data-thback")) { thSel = ""; return render(); }
@@ -1030,13 +1192,13 @@ document.addEventListener("click", async (e) => {
     a.value = a.value.slice(0, s0) + add + a.value.slice(s0); cDraft = a.value; a.focus(); a.setSelectionRange(s0 + add.length, s0 + add.length); return; }
   if (act === "csend") { const v = val("#cText"); if (!v) return; cDraft = ""; const ask = v.match(/^@클로드\s*([\s\S]*)$/); if (ask) return ask[1].trim() ? thAsk(ask[1].trim()) : thAskSheet(); return thReply(v); }
   if (act === "cattach") return thAttach();
-  if (t.dataset.csend) { const v = cDraft; cDraft = ""; closeSheet(); thReply((v ? v + "\n" : "") + "[[안건:" + t.dataset.csend + "]]", false); return toast("안건을 보냈어요"); }
+  if (t.dataset.csend) { const v = cDraft; cDraft = ""; closeSheet(); thReply((v ? v + "\n" : "") + "[[안건:" + t.dataset.csend + "]]", false); return toast("안건을 공유했어요"); }
   if (t.dataset.cown) return thOwner(t.dataset.cown);
   if (t.dataset.cpick) { const p = t.dataset.cpick; return thOwner(edit._cown, edit.own.includes(p) ? edit.own.filter((q) => q !== p) : [...edit.own, p]); }
   if (act === "cownsave") { const x = D.items.find((y) => y.id === edit._cown), own = edit.own; closeSheet(); if (!x) return;
     await save("item", { ...x, 담당자: own.join(", ") }); if (thSel) thReply("[[담당:" + x.id + "|" + (own.join(", ") || "없음") + "]]", false); return toast("담당자를 정했어요"); }
   if (t.dataset.undo) return thUndo(t.dataset.undo);
-  if (t.dataset.thdel) { if (!confirm("이 댓글을 지울까요?")) return; return del("log", t.dataset.thdel); }
+  if (t.dataset.thdel) { if (!confirm("이 메시지를 지울까요?\n되돌릴 수 없어요.")) return; return del("log", t.dataset.thdel); }
 });
 document.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.id === "cText" && !e.isComposing && (isPC() ? !e.shiftKey : e.ctrlKey || e.metaKey)) { e.preventDefault(); document.querySelector('[data-act="csend"]')?.click(); } });
 document.addEventListener("input", (e) => { if (e.target.id === "cText") { cDraft = e.target.value; if (cDraft && thSel && !DEMO && Date.now() - typingAt > 3000) { typingAt = Date.now(); post({ type: "typing", th: thSel, who }).catch(() => {}); } e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px"; } });
@@ -1044,6 +1206,7 @@ document.addEventListener("input", (e) => { if (e.target.id === "cText") { cDraf
 // ── 그리기 ──
 function render() {
   if (!D) return;
+  { const k = (tab === "chat" && thSel) || (tab === "rec" && recSel) || ""; if (k && !navKey) navPush(); else if (!k && navKey) navBack(); navKey = k; }
   const pc = isPC();
   $("#nav").style.display = pc || (tab === "chat" && thSel) ? "none" : "";
   if (tab === "idea") ls.set("ot-seen-idea", D.at || ""); // 제안함을 열면 읽음
@@ -1123,13 +1286,13 @@ document.addEventListener("click", async (e) => {
   if (d.idf != null) { ideaF = d.idf; ls.set("ot-idf", ideaF); return render(); }
   if (d.ito) { ideaTo = d.ito; const t = val("#iqText"); render(); $("#iqText").value = t; return; }
   if (d.ist2) { Object.assign(edit, grabIdea()); edit.상태 = d.ist2; return ideaSheet(); }
-  if (d.ldel2) { if (confirm("이 댓글을 지울까요?")) { Object.assign(edit, grabIdea()); await del("log", d.ldel2); ideaSheet(); } return; }
+  if (d.ldel2) { if (confirm("이 댓글을 지울까요?\n되돌릴 수 없어요.")) { Object.assign(edit, grabIdea()); await del("log", d.ldel2); ideaSheet(); } return; }
   if (d.mview) { meetView = d.mview; ls.set("ot-mview", meetView); return render(); }
   if (d.brand != null) { brandF = d.brand; ls.set("ot-brand", brandF); return render(); }
   if (d.todof != null) { todoF = d.todof; ls.set("ot-todof", todoF); return render(); }
   if (d.owner) return panelOwner(d.owner);
   if (d.item) return openItem(d.item);
-  if (d.msel) { meetSel = d.msel; ls.set("ot-meet", meetSel); return render(); }
+  if (d.msel) { meetSel = d.msel; ls.set("ot-meet", meetSel); render(); if (!isPC()) setTimeout(() => document.querySelector(".mhead")?.scrollIntoView({ behavior: "smooth", block: "start" }), 30); return; }
   if (d.recsel) { recSel = d.recsel; recCls = null; return render(); }
   if ("recback" in d) { if (recCls && recCls.dirty && !confirm("분류를 저장하지 않았어요. 나갈까요?")) return; recSel = ""; recCls = null; return render(); }
   if (d.noti) { const n = notis().find((x) => x.key === d.noti); notiRead([d.noti]); closeSheet(); render(); if (!n) return; if (n.go.th) { tab = "chat"; thSel = n.go.th; render(); return window.scrollTo(0, document.body.scrollHeight); } if (n.go.item) return openItem(n.go.item); const x = D.notes.find((y) => y.id === n.go.idea); if (x) { tab = "idea"; ls.set("ot-tab", tab); render(); edit = { ...x }; return ideaSheet(); } return; }
@@ -1140,7 +1303,7 @@ document.addEventListener("click", async (e) => {
   if (d.mwho) { edit.제목 = val("#mTitle"); edit.날짜 = val("#mDate"); edit.메모 = val("#mMemo"); edit._who = toggle(edit._who || [], d.mwho); return sheetMeeting(); }
   if (d.iown) { Object.assign(edit, grabItem()); edit._own = toggle(edit._own || [], d.iown); return sheetItem(); }
   if (d.ist) { Object.assign(edit, grabItem()); edit.상태 = d.ist; return sheetItem(); }
-  if (d.ldel) { if (confirm("이 기록을 지울까요?")) { await del("log", d.ldel); sheetItem(); } return; }
+  if (d.ldel) { if (confirm("이 기록을 지울까요?\n되돌릴 수 없어요.")) { await del("log", d.ldel); sheetItem(); } return; }
   switch (d.act) {
     case "reload": return reload();
     case "logout": ls.set("ot-key", null); KEY = ""; D = null; return renderLogin();
@@ -1155,7 +1318,7 @@ document.addEventListener("click", async (e) => {
           D = await load(KEY); } recCls = null; render(); toast("정리했어요"); } catch (e) { t.disabled = false; toast(ASKERR[e.message] || "정리하지 못했어요. 잠시 뒤 다시 해 봐요"); render(); } return; }
     case "noti": return notiSheet();
     case "nall": notiRead(notis().map((n) => n.key)); render(); return notiSheet();
-    case "qadd": { if (!who) return askWho(); const v = val("#qText"); if (!v) return; const p = parseQuick(v); if (!p.title) return toast("할 일을 적어요");
+    case "qadd": { if (!who) return askWho(); const v = val("#qText"); if (!v) return; const p = parseQuick(v); if (!p.title) return toast("할 일을 적어 주세요");
       const x = { id: uid("i_"), 회의id: "", 순서: "", 제목: p.title, 상태: "확정", 브랜드: "", 분야: "", 담당자: (p.owners.length ? p.owners : [who]).join(", "), 시작: "", 마감: p.due, 메모: "", 확인할것: "" };
       await save("item", x); return toast(`넣었어요: ${x.담당자}${p.due ? ", 마감 " + md(p.due) : ""}`); }
     case "recnow": { // 오늘 회의가 있으면 거기, 없으면 "M/D 회의"를 만들고 바로 녹음
@@ -1170,7 +1333,7 @@ document.addEventListener("click", async (e) => {
     case "ask": {
       if (!who) return askWho(); if (t.disabled) return;
       const target = d.target, id = d.id, mode = d.mode || "q", q = mode === "q" ? val("#askQ") : "";
-      if (mode === "q" && !q) return toast("물어볼 내용을 적어요");
+      if (mode === "q" && !q) return toast("물어볼 내용을 적어 주세요");
       Object.assign(edit, target === "note" ? grabIdea() : grabItem());
       document.querySelectorAll('[data-act="ask"]').forEach((b) => (b.disabled = true)); t.textContent = mode === "check" ? "검증하는 중…" : "찾아보는 중…"; toast(mode === "check" ? "클로드가 검증하는 중이에요. 1분쯤 걸려요" : "클로드가 찾아보는 중이에요. 1분쯤 걸려요");
       try {
@@ -1180,27 +1343,27 @@ document.addEventListener("click", async (e) => {
       return target === "note" ? ideaSheet() : sheetItem();
     }
     case "more": return moreSheet();
-    case "ipost": { if (!who) return askWho(); const t = val("#iqText"); if (!t) return toast("제안을 적어요"); const [first, ...rest] = t.split("\n"); const now = new Date(), stamp = `${ymd(now)} ${pad(now.getHours())}:${pad(now.getMinutes())}`; await save("note", { id: uid("n_"), 종류: "제안", 작성자: who, 받는사람: ideaTo, 상태: "새 제안", 좋아요: "", 브랜드: "", 제목: first.trim(), 내용: rest.join("\n").trim(), 답: "", 만든시각: stamp }); return toast("올렸어요"); }
+    case "ipost": { if (!who) return askWho(); const t = val("#iqText"); if (!t) return toast("제안을 적어 주세요"); const [first, ...rest] = t.split("\n"); const now = new Date(), stamp = `${ymd(now)} ${pad(now.getHours())}:${pad(now.getMinutes())}`; await save("note", { id: uid("n_"), 종류: "제안", 작성자: who, 받는사람: ideaTo, 상태: "새 제안", 좋아요: "", 브랜드: "", 제목: first.trim(), 내용: rest.join("\n").trim(), 답: "", 만든시각: stamp }); return toast("올렸어요"); }
     case "icmt": { const t = val("#xCmt"); if (!t) return; Object.assign(edit, grabIdea()); await save("log", { id: uid("l_"), 안건id: edit.id, 시각: "", 작성자: who, 내용: t }); return ideaSheet(); }
-    case "isave2": { Object.assign(edit, grabIdea()); if (!edit.제목) return toast("제목을 적어요"); const n = { ...edit }; closeSheet(); await save("note", n); return toast("저장했어요"); }
-    case "idel2": { if (!confirm("이 제안을 지울까요?")) return; const id = edit.id; closeSheet(); return del("note", id); }
-    case "nsave": { Object.assign(edit, grabNote()); if (!edit.제목 && !edit.내용) return toast("제목이나 내용을 적어요"); if (!edit.작성자) return askWho(() => noteSheet()); const n = { ...edit }; closeSheet(); await save("note", n); return toast("저장했어요"); }
-    case "ndel": { if (!confirm("이 노트를 지울까요?")) return; const id = edit.id; closeSheet(); return del("note", id); }
+    case "isave2": { Object.assign(edit, grabIdea()); if (!edit.제목) return toast("제목을 적어 주세요"); const n = { ...edit }; closeSheet(); await save("note", n); return toast("저장했어요"); }
+    case "idel2": { if (!confirm("이 제안을 지울까요?\n댓글도 같이 지워지고 되돌릴 수 없어요.")) return; const id = edit.id; closeSheet(); return del("note", id); }
+    case "nsave": { Object.assign(edit, grabNote()); if (!edit.제목 && !edit.내용) return toast("제목이나 내용을 적어 주세요"); if (!edit.작성자) return askWho(() => noteSheet()); const n = { ...edit }; closeSheet(); await save("note", n); return toast("저장했어요"); }
+    case "ndel": { if (!confirm("이 노트를 지울까요?\n되돌릴 수 없어요.")) return; const id = edit.id; closeSheet(); return del("note", id); }
     case "recstop": if (REC && REC.mr.state !== "inactive") { if (!confirm("녹음을 멈출까요?")) return; REC.mr.stop(); } return;
     case "mnew": edit = { id: uid("m_"), 날짜: today(), 제목: "", 브랜드: brandF || "", 참석: "", 메모: "", _who: who ? [who] : [] }; return sheetMeeting();
     case "medit": { const m0 = meetOf(meetSel); edit = { ...m0, _who: peopleOf(m0.참석) }; return sheetMeeting(); }
-    case "msave": { edit.제목 = val("#mTitle"); edit.날짜 = val("#mDate"); edit.메모 = val("#mMemo"); if (!edit.제목) return toast("제목을 적어요"); if (!edit.날짜) return toast("날짜를 골라요"); if (!sameSet(edit._who, peopleOf(edit.참석))) edit.참석 = edit._who.join(", "); delete edit._who; const m = { ...edit }; meetSel = m.id; ls.set("ot-meet", meetSel); tab = "meet"; ls.set("ot-tab", tab); closeSheet(); await save("meeting", m); return toast("저장했어요"); }
-    case "mdel": { if (!confirm("이 회의와 안건을 모두 지울까요?")) return; const id = edit.id; closeSheet(); return del("meeting", id); }
+    case "msave": { edit.제목 = val("#mTitle"); edit.날짜 = val("#mDate"); edit.메모 = val("#mMemo"); if (!edit.제목) return toast("제목을 적어 주세요"); if (!edit.날짜) return toast("날짜를 골라 주세요"); if (!sameSet(edit._who, peopleOf(edit.참석))) edit.참석 = edit._who.join(", "); delete edit._who; const m = { ...edit }; meetSel = m.id; ls.set("ot-meet", meetSel); tab = "meet"; ls.set("ot-tab", tab); closeSheet(); await save("meeting", m); return toast("저장했어요"); }
+    case "mdel": { if (!confirm("이 회의를 지울까요?\n안의 안건과 기록이 모두 지워지고 되돌릴 수 없어요.")) return; const id = edit.id; closeSheet(); return del("meeting", id); }
     case "inew": { const its = D.items.filter((x) => x.회의id === meetSel); edit = { id: uid("i_"), 회의id: meetSel, 순서: its.length + 1, 제목: "", 상태: "후보", 브랜드: "", 분야: "", 담당자: "", 시작: "", 마감: "", 메모: "", 확인할것: "", _own: [] }; return sheetItem(); }
     case "tnew": edit = { id: uid("i_"), 회의id: "", 순서: "", 제목: "", 상태: "확정", 브랜드: brandF || "", 분야: "", 담당자: "", 시작: "", 마감: "", 메모: "", 확인할것: "", _own: who ? [who] : [] }; return sheetItem();
-    case "isave": { Object.assign(edit, grabItem()); if (!edit.제목) return toast("안건을 적어요"); if (!sameSet(edit._own, peopleOf(edit.담당자))) edit.담당자 = edit._own.join(", "); delete edit._own; const x = { ...edit }; closeSheet(); await save("item", x); return toast("저장했어요"); }
-    case "idel": { if (!confirm("이 안건을 지울까요?")) return; const id = edit.id; closeSheet(); return del("item", id); }
+    case "isave": { Object.assign(edit, grabItem()); if (!edit.제목) return toast("안건을 적어 주세요"); if (!sameSet(edit._own, peopleOf(edit.담당자))) edit.담당자 = edit._own.join(", "); delete edit._own; const x = { ...edit }; closeSheet(); await save("item", x); return toast("저장했어요"); }
+    case "idel": { if (!confirm("이 안건을 지울까요?\n남긴 기록도 같이 지워지고 되돌릴 수 없어요.")) return; const id = edit.id; closeSheet(); return del("item", id); }
     case "ladd": { const txt = val("#lText"); if (!txt) return; if (!who) return askWho(() => { sheetItem(); $("#lText").value = txt; }); Object.assign(edit, grabItem()); const l = { id: uid("l_"), 안건id: edit.id, 시각: "", 작성자: who, 내용: txt }; await save("log", l); return sheetItem(); }
     case "ibulk": return sheetBulk();
     case "bulksave": { const lines = val("#bulkText").split(/\n/).map((s) => s.trim()).filter(Boolean); if (!lines.length) return; let n = D.items.filter((x) => x.회의id === meetSel).length; closeSheet(); for (const line of lines) { const { t, s } = parseStatus(line); if (!t) continue; n++; await save("item", { id: uid("i_"), 회의id: meetSel, 순서: n, 제목: t, 상태: s, 브랜드: "", 분야: "", 담당자: "", 시작: "", 마감: "", 메모: "", 확인할것: "" }); } return toast(`${lines.length}개 넣었어요`); }
   }
 });
-const grabItem = () => ({ 제목: val("#iTitle"), 브랜드: val("#iBrand"), 분야: val("#iField"), 마감: val("#iDue"), 시작: val("#iStart"), 확인할것: val("#iChk"), 메모: val("#iMemo") });
+const grabItem = () => ({ 제목: val("#iTitle"), 브랜드: val("#iBrand"), 분야: val("#iField"), 마감: val("#iDue"), 시간: val("#iTime"), 시작: val("#iStart"), 확인할것: val("#iChk"), 메모: val("#iMemo") });
 document.addEventListener("change", (e) => {
   const el = e.target; if (!el.dataset || !el.dataset.rc || !recCls) return;
   const i = +el.dataset.ri, k = el.dataset.rc; recCls.rows[i][k] = el.value; recCls.dirty = true;
