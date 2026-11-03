@@ -162,6 +162,8 @@
   .pav.md{width:44px;height:44px} .pav.md .pn{font-size:17px} .msg.cont{padding-left:42px}
   .dmplus{width:44px;height:44px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-size:22px;color:var(--ac)}
   .throw.pin{background:var(--ac-soft)} .throw .tx b small{font-size:12px;color:var(--sub);font-weight:600} .chip[disabled]{opacity:1}
+  .minib{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px} .minib button{height:44px;border-radius:12px;background:var(--ac);color:#fff;font-size:15px;font-weight:800} .minib button+button{background:var(--ac-soft);color:var(--ac)}
+  .chead{flex-wrap:wrap}
   .thun{font-style:normal;background:var(--red);color:#fff;border-radius:999px;font-size:11px;font-weight:800;padding:1px 7px;align-self:flex-end}
   .chead{display:flex;align-items:center;gap:6px;margin:0 0 10px} .chead h2{flex:1;min-width:0;font-size:19px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .chead h2 small{font-size:12px;color:var(--sub);font-weight:700} .chead .ic:first-child{font-size:22px;padding:0 10px}
   .mini{background:var(--card);border-radius:18px;padding:14px 16px;margin-bottom:10px} .mini b{display:block;font-size:15px;line-height:1.5} .mini+.mn{margin-bottom:10px}
@@ -887,7 +889,7 @@ function thView() {
   if (t.rs.length) thSeen(t.id, t.rs.at(-1).시각);
   let top = "";
   if (t.kind === "rec") { const x = D.recs.find((y) => y.id === t.id), sm = jp(x.정리, {});
-    top = `<div class="mini"><div class="eyebrow">📝 회의록</div><b>${esc(String(sm.결론 || "").replace(/^\?\s*:\s*/, ""))}</b><div class="cc-btns"><button data-act="thmin">${thMin ? "회의록 접기" : "회의록 펼쳐 보기"}</button></div></div>${thMin ? minutesHtml(x) : ""}`; }
+    top = `<div class="mini"><div class="eyebrow">📝 회의록</div><b>${esc(String(sm.결론 || "").replace(/^\?\s*:\s*/, ""))}</b><div class="minib"><button data-act="thmin">📝 ${thMin ? "회의록 접기" : "회의록 보기"}</button><button data-act="mnpdf">🖨 PDF 받기</button></div></div>${thMin ? minutesHtml(x) : ""}`; }
   const list = (t.첫글 ? [{ id: "", 작성자: t.작성자, 시각: t.시각, 내용: t.첫글 }] : []).concat(t.rs);
   let day = "", prev = "", html = "";
   for (const l of list) {
@@ -898,7 +900,7 @@ function thView() {
     html += `<div class="msg ${mine ? "me" : ""} ${w === "클로드" ? "bot" : ""} ${cont && !mine ? "cont" : ""}">${!mine && !cont ? avHtml(w, "sm") : ""}<div class="mb">${!mine && !cont ? `<div class="mwho">${esc(w === "클로드" ? "클로드" : PNAME(w))}</div>` : ""}<div class="bub">${thBody(l.내용, l.id)}</div><div class="mt">${esc(String(l.시각).slice(11, 16))}${(mine || isBoss()) && l.id ? `<button class="thdel" data-thdel="${l.id}">지우기</button>` : ""}</div></div></div>`;
   }
   if (thBusy === t.id) html += `<div class="msg bot">${avHtml("클로드", "sm")}<div class="mb"><div class="mwho">클로드</div><div class="bub typing">답을 쓰는 중이에요<i>.</i><i>.</i><i>.</i></div></div></div>`;
-  return `<div class="chead"><button class="ic" data-thback aria-label="목록">‹</button><h2>${esc(t.제목)}${t.kind === "dm" ? ' <small>1:1</small>' : ""}</h2>${isBoss() ? `<button class="ic" data-act="thpin">${thPins().includes(t.id) ? "📌 고정 풀기" : "📌 고정"}</button>${t.kind === "dm" ? "" : '<button class="ic" data-act="thren">✏️</button>'}${t.kind === "rec" ? "" : '<button class="ic" data-act="thkill">🗑</button>'}` : ""}</div>${t.mem && t.mem.length ? `<div class="caption" style="margin:-6px 4px 10px">${t.mem.map(PNAME).join(", ")}</div>` : ""}${top}
+  return `<div class="chead"><button class="ic" data-thback aria-label="목록">‹</button><h2>${esc(t.제목)}${t.kind === "dm" ? ' <small>1:1</small>' : ""}</h2>${isBoss() ? `<button class="ic" data-act="thpin">${thPins().includes(t.id) ? "📌 고정 풀기" : "📌 고정"}</button>${t.kind === "dm" ? "" : '<button class="ic" data-act="thren">✏️ 이름</button>'}${t.kind === "rec" ? "" : '<button class="ic" data-act="thkill">🗑 지우기</button>'}` : ""}</div>${t.mem && t.mem.length ? `<div class="caption" style="margin:-6px 4px 10px">${t.mem.map(PNAME).join(", ")}</div>` : ""}${top}
     <div class="msgs">${html || '<div class="empty" style="background:none">첫 메시지를 보내 봐요</div>'}</div>
     <div class="cbox"><button class="cb" data-act="cattach" aria-label="안건 공유">📎</button><textarea id="cText" rows="1" placeholder="메시지 보내기">${esc(cDraft)}</textarea><button class="cb" data-act="cask" aria-label="클로드에게 묻기">${CMARK}</button><button class="send" data-act="csend">보내기</button></div>`;
 }
@@ -961,7 +963,7 @@ function thNew(keep) {
   if (keep) { $("#thT").value = t0; $("#thB").value = b0; }
 }
 document.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-nmem],[data-act='thpin'],[data-act='thkill'],[data-dm],[data-qq],[data-shto],[data-act='cask'],[data-act='caskgo'],[data-act='thmin'],[data-act='ishare'],[data-undo],[data-act='cwrite'],[data-act='thren'],[data-act='threnok'],[data-cat],[data-act='csend'],[data-act='cattach'],[data-act='cownsave'],[data-act='thnew'],[data-act='thmake'],[data-act='recopen'],[data-act='mnprint'],[data-csend],[data-copen],[data-cown],[data-cpick],[data-th],[data-thback],[data-thdel],[data-recgo2]"); if (!t) return;
+  const t = e.target.closest("[data-act='mnpdf'],[data-nmem],[data-act='thpin'],[data-act='thkill'],[data-dm],[data-qq],[data-shto],[data-act='cask'],[data-act='caskgo'],[data-act='thmin'],[data-act='ishare'],[data-undo],[data-act='cwrite'],[data-act='thren'],[data-act='threnok'],[data-cat],[data-act='csend'],[data-act='cattach'],[data-act='cownsave'],[data-act='thnew'],[data-act='thmake'],[data-act='recopen'],[data-act='mnprint'],[data-csend],[data-copen],[data-cown],[data-cpick],[data-th],[data-thback],[data-thdel],[data-recgo2]"); if (!t) return;
   const act = t.dataset.act;
   if (act === "recopen") { recOpen = true; return render(); }
   if (t.dataset.th) { thSel = t.dataset.th; thMin = false; cDraft = ""; render(); return scrollEnd(); }
@@ -972,6 +974,7 @@ document.addEventListener("click", async (e) => {
   if (t.dataset.copen) return openItem(t.dataset.copen);
   if (!who) return askWho();
   if (act === "mnprint") return mnPdf(t);
+  if (act === "mnpdf") { const x = D.recs.find((y) => y.id === thSel); if (!x) return; const tmp = document.createElement("div"); tmp.innerHTML = minutesHtml(x); return mnPdf(tmp.querySelector("[data-act=mnprint]")); }
   if (act === "thnew") return thNew();
   if (act === "thmake") { const 제목 = val("#thT"), 내용 = val("#thB"); if (!제목) return toast("제목을 적어 주세요"); const id = uid("n_"); closeSheet();
     const mem = [...new Set([who, ...thNewMem])]; if (mem.length < 2) return toast("같이 할 사람을 골라 주세요");
