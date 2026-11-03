@@ -1,5 +1,5 @@
 function initialBoardTab() {
-  const allowed = ['me', 'chat', 'todo', 'meet', 'idea', 'ho', 'rec', 'fix', 'home'];
+  const allowed = ['me', 'chat', 'todo', 'meet', 'idea', 'ho', 'rec', 'fix', 'home', 'gal'];
   const restored = reloadBoardView(); if (restored) return restored.tab;
   const linked = new URLSearchParams(location.search).get('view');
   if (allowed.includes(linked)) return linked;
@@ -34,11 +34,15 @@ function boardHelp() {
     ['나의 보드', '내 일정과 할 일, 메모, 내가 올린 제안을 한곳에서 봐요.'],
     ['할 일 넣기', '한 줄 입력칸에 할 일을 적어요. 담당자와 날짜를 함께 적으면 자동으로 정리돼요.'],
     ['즐겨찾기', '메뉴의 즐겨찾기 편집에서 자주 쓰는 칸과 처음 열리는 화면을 골라요.'],
+  ] : g === 'gal' ? [
+    ['사진 넣기', '구글 드라이브에 사진이나 폴더를 올리고 공유 → 링크가 있는 모든 사용자로 바꾼 뒤 링크 복사. 여기 붙여 넣고 넣기를 눌러요. 링크 여러 개는 줄을 바꿔 넣어요.'],
+    ['사진 보기', '앨범을 누르면 사진이 격자로 펼쳐져요. 사진을 누르면 전체 화면으로 열리고, 좌우 버튼·방향키·스와이프로 넘기며 확대해 볼 수 있어요.'],
+    ['폴더 링크', '폴더 링크를 넣으면 폴더 안 사진이 모두 보여요. 드라이브 폴더에 사진을 더 올리면 사진첩에도 자동으로 늘어나요.'],
   ] : [
     ['회의', '회의를 만들고 안건과 담당자, 마감일을 함께 정해요.'],
     ['녹음·회의록', '회의 녹음을 정리하고, 회의록 대화방에서 이어서 이야기할 수 있어요.'],
   ];
-  openSheet(`<h3>${g === 'chat' ? '메신저' : g === 'todo' ? '할 일' : '회의'} 사용방법</h3>${text.map(([title, body]) => `<div class="help-section"><h4>${title}</h4><p>${body}</p></div>`).join('')}<div class="btns"><button class="btn gray" data-x>닫기</button></div>`);
+  openSheet(`<h3>${g === 'chat' ? '메신저' : g === 'todo' ? '할 일' : g === 'gal' ? '사진첩' : '회의'} 사용방법</h3>${text.map(([title, body]) => `<div class="help-section"><h4>${title}</h4><p>${body}</p></div>`).join('')}<div class="btns"><button class="btn gray" data-x>닫기</button></div>`);
 }
 document.addEventListener('click', e => {
   if (e.target.closest('[data-board-prefs]')) return boardPrefs();

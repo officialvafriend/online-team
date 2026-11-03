@@ -494,6 +494,67 @@ body{letter-spacing:-.01em;font-feature-settings:"tnum" 1}
 
 </style>
 <!-- /bundled:chat-photos.css -->
+<!-- bundled:drive-gallery.css -->
+<style>
+.gal-add{padding:18px;border-radius:18px;background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(15,60,62,.06);margin-bottom:18px}
+.gal-add-head{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.gal-add-head b{font-size:16px}
+.gal-add-head small{font-size:13px;color:var(--sub);line-height:1.5}
+.gal-add textarea.in{min-height:64px;resize:vertical;font-size:14px;line-height:1.5;padding-top:12px}
+.gal-add-row{display:grid;grid-template-columns:minmax(0,1fr) 140px 96px;gap:8px;margin-top:8px}
+.gal-add-row .btn{width:auto}
+.gal-how{margin-top:12px;font-size:13px;color:var(--ink2)}
+.gal-how summary{cursor:pointer;color:var(--ac);font-weight:700;width:max-content}
+.gal-how ol{margin:8px 0 0;padding-left:20px;line-height:1.8}
+.gal-albums{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.gal-album{display:flex;flex-direction:column;text-align:left;border-radius:18px;background:var(--card);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(15,60,62,.06);transition:transform .18s ease,box-shadow .18s ease}
+.gal-album:hover{transform:translateY(-2px);box-shadow:0 2px 6px rgba(0,0,0,.05),0 14px 32px rgba(15,60,62,.1)}
+.gal-album:focus-visible,.gal-tile:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.gal-cover{aspect-ratio:4/3;display:grid;gap:2px;background:var(--line);overflow:hidden}
+.gal-cover img{width:100%;height:100%;object-fit:cover;display:block;background:var(--line2)}
+.gal-cover.n2{grid-template-columns:1fr 1fr}
+.gal-cover.n3{grid-template-columns:2fr 1fr;grid-template-rows:1fr 1fr}
+.gal-cover.n3 img:first-child{grid-row:span 2}
+.gal-cover.n4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+.gal-cover-empty{place-items:center;color:var(--sub);font-size:14px;font-weight:600}
+.gal-album-t{display:flex;flex-direction:column;gap:3px;padding:12px 14px 14px}
+.gal-album-t b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gal-album-t small{font-size:12px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gal-head{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.gal-head-t{flex:1;min-width:0}
+.gal-head-t h2{font-size:20px;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gal-head-t small{font-size:13px;color:var(--sub)}
+.gal-head-r{display:flex;gap:6px}
+.gal-head-r a.ic{display:inline-flex;align-items:center;text-decoration:none;background:var(--ac-soft);color:var(--ac)}
+.gal-note{padding:12px 14px;border-radius:12px;background:var(--ac-soft);color:var(--ink2);font-size:13px;line-height:1.55;margin-bottom:12px}
+.gal-note.warn{background:var(--amber-soft,#fff4d6);color:var(--ink)}
+.gal-note .ic{height:28px;margin-left:6px;background:var(--card)}
+.gal-frame{width:100%;height:70vh;border:0;border-radius:14px;background:var(--card)}
+.gal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.gal-tile{position:relative;display:block;width:100%;aspect-ratio:1;border-radius:12px;overflow:hidden;background:var(--line);cursor:zoom-in}
+.gal-tile img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .25s ease}
+.gal-tile:hover img{transform:scale(1.025)}
+.gal-name{position:absolute;left:0;right:0;bottom:0;padding:22px 10px 8px;font-size:12px;font-weight:600;color:#fff;text-align:left;background:linear-gradient(transparent,rgba(0,0,0,.55));opacity:0;transition:opacity .2s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gal-tile:hover .gal-name,.gal-tile:focus-visible .gal-name{opacity:1}
+.gal-broken{display:none}
+.gal-tile.broken{cursor:default}
+.gal-tile.broken img{display:none}
+.gal-tile.broken .gal-broken{display:grid;place-items:center;position:absolute;inset:0;padding:12px;font-size:12px;color:var(--sub);text-align:center}
+@media (max-width:899px){
+  .gal-add-row{grid-template-columns:1fr 1fr}
+  .gal-add-row .btn{grid-column:span 2}
+  .gal-albums{grid-template-columns:1fr 1fr;gap:10px}
+  .gal-album{border-radius:14px}
+  .gal-album-t{padding:9px 10px 11px}
+  .gal-grid{grid-template-columns:1fr 1fr;gap:6px}
+  .gal-tile{border-radius:10px}
+  .gal-name{opacity:1}
+  .gal-head-r{width:100%}
+  .gal-head-r>*{flex:1;justify-content:center}
+}
+
+</style>
+<!-- /bundled:drive-gallery.css -->
 </head>
 <body>
 <div class="wrap" id="app"></div>
@@ -800,7 +861,7 @@ function openImageReview(meta, getSource, gallery = null, startIndex = 0) {
   dialog.querySelector('.iv-previous').addEventListener('click', () => navigateImage(-1));
   dialog.querySelector('.iv-next').addEventListener('click', () => navigateImage(1));
   dialog.querySelector('.iv-close').addEventListener('click', () => dialog.close());
-  dialog.querySelector('.iv-download').addEventListener('click', () => { if (source) { const a = document.createElement('a'); a.href = source; a.download = meta.name; a.click(); } });
+  dialog.querySelector('.iv-download').addEventListener('click', () => { if (source) { const a = document.createElement('a'); a.href = meta.download || source; a.download = meta.name; if (meta.download) { a.target = '_blank'; a.rel = 'noopener'; } a.click(); } });
   dialog.querySelector('.iv-toolbar').addEventListener('click', e => {
     const command = e.target.closest('[data-iv]')?.dataset.iv;
     if (command === 'background') return stage.classList.toggle('iv-light');
@@ -856,7 +917,7 @@ function openImageReview(meta, getSource, gallery = null, startIndex = 0) {
       const url = await pending; if (!dialog.open || version !== loadVersion) return;
       source = url; img.src = source; await img.decode(); if (!dialog.open || version !== loadVersion) return;
       ready = true; canvas.hidden = false; loading.hidden = true;
-      info.textContent = `${img.naturalWidth.toLocaleString()} × ${img.naturalHeight.toLocaleString()} px · ${fileSize(meta.size)} · 원본`;
+      info.textContent = `${img.naturalWidth.toLocaleString()} × ${img.naturalHeight.toLocaleString()} px${meta.size ? ` · ${fileSize(meta.size)} · 원본` : meta.download ? ' · 구글 드라이브' : ''}`;
       dialog.querySelector('.iv-download').disabled = false;
       dialog.querySelectorAll('[data-iv]').forEach(b => b.disabled = false);
       fitImage(); resize?.disconnect(); resize = new ResizeObserver(() => { if (fitted) fitImage(); else setZoom(zoom); }); resize.observe(stage);
@@ -977,7 +1038,7 @@ document.addEventListener('keydown', e => { if (e.target.id === 'messageReplyTex
 <!-- bundled:dashboard-ui.js -->
 <script>
 function initialBoardTab() {
-  const allowed = ['me', 'chat', 'todo', 'meet', 'idea', 'ho', 'rec', 'fix', 'home'];
+  const allowed = ['me', 'chat', 'todo', 'meet', 'idea', 'ho', 'rec', 'fix', 'home', 'gal'];
   const restored = reloadBoardView(); if (restored) return restored.tab;
   const linked = new URLSearchParams(location.search).get('view');
   if (allowed.includes(linked)) return linked;
@@ -1012,11 +1073,15 @@ function boardHelp() {
     ['나의 보드', '내 일정과 할 일, 메모, 내가 올린 제안을 한곳에서 봐요.'],
     ['할 일 넣기', '한 줄 입력칸에 할 일을 적어요. 담당자와 날짜를 함께 적으면 자동으로 정리돼요.'],
     ['즐겨찾기', '메뉴의 즐겨찾기 편집에서 자주 쓰는 칸과 처음 열리는 화면을 골라요.'],
+  ] : g === 'gal' ? [
+    ['사진 넣기', '구글 드라이브에 사진이나 폴더를 올리고 공유 → 링크가 있는 모든 사용자로 바꾼 뒤 링크 복사. 여기 붙여 넣고 넣기를 눌러요. 링크 여러 개는 줄을 바꿔 넣어요.'],
+    ['사진 보기', '앨범을 누르면 사진이 격자로 펼쳐져요. 사진을 누르면 전체 화면으로 열리고, 좌우 버튼·방향키·스와이프로 넘기며 확대해 볼 수 있어요.'],
+    ['폴더 링크', '폴더 링크를 넣으면 폴더 안 사진이 모두 보여요. 드라이브 폴더에 사진을 더 올리면 사진첩에도 자동으로 늘어나요.'],
   ] : [
     ['회의', '회의를 만들고 안건과 담당자, 마감일을 함께 정해요.'],
     ['녹음·회의록', '회의 녹음을 정리하고, 회의록 대화방에서 이어서 이야기할 수 있어요.'],
   ];
-  openSheet(`<h3>${g === 'chat' ? '메신저' : g === 'todo' ? '할 일' : '회의'} 사용방법</h3>${text.map(([title, body]) => `<div class="help-section"><h4>${title}</h4><p>${body}</p></div>`).join('')}<div class="btns"><button class="btn gray" data-x>닫기</button></div>`);
+  openSheet(`<h3>${g === 'chat' ? '메신저' : g === 'todo' ? '할 일' : g === 'gal' ? '사진첩' : '회의'} 사용방법</h3>${text.map(([title, body]) => `<div class="help-section"><h4>${title}</h4><p>${body}</p></div>`).join('')}<div class="btns"><button class="btn gray" data-x>닫기</button></div>`);
 }
 document.addEventListener('click', e => {
   if (e.target.closest('[data-board-prefs]')) return boardPrefs();
@@ -1045,7 +1110,7 @@ function reloadBoardView() {
     const kind = performance.getEntriesByType('navigation')[0]?.type;
     if (!['reload', 'back_forward'].includes(kind)) return null;
     const saved = JSON.parse(sessionStorage.getItem(boardViewKey()) || 'null');
-    return saved?.version === 1 && ['me', 'chat', 'todo', 'meet', 'idea', 'ho', 'rec', 'fix', 'home'].includes(saved.tab) ? saved : null;
+    return saved?.version === 1 && ['me', 'chat', 'todo', 'meet', 'idea', 'ho', 'rec', 'fix', 'home', 'gal'].includes(saved.tab) ? saved : null;
   } catch { return null; }
 }
 function persistBoardView() {
@@ -1117,6 +1182,138 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 
 </script>
 <!-- /bundled:view-state.js -->
+<!-- bundled:drive-gallery.js -->
+<script>
+// 사진첩: 구글 드라이브 공유 링크(파일·폴더)를 노트(종류 "사진첩")로 저장하고 사진을 격자로 보여 줌
+let galSel = '', galOpenAdd = false;
+const galFolders = {}; // 폴더 id → { state: 'loading'|'ok'|'fail'|'old', files, name, error }
+try { galSel = localStorage.getItem('ot-gal') || ''; } catch {}
+const galAlbums = () => D.notes.filter(n => n.종류 === '사진첩').sort((a, b) => (b.만든시각 || '').localeCompare(a.만든시각 || ''));
+// 링크 한 줄 → { kind: 'file'|'folder', id }
+function galParse(line) {
+  const s = String(line || '').trim(); if (!s) return null;
+  let m = s.match(/\/folders\/([\w-]{10,})/) || s.match(/embeddedfolderview\?(?:[^#]*&)?id=([\w-]{10,})/);
+  if (m) return { kind: 'folder', id: m[1] };
+  m = s.match(/\/file\/d\/([\w-]{10,})/) || s.match(/\/d\/([\w-]{10,})/) || s.match(/[?&]id=([\w-]{10,})/);
+  if (m) return { kind: 'file', id: m[1] };
+  return /^[\w-]{25,}$/.test(s) ? { kind: 'file', id: s } : null;
+}
+const galLinks = n => String(n.내용 || '').split(/\s+/).map(galParse).filter(Boolean);
+const galThumb = (id, w = 640) => `https://lh3.googleusercontent.com/d/${id}=w${w}`;
+const galBig = id => `https://lh3.googleusercontent.com/d/${id}=w2560`;
+// 앨범의 사진 목록. 폴더는 서버에서 받아 와야 하므로 처음엔 비어 있을 수 있음
+function galImages(n) {
+  const out = [];
+  for (const l of galLinks(n)) {
+    if (l.kind === 'file') out.push({ id: l.id, name: '' });
+    else { const f = galFolders[l.id]; if (f?.state === 'ok') out.push(...f.files); else if (!f) galFetch(l.id); }
+  }
+  return out;
+}
+async function galFetch(id, force) {
+  if (galFolders[id] && !force) return;
+  galFolders[id] = { state: 'loading' };
+  if (DEMO) { galFolders[id] = { state: 'ok', name: '예시 폴더', files: [] }; return; }
+  try {
+    const r = await post({ type: 'driveFolder', id });
+    galFolders[id] = { state: 'ok', name: r.name || '', files: (r.files || []).map(f => ({ id: f.id, name: f.name || '', w: f.w, h: f.h, shared: f.shared })) };
+  } catch (e) {
+    const msg = String(e.message || e);
+    // 서버에 사진첩 코드가 아직 없으면 type 오류가 남 → 드라이브 기본 폴더 보기로 대신 보여 줌
+    galFolders[id] = { state: msg === 'type' || msg === 'kind' ? 'old' : 'fail', error: msg };
+  }
+  if (tab === 'gal') render();
+}
+function galCover(n) {
+  const imgs = galImages(n).slice(0, 4), folder = galLinks(n).find(l => l.kind === 'folder'), f = folder && galFolders[folder.id];
+  if (!imgs.length) return `<div class="gal-cover gal-cover-empty">${f?.state === 'loading' ? '불러오는 중…' : '📁 드라이브 폴더'}</div>`;
+  return `<div class="gal-cover n${imgs.length}">${imgs.map(i => `<img src="${galThumb(i.id, 480)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'">`).join('')}</div>`;
+}
+function galCount(n) {
+  const links = galLinks(n), files = links.filter(l => l.kind === 'file').length, folders = links.filter(l => l.kind === 'folder');
+  const known = folders.every(l => galFolders[l.id]?.state === 'ok');
+  return known ? `${galImages(n).length}장` : files ? `${files}장 + 폴더` : '폴더';
+}
+function galAddBox() {
+  return `<div class="gal-add card">
+    <div class="gal-add-head"><b>드라이브 사진 넣기</b><small>파일이나 폴더의 공유 링크를 붙여 넣어요. 여러 개는 줄을 바꿔서 넣어요.</small></div>
+    <textarea class="in" id="galLink" rows="2" placeholder="https://drive.google.com/drive/folders/…"></textarea>
+    <div class="gal-add-row"><input class="in" id="galTitle" maxlength="60" placeholder="앨범 이름 (선택)"><select class="in" id="galBrand">${['', ...BRANDS].map(b => `<option value="${b}">${b || '브랜드 없음'}</option>`).join('')}</select><button class="btn" data-gal-add>넣기</button></div>
+    <details class="gal-how"><summary>공유 링크 만드는 법</summary><ol><li>구글 드라이브에 사진이나 폴더를 올려요.</li><li>마우스 오른쪽 버튼 → <b>공유</b> → 일반 액세스를 <b>링크가 있는 모든 사용자</b>로 바꿔요.</li><li><b>링크 복사</b>를 눌러 여기 붙여 넣어요.</li></ol></details>
+  </div>`;
+}
+function galHtml() {
+  const albums = galAlbums(), sel = albums.find(n => n.id === galSel);
+  if (sel) return galAlbumHtml(sel);
+  return `${albums.length && !galOpenAdd ? `<div class="btns" style="margin:0 0 14px"><button class="btn" data-gal-new style="height:50px;font-size:16px">＋ 드라이브 사진 넣기</button></div>` : galAddBox()}
+    ${albums.length ? `<div class="gal-albums">${albums.map(n => `<button class="gal-album" data-gal="${n.id}">${galCover(n)}<span class="gal-album-t"><b>${esc(n.제목 || '이름 없는 앨범')}</b><small>${esc([n.브랜드, galCount(n), PNAME(n.작성자), (n.만든시각 || '').slice(5, 10).replace('-', '/')].filter(Boolean).join(' · '))}</small></span></button>`).join('')}</div>`
+      : '<div class="list"><div class="empty">아직 사진첩이 없어요. 드라이브 링크를 넣으면 바로 사진이 보여요</div></div>'}`;
+}
+function galAlbumHtml(n) {
+  const links = galLinks(n), imgs = galImages(n), folders = links.filter(l => l.kind === 'folder');
+  const notes = folders.map(l => {
+    const f = galFolders[l.id];
+    if (!f || f.state === 'loading') return '<div class="gal-note">폴더 사진을 불러오는 중이에요…</div>';
+    if (f.state === 'old') return `<div class="gal-note">폴더를 바로 펼치려면 서버 업데이트가 필요해요. 그동안 드라이브 화면으로 보여 드려요.</div><iframe class="gal-frame" src="https://drive.google.com/embeddedfolderview?id=${l.id}#grid" title="드라이브 폴더" loading="lazy"></iframe>`;
+    if (f.state === 'fail') return `<div class="gal-note warn">폴더를 열지 못했어요. 링크가 맞는지, 공유가 <b>링크가 있는 모든 사용자</b>인지 확인해 주세요. <button class="ic" data-gal-retry="${l.id}">다시 불러오기</button></div>`;
+    if (!f.files.length) return '<div class="gal-note">이 폴더에는 사진이 없어요.</div>';
+    const closed = f.files.filter(x => x.shared === false).length;
+    return closed ? `<div class="gal-note warn">사진 ${closed}장이 비공개라 다른 사람에게는 안 보일 수 있어요. 폴더 공유를 <b>링크가 있는 모든 사용자</b>로 바꿔 주세요.</div>` : '';
+  }).join('');
+  const first = links[0], open = first ? (first.kind === 'folder' ? `https://drive.google.com/drive/folders/${first.id}` : `https://drive.google.com/file/d/${first.id}/view`) : '';
+  return `<div class="gal-head"><button class="ic" data-gal="">‹ 사진첩</button><div class="gal-head-t"><h2>${esc(n.제목 || '이름 없는 앨범')}</h2><small>${esc([n.브랜드, imgs.length ? imgs.length + '장' : '', PNAME(n.작성자) + ' 올림'].filter(Boolean).join(' · '))}</small></div>
+      <div class="gal-head-r">${open ? `<a class="ic" href="${open}" target="_blank" rel="noopener">드라이브에서 열기 ↗</a>` : ''}<button class="ic" data-gal-edit="${n.id}">고치기</button></div></div>
+    ${notes}
+    ${imgs.length ? `<div class="gal-grid">${imgs.map((i, k) => `<button class="gal-tile" data-gal-img="${k}" aria-label="${esc(i.name || '사진 ' + (k + 1))} 크게 보기"><img src="${galThumb(i.id)}" alt="${esc(i.name)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.gal-tile').classList.add('broken')"><span class="gal-broken">공유가 꺼져 있어 볼 수 없어요</span>${i.name ? `<span class="gal-name">${esc(i.name)}</span>` : ''}</button>`).join('')}</div>` : ''}`;
+}
+function galEditSheet(n) {
+  openSheet(`<h3>사진첩 고치기</h3>
+    <div class="lbl">앨범 이름</div><input class="in" id="galETitle" maxlength="60" value="${esc(n.제목)}">
+    <div class="lbl">브랜드</div><select class="in" id="galEBrand">${['', ...BRANDS].map(b => `<option value="${b}" ${n.브랜드 === b ? 'selected' : ''}>${b || '없음'}</option>`).join('')}</select>
+    <div class="lbl">드라이브 링크 <small>(한 줄에 하나)</small></div><textarea class="in" id="galELink" style="min-height:120px">${esc(n.내용)}</textarea>
+    <div class="btns"><button class="btn red" data-gal-del="${n.id}" style="flex:0 0 96px">지우기</button><button class="btn" data-gal-save="${n.id}">저장</button></div>`);
+}
+function galReadLinks(text) {
+  const lines = String(text || '').split(/\s+/).filter(Boolean), seen = new Set();
+  const ok = lines.filter(l => { const p = galParse(l); if (!p || seen.has(p.id)) return false; seen.add(p.id); return true; });
+  return { ok, bad: lines.filter(l => !galParse(l)).length };
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-gal],[data-gal-new],[data-gal-add],[data-gal-img],[data-gal-edit],[data-gal-save],[data-gal-del],[data-gal-retry]'); if (!t) return;
+  const d = t.dataset;
+  if ('gal' in d) { galSel = d.gal; galOpenAdd = false; try { localStorage.setItem('ot-gal', galSel); } catch {} render(); scrollTo(0, 0); return; }
+  if ('galNew' in d) { galOpenAdd = true; render(); $('#galLink')?.focus(); return; }
+  if ('galRetry' in d) { galFetch(d.galRetry, true); render(); return; }
+  if ('galAdd' in d) {
+    const { ok, bad } = galReadLinks($('#galLink').value);
+    if (!ok.length) return toast('구글 드라이브 공유 링크를 붙여 넣어 주세요');
+    if (!who) return askWho();
+    const n = { id: uid('n_'), 종류: '사진첩', 작성자: who, 제목: val('#galTitle'), 브랜드: $('#galBrand').value, 내용: ok.join('\n'), 만든시각: `${today()} ${pad(new Date().getHours())}:${pad(new Date().getMinutes())}` };
+    galSel = n.id; galOpenAdd = false; try { localStorage.setItem('ot-gal', galSel); } catch {}
+    save('note', n);
+    // 제목을 비워 두면 폴더 이름으로 채움
+    if (!n.제목) { const f = galParse(ok[0]); if (f.kind === 'folder') { const fill = setInterval(() => { const st = galFolders[f.id]; if (!st || st.state === 'loading') return; clearInterval(fill); const cur = D.notes.find(x => x.id === n.id); if (st.name && cur && !cur.제목) save('note', { ...cur, 제목: st.name }); }, 400); setTimeout(() => clearInterval(fill), 30000); } }
+    return toast(bad ? `링크가 아닌 ${bad}줄은 빼고 넣었어요` : '사진첩에 넣었어요');
+  }
+  if ('galImg' in d) {
+    const n = galAlbums().find(x => x.id === galSel); if (!n) return;
+    const items = galImages(n).map((i, k) => ({ meta: { name: i.name || `사진 ${k + 1}`, size: 0, download: `https://drive.google.com/uc?export=download&id=${i.id}` },getSource: () => galBig(i.id) }));
+    const k = +d.galImg; return openImageReview(items[k].meta, items[k].getSource, items, k);
+  }
+  if ('galEdit' in d) { const n = D.notes.find(x => x.id === d.galEdit); if (n) galEditSheet(n); return; }
+  if ('galSave' in d) {
+    const n = D.notes.find(x => x.id === d.galSave); if (!n) return;
+    const { ok } = galReadLinks($('#galELink').value); if (!ok.length) return toast('링크를 하나 이상 넣어 주세요');
+    closeSheet(); save('note', { ...n, 제목: val('#galETitle'), 브랜드: $('#galEBrand').value, 내용: ok.join('\n') }); return toast('저장했어요');
+  }
+  if ('galDel' in d) {
+    if (!confirm('이 사진첩을 지울까요? 드라이브의 사진은 그대로 남아요.')) return;
+    closeSheet(); galSel = ''; try { localStorage.setItem('ot-gal', ''); } catch {} del('note', d.galDel); return toast('사진첩을 지웠어요');
+  }
+});
+
+</script>
+<!-- /bundled:drive-gallery.js -->
 <script>
 // 온라인팀 회의 보드 — 데이터는 구글시트(회의, 안건, 기록 탭), Apps Script(비밀번호)로 읽고 씀. 비밀번호는 이 기기에만 저장
 const APPS_URL = "https://script.google.com/macros/s/AKfycbxjg-ChnaEq4HTy-6K4mhEv8y840A7DPDUIL3BFFKla-N4NT4iVd_suGQ3jaYaG8SG59g/exec";
@@ -1223,16 +1420,17 @@ const ICON = {
   home: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 3 10.4V20a1 1 0 0 0 1 1h5.5v-6h5v6H20a1 1 0 0 0 1-1v-9.6z"/></svg>',
   meet: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm3 4v2h10V8zm0 4v2h7v-2z"/></svg>',
   fix: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5zm-1.2 13.6-3.6-3.6 1.4-1.4 2.2 2.2 4.8-4.8 1.4 1.4z"/></svg>',
+  gal: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm0 13.5V19h14v-3.2l-4-4.3-4.6 5-2.9-2.9zM8.5 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg>',
   todo: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 3h8v2h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h3zm2 0v3h4V3zm5.3 7.3-4.3 4.3-2.3-2.3-1.4 1.4 3.7 3.7 5.7-5.7z"/></svg>',
 };
-const TABS = [["me", "나의 보드"], ["home", "홈"], ["todo", "할 일"], ["idea", "제안함"], ["ho", "인수인계"], ["meet", "회의"], ["rec", "녹음"], ["fix", "확정"]];
+const TABS = [["me", "나의 보드"], ["home", "홈"], ["todo", "할 일"], ["idea", "제안함"], ["ho", "인수인계"], ["meet", "회의"], ["rec", "녹음"], ["fix", "확정"], ["gal", "사진첩"]];
 TABS.splice(1, 0, ["chat", "메신저"]);
 const FAV0 = ["me", "todo", "idea", "meet"];
 const favs = () => { const f = (who && profOf(who).f) || []; const ok = f.filter((k) => TABS.some(([t]) => t === k)).slice(0, 4); const r = (ok.length ? ok : FAV0).filter((k) => k !== "chat"); r.splice(1, 0, "chat"); return r; }; // 메신저는 늘 아래 메뉴 두 번째
-const MAIN = [["chat", "메신저", "chat"], ["todo", "할 일", "me"], ["meet", "회의", "meet"]]; // [메뉴, 이름, 누르면 여는 화면]
-const SUBS = { chat: [["chat", "대화방"], ["idea", "제안함"], ["ho", "인수인계"]], todo: [["me", "내 것"], ["todo", "사람별"], ["fix", "확정"]], meet: [["meet", "회의"], ["rec", "녹음"]] };
+const MAIN = [["chat", "메신저", "chat"], ["todo", "할 일", "me"], ["meet", "회의", "meet"], ["gal", "사진첩", "gal"]]; // [메뉴, 이름, 누르면 여는 화면]
+const SUBS = { chat: [["chat", "대화방"], ["idea", "제안함"], ["ho", "인수인계"]], todo: [["me", "내 것"], ["todo", "사람별"], ["fix", "확정"]], meet: [["meet", "회의"], ["rec", "녹음"]], gal: [["gal", "사진첩"]] };
 const groupOf = (k) => Object.keys(SUBS).find((g) => SUBS[g].some(([t]) => t === k)) || "chat";
-const subBar = () => { const g = groupOf(tab); if ((tab === "chat" && thSel) || (tab === "rec" && recSel)) return "";
+const subBar = () => { const g = groupOf(tab); if ((tab === "chat" && thSel) || (tab === "rec" && recSel) || SUBS[g].length < 2) return "";
   return `<div class="seg subbar">${SUBS[g].map(([k, n]) => `<button class="${k === tab ? "on" : ""}" data-tab="${k}">${n}${k === "idea" && unreadIdeas() ? ` <span class="ndot">${unreadIdeas()}</span>` : ""}</button>`).join("")}</div>`; };
 const moreTabs = () => TABS.map(([k]) => k).filter((k) => !favs().includes(k)); // 더보기 안 (폰은 더보기 버튼, PC는 왼쪽 메뉴 아래에 작게)
 const tabName = (k) => (TABS.find(([t]) => t === k) || [, k])[1];
@@ -1975,7 +2173,7 @@ function render() {
   const unread = unreadIdeas() + thUnreadAll(), dot = unread ? `<span class="ndot">${unread}</span>` : "";
   $("#nav").innerHTML = `<div>${[["me", "나의 보드", "me"], ...MAIN].map(([g, n, go]) => `<button class="${(g === "me" ? tab === "me" : tab !== "me" && groupOf(tab) === g) ? "on" : ""}" data-tab="${go}">${ICON[g]}${n}${g === "chat" ? dot : ""}</button>`).join("")}</div>`;
   const at = D.at ? D.at.slice(11) : "";
-  const body = subBar() + (tab === "home" ? (pc ? homePC() : homeHtml()) : tab === "meet" ? meetHtml() : tab === "fix" ? fixHtml() : tab === "me" ? meHtml() : tab === "idea" ? ideaHtml() : tab === "ho" ? hoHtml() : tab === "rec" ? recHtml() : tab === "chat" ? thHtml() : todoHtml());
+  const body = subBar() + (tab === "home" ? (pc ? homePC() : homeHtml()) : tab === "meet" ? meetHtml() : tab === "fix" ? fixHtml() : tab === "me" ? meHtml() : tab === "idea" ? ideaHtml() : tab === "ho" ? hoHtml() : tab === "rec" ? recHtml() : tab === "chat" ? thHtml() : tab === "gal" ? galHtml() : todoHtml());
   const demo = (DEMO ? `<div class="demo">예시 화면이에요. 눌러 봐도 시트에는 저장되지 않아요</div>` : "") + recBar();
   if (!pc) { $("#app").innerHTML = `${demo}<div class="top"><div class="logo">온라인팀 <b>보드</b></div><div class="r">${bellHtml("bell")}<button class="ic" data-act="reload" aria-label="새로고침">${at ? at + " " : ""}↻</button><button class="topme" data-act="${who ? "prof" : "who"}" aria-label="내 프로필">${who ? avHtml(who, "sm") : "나는?"}</button></div></div>${!(tab === "chat" && thSel) ? `<div class="mobile-help"><button class="ic" data-board-prefs>☆ 즐겨찾기</button>${boardHelpButton()}</div>` : ""}${body}`; setBadge(thUnreadAll() + (who ? notiCount() : 0)); return; }
   const title = (tab === "chat" && thSel) || (tab === "rec" && recSel) ? "" : tab === "me" ? "나의 보드" : MAIN.find(([g]) => g === groupOf(tab))[1];

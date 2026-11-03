@@ -10,7 +10,7 @@ function reloadBoardView() {
     const kind = performance.getEntriesByType('navigation')[0]?.type;
     if (!['reload', 'back_forward'].includes(kind)) return null;
     const saved = JSON.parse(sessionStorage.getItem(boardViewKey()) || 'null');
-    return saved?.version === 1 && ['me', 'chat', 'todo', 'meet', 'idea', 'ho', 'rec', 'fix', 'home'].includes(saved.tab) ? saved : null;
+    return saved?.version === 1 && ['me', 'chat', 'todo', 'meet', 'idea', 'ho', 'rec', 'fix', 'home', 'gal'].includes(saved.tab) ? saved : null;
   } catch { return null; }
 }
 function persistBoardView() {

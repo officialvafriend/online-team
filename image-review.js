@@ -52,7 +52,7 @@ function openImageReview(meta, getSource, gallery = null, startIndex = 0) {
   dialog.querySelector('.iv-previous').addEventListener('click', () => navigateImage(-1));
   dialog.querySelector('.iv-next').addEventListener('click', () => navigateImage(1));
   dialog.querySelector('.iv-close').addEventListener('click', () => dialog.close());
-  dialog.querySelector('.iv-download').addEventListener('click', () => { if (source) { const a = document.createElement('a'); a.href = source; a.download = meta.name; a.click(); } });
+  dialog.querySelector('.iv-download').addEventListener('click', () => { if (source) { const a = document.createElement('a'); a.href = meta.download || source; a.download = meta.name; if (meta.download) { a.target = '_blank'; a.rel = 'noopener'; } a.click(); } });
   dialog.querySelector('.iv-toolbar').addEventListener('click', e => {
     const command = e.target.closest('[data-iv]')?.dataset.iv;
     if (command === 'background') return stage.classList.toggle('iv-light');
@@ -108,7 +108,7 @@ function openImageReview(meta, getSource, gallery = null, startIndex = 0) {
       const url = await pending; if (!dialog.open || version !== loadVersion) return;
       source = url; img.src = source; await img.decode(); if (!dialog.open || version !== loadVersion) return;
       ready = true; canvas.hidden = false; loading.hidden = true;
-      info.textContent = `${img.naturalWidth.toLocaleString()} × ${img.naturalHeight.toLocaleString()} px · ${fileSize(meta.size)} · 원본`;
+      info.textContent = `${img.naturalWidth.toLocaleString()} × ${img.naturalHeight.toLocaleString()} px${meta.size ? ` · ${fileSize(meta.size)} · 원본` : meta.download ? ' · 구글 드라이브' : ''}`;
       dialog.querySelector('.iv-download').disabled = false;
       dialog.querySelectorAll('[data-iv]').forEach(b => b.disabled = false);
       fitImage(); resize?.disconnect(); resize = new ResizeObserver(() => { if (fitted) fitImage(); else setZoom(zoom); }); resize.observe(stage);
