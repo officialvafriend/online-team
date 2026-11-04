@@ -2,7 +2,7 @@
    CRM 시트의 '할 일 목록', '발송 목록'만 받아서 오늘 할 일, 요약, 결과 목록, 달력으로 보여 줌.
    이름, 전화번호 명단은 서버(Apps Script crmGet)가 아예 보내지 않음.
    상태(F)와 결과(H~L: 보낸시간, 구매, 적립금사용, 회수, 메모)는 클로드 액상덕후 세션이 시트에 적음 */
-const CRM = { d: null, busy: false, err: "", open: "", month: "", kind: {}, view: "now" };
+const CRM = { d: null, busy: false, err: "", open: "", month: "", kind: {}, view: "r10" }; /* 들어가면 성과부터 보임 */
 const crmMD = (s) => String(s || "").slice(0, 5).replace("/", "-"); // '11/04(수)' → '11-04'
 const crmNum = (v) => { const n = Number(String(v || "").replace(/[^\d.]/g, "")); return String(v || "").trim() && !isNaN(n) ? n : null; };
 const crmWon = (n) => (n >= 10000 ? (Math.round(n / 1000) / 10).toLocaleString() + "만원" : n.toLocaleString() + "원");
@@ -24,7 +24,7 @@ async function crmLoad() {
   if (tab === "crm") render();
 }
 function crmHtml() {
-  const seg = `<div class="crm-seg" role="tablist"><button role="tab" data-crm-view="now" aria-selected="${CRM.view === "now"}" class="${CRM.view === "now" ? "on" : ""}">이번 달 진행</button><button role="tab" data-crm-view="r10" aria-selected="${CRM.view === "r10"}" class="${CRM.view === "r10" ? "on" : ""}">10월 성과</button></div>`;
+  const seg = `<div class="crm-seg" role="tablist"><button role="tab" data-crm-view="r10" aria-selected="${CRM.view === "r10"}" class="${CRM.view === "r10" ? "on" : ""}">CRM 성과</button><button role="tab" data-crm-view="now" aria-selected="${CRM.view === "now"}" class="${CRM.view === "now" ? "on" : ""}">이번 달 일정</button></div>`;
   if (CRM.view === "r10") return seg + crmReportHtml();
   return seg + crmNowHtml();
 }
@@ -129,29 +129,33 @@ const CRM_R10 = {
   /* 문자 받고 며칠 만에 샀나: 0일(그날) ~ 7일, 주문 수 */
   lag: [58, 37, 19, 14, 19, 12, 8, 5],
 };
+/* 11월 진행 중 성과: 요청할 때 (보혜)\CRM성과\CRM성과_갱신.py --write 로 아래 한 줄만 바뀜 (합계만, 전화번호 없음) */
+/*R11*/ const CRM_R11 = {"at": "11/04 19:49 기준", "total": {"people": 1427, "buyers": 7, "orders": 7, "sales": 282131}, "rows": [["11-04", "생애주기 문자", 1427, 7, 7, 282131, 0, 0]], "lag": [7, 0, 0, 0, 0, 0, 0, 0]}; /*R11 끝*/
 function crmReportHtml() {
-  const R = CRM_R10, T = R.total, pct = (a, b) => (b ? (a / b * 100).toFixed(1) : "0.0") + "%";
+  return `<div class="crm crm-rep">${crmReportBlock(CRM_R11, "11월 CRM 문자 성과", true)}<div class="crm-rep-gap"></div>${crmReportBlock(CRM_R10, "10월 CRM 문자 성과 (확정)", false)}
+    <p class="crm-note sub">문자를 받은 뒤 7일 안에 산 실적이고, 문자 때문에 늘어난 매출이라는 뜻은 아니에요.</p></div>`;
+}
+function crmReportBlock(R, title, live) {
+  const T = R.total, pct = (a, b) => (b ? (a / b * 100).toFixed(1) : "0.0") + "%";
   const man = (n) => (n >= 10000 ? (Math.round(n / 1000) / 10).toLocaleString() + "만원" : n.toLocaleString() + "원");
-  const rows = R.rows.filter((r) => r[2] >= 50), maxRate = Math.max(...rows.map((r) => r[3] / r[2])), maxLag = Math.max(...R.lag);
-  const best = rows.filter((r) => r[7]).reduce((a, r) => (r[3] / r[2] > a[3] / a[2] ? r : a));
+  const rows = R.rows.filter((r) => r[2] >= 50), maxRate = Math.max(0.0001, ...rows.map((r) => r[3] / r[2])), maxLag = Math.max(1, ...R.lag);
+  const doneRows = rows.filter((r) => r[7]), best = doneRows.length ? doneRows.reduce((a, r) => (r[3] / r[2] > a[3] / a[2] ? r : a)) : null;
   const early = R.lag[0] + R.lag[1], allLag = R.lag.reduce((a, b) => a + b, 0);
-  return `<div class="crm crm-rep">
-    <div class="crm-rep-head"><b>10월 CRM 문자 성과</b><span>${R.at}, 문자 받고 7일 안에 산 사람 기준</span></div>
+  const md2 = (d) => `${+d.slice(0, 2)}/${+d.slice(3)}`;
+  return `<div class="crm-rep-head"><b>${esc(title)}</b>${live ? `<span class="crm-live">집계 중</span>` : ""}<span>${esc(R.at)}, 문자 받고 7일 안에 산 사람 기준</span></div>
     <div class="crm-sum">
-      <div><small>문자 받은 사람</small><b>${T.people.toLocaleString()}명</b><em>보낸 문자 ${T.sent.toLocaleString()}건</em></div>
+      <div><small>문자 받은 사람</small><b>${T.people.toLocaleString()}명</b><em>${T.sent ? `보낸 문자 ${T.sent.toLocaleString()}건` : "보낸 명단 기준"}</em></div>
       <div><small>산 사람</small><b>${T.buyers.toLocaleString()}명</b><em>주문 ${T.orders}건</em></div>
       <div><small>구매율</small><b>${pct(T.buyers, T.people)}</b><em>산 사람 ÷ 받은 사람</em></div>
-      <div><small>연결 매출</small><b>${man(T.sales)}</b><em>문자비 ${man(T.cost)}, ${Math.round(T.sales / T.cost)}배</em></div>
+      <div><small>연결 매출</small><b>${man(T.sales)}</b><em>${T.cost ? `문자비 ${man(T.cost)}, ${Math.round(T.sales / T.cost)}배` : live ? "7일 동안 늘어나요" : ""}</em></div>
     </div>
-    <div class="crm-sec">문자별 구매율 <small>막대가 길수록 많이 샀어요. 50명 미만 발송은 뺐어요</small></div>
-    <div class="crm-card crm-bars">${rows.map((r) => { const rate = r[3] / r[2]; return `<div class="crm-bar ${r === best ? "best" : ""}">
-      <span class="crm-bl"><b>${+r[0].slice(0, 2)}/${+r[0].slice(3)}</b>${r[1] ? `<small>${esc(r[1])}</small>` : ""}</span>
+    <div class="crm-sec">문자별 구매율 <small>${rows.length > 1 ? "막대가 길수록 많이 샀어요. 50명 미만 발송은 뺐어요" : "문자가 더 나가면 여기 줄이 늘어나요"}</small></div>
+    <div class="crm-card crm-bars">${rows.map((r) => { const rate = r[3] / r[2]; return `<div class="crm-bar ${r === best && rows.length > 1 ? "best" : ""}">
+      <span class="crm-bl"><b>${md2(r[0])}</b>${r[1] ? `<small>${esc(r[1])}</small>` : ""}</span>
       <span class="crm-bt" aria-hidden="true"><i style="width:${Math.max(2, rate / maxRate * 100).toFixed(1)}%"></i></span>
       <span class="crm-bv"><b>${pct(r[3], r[2])}</b><small>${r[3]}명, ${man(r[5])}${r[7] ? "" : ", 집계 중"}</small></span></div>`; }).join("")}</div>
-    <p class="crm-note">가장 잘 된 문자: ${+best[0].slice(0, 2)}/${+best[0].slice(3)} (${pct(best[3], best[2])}, ${best[2].toLocaleString()}명 중 ${best[3]}명)</p>
-    <div class="crm-sec">문자 받고 며칠 만에 샀나 <small>주문 ${allLag}건</small></div>
+    ${best && rows.length > 1 ? `<p class="crm-note">가장 잘 된 문자: ${md2(best[0])} (${pct(best[3], best[2])}, ${best[2].toLocaleString()}명 중 ${best[3]}명)</p>` : ""}
+    ${allLag ? `<div class="crm-sec">문자 받고 며칠 만에 샀나 <small>주문 ${allLag}건</small></div>
     <div class="crm-card crm-lag">${R.lag.map((n, i) => `<div class="crm-lagc"><span class="crm-lagv">${n}</span><span class="crm-lagb"><i style="height:${(n / maxLag * 100).toFixed(1)}%"></i></span><span class="crm-lagl">${i ? i + "일" : "그날"}</span></div>`).join("")}</div>
-    <p class="crm-note">${Math.round(early / allLag * 100)}%가 문자 받은 날이나 다음 날 샀어요.</p>
-    <p class="crm-note sub">문자를 받은 뒤 산 실적이고, 문자 때문에 늘어난 매출이라는 뜻은 아니에요. 10/27은 7일이 다 안 지나 집계 중이에요.</p>
-  </div>`;
+    <p class="crm-note">${Math.round(early / allLag * 100)}%가 문자 받은 날이나 다음 날 샀어요.</p>` : ""}`;
 }

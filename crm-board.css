@@ -101,3 +101,7 @@
 .crm-lagb i{display:block;width:100%;border-radius:6px 6px 0 0;background:var(--ac)}
 .crm-lagl{font-size:12.5px;color:var(--sub)}
 @media (max-width:760px){.crm-bar{grid-template-columns:52px minmax(0,1fr) 112px;gap:8px}.crm-bl small{display:none}.crm-bv small{white-space:normal}.crm-lagb{height:90px}}
+.crm-rep-head .crm-live{display:inline-block;margin:0 0 0 8px;padding:2px 8px;border-radius:8px;background:var(--amber-soft,#F6EEDD);color:var(--amber,#A86A12);font-size:12.5px;font-weight:700;vertical-align:3px}
+.crm-rep-head b{display:inline}
+.crm-rep-head span:last-child{display:block}
+.crm-rep-gap{height:1px;background:var(--line2);margin:32px 0 24px}
