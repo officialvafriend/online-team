@@ -491,6 +491,8 @@ body{letter-spacing:-.01em;font-feature-settings:"tnum" 1}
 .image-review .iv-previous:disabled,.image-review .iv-next:disabled{opacity:.35}
 .iv-gallery-count{display:inline-block;margin-left:12px;font-variant-numeric:tabular-nums}
 @media(max-width:599px){.image-review .iv-previous,.image-review .iv-next{width:44px;height:48px}.image-review .iv-previous{left:6px}.image-review .iv-next{right:6px}}
+.orig-toggle{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:14px;font-weight:600;color:var(--ink2);cursor:pointer}
+.orig-toggle input{width:20px;height:20px;accent-color:var(--ac)}
 
 </style>
 <!-- /bundled:chat-photos.css -->
@@ -625,13 +627,13 @@ function decodeAttachment(token) {
 }
 function attachmentHtml(token) {
   const m = decodeAttachment(token); if (!m) return esc('첨부파일 정보를 읽을 수 없어요');
-  return `<div class="attachment ${previewableImage(m.mime) ? "attachment-image" : ""}" data-file-token="${token}">${previewableImage(m.mime) ? `<button class="chat-photo" data-photo-view="${token}" aria-label="사진 크게 보기"><span class="photo-loading">사진 불러오는 중…</span><img data-file-image="${m.id}" alt="${esc(m.name)}" hidden></button>` : '<span class="file-icon" aria-hidden="true">📄</span>'}<span class="file-name">${esc(m.name)}</span><small class="attachment-resolution">${fileSize(m.size)} · 원본</small>${previewableImage(m.mime) ? `<button class="image-open" data-photo-view="${token}">확대해서 자세히 보기</button>` : ""}<button class="file-download" data-file-download="${token}">원본 다운로드</button></div>`;
+  return `<div class="attachment ${previewableImage(m.mime) ? "attachment-image" : ""}" data-file-token="${token}">${previewableImage(m.mime) ? `<button class="chat-photo" data-photo-view="${token}" aria-label="사진 크게 보기"><span class="photo-loading">사진 불러오는 중…</span><img data-file-image="${m.id}" alt="${esc(m.name)}" hidden></button>` : '<span class="file-icon" aria-hidden="true">📄</span>'}<span class="file-name">${esc(m.name)}</span><small class="attachment-resolution">${fileSize(m.size)} · ${m.q === 's' ? '작게 보냄' : '원본'}</small>${previewableImage(m.mime) ? `<button class="image-open" data-photo-view="${token}">확대해서 자세히 보기</button>` : ""}<button class="file-download" data-file-download="${token}">${m.q === 's' ? '사진 저장' : '원본 다운로드'}</button></div>`;
 }
 function photoPreview() {
   const batch = chatPhotos.get(thSel), busy = photoSends.has(thSel);
   if (!batch?.files.length) return '';
-  const items = batch.files.map(p => `<div class="photo-preview">${previewableImage(p.file.type) ? `<button class="draft-image-open" data-draft-view="${p.id}" aria-label="첨부할 이미지 확대해서 확인"><img src="${p.url}" alt="보낼 사진"><span>확대해서 확인</span></button>` : '<span class="file-icon">📄</span>'}<span>${esc(p.file.name)}<small>${fileSize(p.file.size)} · 원본 그대로</small></span><button type="button" data-photo-remove="${p.id}" ${busy ? 'disabled' : ''} aria-label="${esc(p.file.name)} 첨부 빼기">✕</button></div>`).join('');
-  return `<div class="attachment-batch-head"><strong>${batch.files.length}개 첨부</strong><span role="status">${busy ? (batch.progress || '보내는 중…') : '원본 그대로 · 파일당 20MB'}</span><button data-add-files ${busy ? 'disabled' : ''}>＋ 더 추가</button></div><div class="attachment-drafts ${batch.files.length > 1 ? 'multiple' : ''}">${items}</div>`;
+  const items = batch.files.map(p => `<div class="photo-preview">${previewableImage(p.file.type) ? `<button class="draft-image-open" data-draft-view="${p.id}" aria-label="첨부할 이미지 확대해서 확인"><img src="${p.url}" alt="보낼 사진"><span>확대해서 확인</span></button>` : '<span class="file-icon">📄</span>'}<span>${esc(p.file.name)}<small>${fileSize(p.file.size)} · ${batch.orig || !shrinkable(p.file) ? '원본 그대로' : '줄여서 보냄'}</small></span><button type="button" data-photo-remove="${p.id}" ${busy ? 'disabled' : ''} aria-label="${esc(p.file.name)} 첨부 빼기">✕</button></div>`).join('');
+  return `<div class="attachment-batch-head"><strong>${batch.files.length}개 첨부</strong><span role="status">${busy ? (batch.progress || '보내는 중…') : batch.orig || !batch.files.some(p => shrinkable(p.file)) ? '원본 그대로 · 파일당 20MB' : '빠르게 보내려고 사진을 줄여요'}</span><label class="orig-toggle"><input type="checkbox" data-photo-orig ${batch.orig ? 'checked' : ''} ${busy ? 'disabled' : ''}> 원본으로 보내기</label><button data-add-files ${busy ? 'disabled' : ''}>＋ 더 추가</button></div><div class="attachment-drafts ${batch.files.length > 1 ? 'multiple' : ''}">${items}</div>`;
 }
 function updatePhotoPreview() {
   const el = $('#photoPreview'); if (el) el.innerHTML = photoPreview();
@@ -650,6 +652,21 @@ function selectChatFiles(files) {
   if (batch.files.length) chatPhotos.set(room, batch);
   cDraft = $('#cText')?.value || ''; updatePhotoPreview();
   if (rejected) toast('파일당 20MB, 한 번에 30개까지 첨부할 수 있어요. 나머지 파일은 선택 목록에 유지했어요');
+}
+const SHRINK_EDGE = 1600, SHRINK_MIN = 400 * 1024;
+const shrinkable = file => /^image\/(jpeg|png|webp|avif|bmp)$/.test(file.type) && file.size > SHRINK_MIN;
+async function isAnimatedWebp(file) { if (file.type !== 'image/webp') return false; try { return new TextDecoder('latin1').decode(await file.slice(0, 64 * 1024).arrayBuffer()).includes('ANMF'); } catch { return false; } }
+async function shrinkPhoto(file) {
+  if (!shrinkable(file) || await isAnimatedWebp(file)) return file;
+  try {
+    const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    const k = Math.min(1, SHRINK_EDGE / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bmp, 0, 0, c.width, c.height); bmp.close?.();
+    const blob = await new Promise(ok => c.toBlob(ok, 'image/jpeg', 0.82));
+    if (!blob || blob.size >= file.size) return file;
+    return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+  } catch { return file; }
 }
 async function digestFile(bytes) { return [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(b => b.toString(16).padStart(2, '0')).join(''); }
 async function loadAttachment(m, { priority = true } = {}) {
@@ -676,24 +693,27 @@ async function sendChatPhoto(text) {
   try {
     let next = 0, completed = batch.files.filter(p => p.meta).length, uploadError = null;
     const progress = () => {
-      batch.progress = `${completed} / ${batch.files.length}개 업로드 완료 · 원본 전송 중`;
+      batch.progress = `${completed} / ${batch.files.length}개 보냄${batch.orig ? ' · 원본 전송 중' : ''}`;
       if (thSel === room) { const label = document.querySelector('.attachment-batch-head [role="status"]'); if (label) label.textContent = batch.progress; }
     };
     progress();
     async function worker() {
       while (next < batch.files.length && !uploadError) {
         const photo = batch.files[next++];
-        if (photo.meta) { attachmentCache.set(photo.meta.id, Promise.resolve(photo.url)); continue; }
+        if (photo.meta) { attachmentCache.set(photo.meta.id, Promise.resolve(photo.meta.q ? photo.smallUrl || photo.url : photo.url)); continue; }
         try {
-          const bytes = await photo.file.arrayBuffer(), sha256 = await digestFile(bytes);
-          if (DEMO) photo.meta = { id: 'demo_' + photo.id, name: photo.file.name.slice(0, 240), mime: photo.file.type || 'application/octet-stream', size: photo.file.size, sha256 };
+          if (!batch.orig && !photo.small) photo.small = await shrinkPhoto(photo.file);
+          const f = batch.orig ? photo.file : photo.small, small = f !== photo.file ? { q: 's' } : {};
+          const bytes = await f.arrayBuffer(), sha256 = await digestFile(bytes);
+          if (DEMO) photo.meta = { id: 'demo_' + photo.id, name: f.name.slice(0, 240), mime: f.type || 'application/octet-stream', size: f.size, sha256, ...small };
           else {
-            const result = await post({ type: 'attachmentUpload', uploadId: photo.id, name: photo.file.name, mime: photo.file.type || 'application/octet-stream', b64: await b64(photo.file), sha256 });
-            if (!result.file || result.file.sha256 !== sha256 || result.file.size !== photo.file.size) throw new Error('checksum');
-            photo.meta = result.file;
+            const result = await post({ type: 'attachmentUpload', uploadId: photo.id + (small.q ? 's' : ''), name: f.name, mime: f.type || 'application/octet-stream', b64: await b64(f), sha256 });
+            if (!result.file || result.file.sha256 !== sha256 || result.file.size !== f.size) throw new Error('checksum');
+            photo.meta = { ...result.file, ...small };
           }
-          // The sender already holds the verified original. Never download it again.
-          attachmentCache.set(photo.meta.id, Promise.resolve(photo.url)); await cacheOriginalFile(photo.meta, photo.file); completed++; progress();
+          // The sender already holds the file it sent. Never download it again.
+          if (small.q && !photo.smallUrl) photo.smallUrl = URL.createObjectURL(f);
+          attachmentCache.set(photo.meta.id, Promise.resolve(small.q ? photo.smallUrl : photo.url)); await cacheOriginalFile(photo.meta, f); completed++; progress();
         } catch (e) { uploadError = e; }
       }
     }
@@ -707,7 +727,7 @@ async function sendChatPhoto(text) {
     if (!D.logs.some(l => l.id === log.id)) D.logs.push(log);
     chatPhotos.delete(room);
     if (thSel === room) { const current = $('#cText')?.value || ''; cDraft = current.trim() === text ? '' : current; render(); scrollEnd(); }
-    toast(DEMO ? '예시 화면에 첨부했어요' : `${batch.files.length}개 원본 파일을 보냈어요`);
+    toast(DEMO ? '예시 화면에 첨부했어요' : `${batch.files.length}개 ${batch.orig ? '원본 파일' : '사진'}을 보냈어요`);
   } catch (e) { toast('보내지 못했어요. 첨부한 파일은 그대로 있으니 다시 보내 주세요'); }
   finally { photoSends.delete(room); updatePhotoPreview(); }
 }
@@ -719,7 +739,7 @@ function showAttachment(token, origin) {
   const items = unique.length ? unique.map(meta => ({ meta, getSource: (priority = true) => loadAttachment(meta, { priority }) })) : [{ meta: m, getSource: () => loadAttachment(m) }];
   return openImageReview(m, () => loadAttachment(m), items, Math.max(0, items.findIndex(item => item.meta.id === m.id)));
 }
-document.addEventListener('change', e => { if (e.target.id === 'chatPhotoInput') { selectChatFiles([...e.target.files]); e.target.value = ''; } });
+document.addEventListener('change', e => { if (e.target.matches?.('[data-photo-orig]')) { const batch = chatPhotos.get(thSel); if (batch && !photoSends.has(thSel)) { batch.orig = e.target.checked; batch.files.forEach(p => { p.meta = null; }); updatePhotoPreview(); } return; } if (e.target.id === 'chatPhotoInput') { selectChatFiles([...e.target.files]); e.target.value = ''; } });
 document.addEventListener('paste', e => {
   if (!e.target.closest('.cbox')) return;
   const images = [...(e.clipboardData?.items || [])].filter(i => i.kind === 'file' && i.type.startsWith('image/')).map(i => i.getAsFile()).filter(Boolean);
@@ -729,7 +749,7 @@ document.addEventListener('dragover', e => { if (e.target.closest('.cbox') && e.
 document.addEventListener('drop', e => { if (e.target.closest('.cbox') && e.dataTransfer?.files.length) { e.preventDefault(); selectChatFiles([...e.dataTransfer.files]); } });
 document.addEventListener('click', async e => {
   const remove = e.target.closest('[data-photo-remove]');
-  if (remove && !photoSends.has(thSel)) { const batch = chatPhotos.get(thSel), p = batch?.files.find(p => p.id === remove.dataset.photoRemove); if (p) { if (p.meta) attachmentCache.delete(p.meta.id); URL.revokeObjectURL(p.url); batch.files = batch.files.filter(f => f !== p); if (!batch.files.length) chatPhotos.delete(thSel); } updatePhotoPreview(); }
+  if (remove && !photoSends.has(thSel)) { const batch = chatPhotos.get(thSel), p = batch?.files.find(p => p.id === remove.dataset.photoRemove); if (p) { if (p.meta) attachmentCache.delete(p.meta.id); URL.revokeObjectURL(p.url); if (p.smallUrl) URL.revokeObjectURL(p.smallUrl); batch.files = batch.files.filter(f => f !== p); if (!batch.files.length) chatPhotos.delete(thSel); } updatePhotoPreview(); }
   if (e.target.closest('[data-add-files]') && !photoSends.has(thSel)) $('#chatPhotoInput')?.click();
   const pick = e.target.closest('[data-pick-file]'); if (pick) { closeSheet(); $('#chatPhotoInput')?.click(); }
   const view = e.target.closest('[data-photo-view]'); if (view) return showAttachment(view.dataset.photoView, view);
@@ -754,7 +774,7 @@ let originalLoads = 0; const originalQueue = [];
 async function loadVisibleOriginal(img) {
   const card = img.closest('[data-file-token]'), m = card && decodeAttachment(card.dataset.fileToken); if (!m) return;
   originalQueue.push(async () => {
-    try { const pending = loadAttachment(m); prefetchAttachmentNeighbors(card); const url = await pending; if (img.isConnected) { img.onload = () => { const label = card.querySelector('.attachment-resolution'); if (label) label.textContent = `${img.naturalWidth.toLocaleString()} × ${img.naturalHeight.toLocaleString()} px · ${fileSize(m.size)} · 원본`; }; img.src = url; img.hidden = false; card.querySelector('.photo-loading')?.remove(); } }
+    try { const pending = loadAttachment(m); prefetchAttachmentNeighbors(card); const url = await pending; if (img.isConnected) { img.onload = () => { const label = card.querySelector('.attachment-resolution'); if (label) label.textContent = `${img.naturalWidth.toLocaleString()} × ${img.naturalHeight.toLocaleString()} px · ${fileSize(m.size)} · ${m.q === 's' ? '작게 보냄' : '원본'}`; }; img.src = url; img.hidden = false; card.querySelector('.photo-loading')?.remove(); } }
     catch { if (card.isConnected) card.querySelector('.photo-loading').textContent = '눌러서 원본 보기'; }
   });
   pumpOriginals();
@@ -2257,17 +2277,78 @@ function minutesHtml(x) {
     <footer>클로드가 회의 녹음을 받아써서 정리했어요. 누가 한 말인지는 짐작이라 틀릴 수 있어요.</footer></article>
     <div class="mn-btns"><button data-recgo2="${x.id}">받아쓴 글 보기</button><button data-act="mnprint">PDF 받기</button></div>`;
 }
+// 회의록 PDF: 화면을 사진으로 찍지 않고 글자 그대로 넣음 (pdfmake + 프리텐다드 글꼴, 글꼴은 처음 한 번만 받음)
+let mnPdfKit = null, mnPdfBusy = false;
+function mnPdfLoad() {
+  if (mnPdfKit) return mnPdfKit;
+  const font = "https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/public/static/alternative/Pretendard-";
+  const b64 = (buf) => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1]); r.onerror = no; r.readAsDataURL(new Blob([buf])); });
+  mnPdfKit = (async () => {
+    if (!window.pdfMake) await new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.10/pdfmake.min.js"; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); });
+    const [reg, bold] = await Promise.all(["Regular", "Bold"].map(async (w) => { const r = await fetch(font + w + ".ttf"); if (!r.ok) throw new Error("font"); return b64(await r.arrayBuffer()); }));
+    pdfMake.vfs = { ...(pdfMake.vfs || {}), "P-R.ttf": reg, "P-B.ttf": bold };
+    pdfMake.fonts = { Pretendard: { normal: "P-R.ttf", bold: "P-B.ttf", italics: "P-R.ttf", bolditalics: "P-B.ttf" } };
+    return window.pdfMake;
+  })();
+  mnPdfKit.catch(() => { mnPdfKit = null; });
+  return mnPdfKit;
+}
+function mnPdfDoc(x) {
+  const sm = jp(x.정리, {}) || {}, m = meetOf(x.회의id), its = D.items.filter((i) => i.회의id === x.회의id);
+  const AC = "#1f5c55", SUB = "#5b636c", LINE = "#dfe3df", INK = "#14181d";
+  const clean = (t) => String(t || "").replace(/^\?\s*:\s*/, "").replace(/\s*\((짐작|추측)\)/g, "").trim();
+  const lines = (v) => (Array.isArray(v) ? v : String(v || "").split(/\n/)).filter((t) => t != null && typeof t !== "object").map((t) => String(t).trim()).filter((t) => clean(t));
+  const done = lines(sm.정한것), todo = lines(sm.못정한것), groups = (Array.isArray(sm.안건별) ? sm.안건별 : []).filter((g) => g && typeof g === "object");
+  const said = (t) => { const k = t.match(/^([^\s:]{1,6}):\s*(.+)$/); if (!k || k[1] === "?") return clean(k ? k[2] : t); return [{ text: (PEOPLE.includes(k[1]) ? PNAME(k[1]) : k[1]) + "  ", bold: true, color: AC }, clean(k[2])]; };
+  const s0 = x.세션 || "", day = s0 ? `${s0.slice(0, 4)}년 ${+s0.slice(4, 6)}월 ${+s0.slice(6, 8)}일` : "", time = s0 ? `${s0.slice(9, 11)}:${s0.slice(11, 13)}` : "";
+  const title = m ? m.제목 : "회의", people = m && m.참석 ? peopleOf(m.참석).map(PNAME).join(", ") : "";
+  const rule = (w, c) => ({ canvas: [{ type: "line", x1: 0, y1: 0, x2: 481, y2: 0, lineWidth: w, lineColor: c }] });
+  const h2 = (t) => [{ text: t, fontSize: 16, bold: true, margin: [0, 18, 0, 6] }, { ...rule(1.2, AC), margin: [0, 0, 0, 12] }];
+  const ol = (a) => ({ ol: a.map((t) => ({ text: clean(t), margin: [0, 2, 0, 2] })), markerColor: AC, lineHeight: 1.35 });
+  const agenda = groups.map((g, n) => {
+    const it = its.find((i) => i.id === g.item), name = it ? it.제목 : String(g.item || "").replace(/^new:/, "") || "기타";
+    const meta = [it && peopleOf(it.담당자).length ? "담당 " + peopleOf(it.담당자).map(PNAME).join(", ") : "", it && it.마감 ? "마감 " + md(it.마감) : "", it ? it.상태 : ""].filter(Boolean).join("   |   ");
+    return { unbreakable: lines(g.정리).length <= 12, stack: [{ columns: [{ text: String(n + 1).padStart(2, "0"), width: 34, bold: true, color: AC, fontSize: 11, margin: [0, 1, 0, 0] }, { stack: [{ text: name, bold: true, fontSize: 12.5, margin: [0, 0, 0, 4] }, { ul: lines(g.정리).map((t) => ({ text: said(t), margin: [0, 1, 0, 1] })), lineHeight: 1.35 }, meta ? { text: meta, fontSize: 9, color: SUB, bold: true, margin: [0, 6, 0, 0] } : ""] }] }, { ...rule(0.5, LINE), margin: [0, 12, 0, 12] }] };
+  });
+  const cover = [
+    { text: "온라인팀 회의록", fontSize: 11, bold: true, color: AC, margin: [0, 30, 0, 0] },
+    { text: title, fontSize: 44, bold: true, lineHeight: 1.1, margin: [0, 26, 0, 30] },
+    rule(1.2, INK),
+    { columns: [["일시", [day, time].filter(Boolean).join(" ")], ["길이", x.길이 || ""], ["참석", people]].filter(([, v]) => v).map(([k, v]) => ({ width: "auto", stack: [{ text: k, fontSize: 9, color: SUB, bold: true }, { text: v, fontSize: 13, bold: true, margin: [0, 3, 0, 0] }] })), columnGap: 40, margin: [0, 14, 0, 14] },
+    rule(0.6, LINE),
+    sm.결론 ? { stack: [{ text: "결론", fontSize: 10, bold: true, color: AC }, { text: clean(sm.결론).length > 160 ? clean(sm.결론).slice(0, 158) + "…" : clean(sm.결론), fontSize: clean(sm.결론).length > 80 ? 16 : 20, bold: true, lineHeight: 1.3, margin: [0, 8, 0, 0] }], margin: [0, 40, 0, 0] } : "",
+    { columns: [[groups.length, "안건"], [done.length, "정한 것"], [todo.length, "다음에 정할 것"]].map(([n, t]) => ({ width: "auto", stack: [{ text: String(n), fontSize: 22, bold: true }, { text: t, fontSize: 10, color: SUB }] })), columnGap: 34, absolutePosition: { x: 57, y: 720 } },
+    { text: "", pageBreak: "after" },
+  ];
+  const body = [
+    ...(done.length ? [...h2("정한 것"), done.length <= 15 ? { table: { widths: ["*"], body: [[{ ...ol(done), fillColor: "#e9f1ee", margin: [12, 10, 12, 10] }]] }, layout: "noBorders" } : ol(done)] : []),
+    ...(todo.length ? [...h2("다음에 정할 것"), ol(todo)] : []),
+    ...(agenda.length ? [...h2("안건별 정리"), ...agenda] : []),
+    { text: "클로드가 회의 녹음을 받아써서 정리했어요. 누가 한 말인지는 짐작이라 틀릴 수 있어요.", fontSize: 8.5, color: SUB, margin: [0, 12, 0, 0] },
+  ];
+  return {
+    pageSize: "A4", pageMargins: [57, 62, 57, 57], info: { title: title + " 회의록" },
+    defaultStyle: { font: "Pretendard", fontSize: 11, color: INK, lineHeight: 1.3 },
+    background: (page) => (page === 1 ? { canvas: [{ type: "rect", x: 0, y: 0, w: 25.5, h: 842, color: AC }], absolutePosition: { x: 0, y: 0 } } : ""),
+    header: (page) => (page === 1 ? null : { columns: [{ text: title + " 회의록", bold: true }, { text: day, alignment: "right" }], fontSize: 8.5, color: SUB, margin: [57, 28, 57, 0] }),
+    footer: (page, count) => (page === 1 ? null : { columns: [{ text: "VF 베이프렌드 온라인팀", color: "#8a9199" }, { text: page + " / " + count, alignment: "right", bold: true, color: SUB }], fontSize: 8.5, margin: [57, 18, 57, 0] }),
+    content: [...cover, ...body],
+  };
+}
 async function mnPdf(btn) {
-  const src = btn.closest(".mn-btns")?.previousElementSibling; if (!src || !src.classList.contains("mn")) return toast("회의록을 못 찾았어요. ↻를 눌러 새로 불러와 주세요");
-  toast("PDF 만드는 중이에요…");
-  if (!window.html2pdf) await new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); }).catch(() => null);
-  if (!window.html2pdf) return toast("PDF 도구를 못 불러왔어요. 인터넷을 확인해 주세요");
-  const el = src.cloneNode(true); // 화면 밖에 두면 빈 PDF가 나와서 붙이지 않고 바로 넘김
-  el.style.cssText = "width:720px;border-radius:0;padding:8px 4px;--card:#fff;--ink:#191f28;--ink2:#4e5968;--sub:#8b95a1;--line:#eef3f3;--line2:#dde8e8;--ac:#0f8a8c;--ac-soft:#e0fcfc;background:#fff;color:#191f28";
-  el.querySelectorAll(".mn-meta button").forEach((b) => b.remove());
-  const name = (el.querySelector("h2")?.textContent || "회의록").trim().replace(/[\\/:*?"<>|]/g, "");
-  try { await html2pdf().set({ margin: [14, 14, 14, 14], filename: name + " 회의록.pdf", image: { type: "jpeg", quality: 0.95 }, html2canvas: { scale: 2, backgroundColor: "#ffffff", scrollX: 0, scrollY: 0 }, jsPDF: { unit: "mm", format: "a4" }, pagebreak: { mode: ["css", "legacy"], avoid: [".mn-item", "h3", "li"] } }).from(el).save(); toast("PDF를 받았어요"); }
-  catch (e) { toast("PDF를 만들지 못했어요. 잠시 뒤 다시 눌러 주세요"); }
+  const id = btn?.closest(".mn-btns")?.querySelector("[data-recgo2]")?.dataset.recgo2, x = id && D.recs.find((y) => y.id === id);
+  if (!x) return toast("회의록을 못 찾았어요. ↻를 눌러 새로 불러와 주세요");
+  if (mnPdfBusy) return; mnPdfBusy = true;
+  toast(mnPdfKit ? "PDF 만드는 중이에요…" : "PDF 만드는 중이에요. 글꼴을 받느라 처음엔 조금 걸려요");
+  try {
+    let kit; try { kit = await mnPdfLoad(); } catch (e) { return toast("PDF 도구를 못 불러왔어요. 인터넷을 확인하고 다시 눌러 주세요"); }
+    const name = ((meetOf(x.회의id)?.제목 || "회의").replace(/[\u0000-\u001f\\/:*?"<>|]/g, "").replace(/\s+/g, " ").trim().slice(0, 60) || "회의") + " 회의록.pdf";
+    const blob = await new Promise((ok, no) => { try { kit.createPdf(mnPdfDoc(x)).getBlob(ok); } catch (e) { no(e); } });
+    const file = new File([blob], name, { type: "application/pdf" }), standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+    if (standalone && navigator.canShare?.({ files: [file] })) { try { await navigator.share({ files: [file], title: name }); toast("PDF를 저장하거나 보낼 곳을 고르세요"); } catch (e) { if (e.name !== "AbortError") toast("PDF를 열지 못했어요. 다시 눌러 주세요"); } return; }
+    const a = document.createElement("a"), url = URL.createObjectURL(blob); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000); toast("PDF를 받았어요");
+  } catch (e) { toast("PDF를 만들지 못했어요. 잠시 뒤 다시 눌러 주세요"); }
+  finally { mnPdfBusy = false; }
 }
 let thMin = false, thBusy = "", cDraft = "";
 const dayTxt = (d) => { const x = new Date(String(d).slice(0, 10) + "T00:00:00"); return isNaN(x) ? "" : `${x.getMonth() + 1}월 ${x.getDate()}일 (${"일월화수목금토"[x.getDay()]})`; };

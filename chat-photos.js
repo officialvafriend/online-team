@@ -14,13 +14,13 @@ function decodeAttachment(token) {
 }
 function attachmentHtml(token) {
   const m = decodeAttachment(token); if (!m) return esc('첨부파일 정보를 읽을 수 없어요');
-  return `<div class="attachment ${previewableImage(m.mime) ? "attachment-image" : ""}" data-file-token="${token}">${previewableImage(m.mime) ? `<button class="chat-photo" data-photo-view="${token}" aria-label="사진 크게 보기"><span class="photo-loading">사진 불러오는 중…</span><img data-file-image="${m.id}" alt="${esc(m.name)}" hidden></button>` : '<span class="file-icon" aria-hidden="true">📄</span>'}<span class="file-name">${esc(m.name)}</span><small class="attachment-resolution">${fileSize(m.size)} · 원본</small>${previewableImage(m.mime) ? `<button class="image-open" data-photo-view="${token}">확대해서 자세히 보기</button>` : ""}<button class="file-download" data-file-download="${token}">원본 다운로드</button></div>`;
+  return `<div class="attachment ${previewableImage(m.mime) ? "attachment-image" : ""}" data-file-token="${token}">${previewableImage(m.mime) ? `<button class="chat-photo" data-photo-view="${token}" aria-label="사진 크게 보기"><span class="photo-loading">사진 불러오는 중…</span><img data-file-image="${m.id}" alt="${esc(m.name)}" hidden></button>` : '<span class="file-icon" aria-hidden="true">📄</span>'}<span class="file-name">${esc(m.name)}</span><small class="attachment-resolution">${fileSize(m.size)} · ${m.q === 's' ? '작게 보냄' : '원본'}</small>${previewableImage(m.mime) ? `<button class="image-open" data-photo-view="${token}">확대해서 자세히 보기</button>` : ""}<button class="file-download" data-file-download="${token}">${m.q === 's' ? '사진 저장' : '원본 다운로드'}</button></div>`;
 }
 function photoPreview() {
   const batch = chatPhotos.get(thSel), busy = photoSends.has(thSel);
   if (!batch?.files.length) return '';
-  const items = batch.files.map(p => `<div class="photo-preview">${previewableImage(p.file.type) ? `<button class="draft-image-open" data-draft-view="${p.id}" aria-label="첨부할 이미지 확대해서 확인"><img src="${p.url}" alt="보낼 사진"><span>확대해서 확인</span></button>` : '<span class="file-icon">📄</span>'}<span>${esc(p.file.name)}<small>${fileSize(p.file.size)} · 원본 그대로</small></span><button type="button" data-photo-remove="${p.id}" ${busy ? 'disabled' : ''} aria-label="${esc(p.file.name)} 첨부 빼기">✕</button></div>`).join('');
-  return `<div class="attachment-batch-head"><strong>${batch.files.length}개 첨부</strong><span role="status">${busy ? (batch.progress || '보내는 중…') : '원본 그대로 · 파일당 20MB'}</span><button data-add-files ${busy ? 'disabled' : ''}>＋ 더 추가</button></div><div class="attachment-drafts ${batch.files.length > 1 ? 'multiple' : ''}">${items}</div>`;
+  const items = batch.files.map(p => `<div class="photo-preview">${previewableImage(p.file.type) ? `<button class="draft-image-open" data-draft-view="${p.id}" aria-label="첨부할 이미지 확대해서 확인"><img src="${p.url}" alt="보낼 사진"><span>확대해서 확인</span></button>` : '<span class="file-icon">📄</span>'}<span>${esc(p.file.name)}<small>${fileSize(p.file.size)} · ${batch.orig || !shrinkable(p.file) ? '원본 그대로' : '줄여서 보냄'}</small></span><button type="button" data-photo-remove="${p.id}" ${busy ? 'disabled' : ''} aria-label="${esc(p.file.name)} 첨부 빼기">✕</button></div>`).join('');
+  return `<div class="attachment-batch-head"><strong>${batch.files.length}개 첨부</strong><span role="status">${busy ? (batch.progress || '보내는 중…') : batch.orig || !batch.files.some(p => shrinkable(p.file)) ? '원본 그대로 · 파일당 20MB' : '빠르게 보내려고 사진을 줄여요'}</span><label class="orig-toggle"><input type="checkbox" data-photo-orig ${batch.orig ? 'checked' : ''} ${busy ? 'disabled' : ''}> 원본으로 보내기</label><button data-add-files ${busy ? 'disabled' : ''}>＋ 더 추가</button></div><div class="attachment-drafts ${batch.files.length > 1 ? 'multiple' : ''}">${items}</div>`;
 }
 function updatePhotoPreview() {
   const el = $('#photoPreview'); if (el) el.innerHTML = photoPreview();
@@ -39,6 +39,21 @@ function selectChatFiles(files) {
   if (batch.files.length) chatPhotos.set(room, batch);
   cDraft = $('#cText')?.value || ''; updatePhotoPreview();
   if (rejected) toast('파일당 20MB, 한 번에 30개까지 첨부할 수 있어요. 나머지 파일은 선택 목록에 유지했어요');
+}
+const SHRINK_EDGE = 1600, SHRINK_MIN = 400 * 1024;
+const shrinkable = file => /^image\/(jpeg|png|webp|avif|bmp)$/.test(file.type) && file.size > SHRINK_MIN;
+async function isAnimatedWebp(file) { if (file.type !== 'image/webp') return false; try { return new TextDecoder('latin1').decode(await file.slice(0, 64 * 1024).arrayBuffer()).includes('ANMF'); } catch { return false; } }
+async function shrinkPhoto(file) {
+  if (!shrinkable(file) || await isAnimatedWebp(file)) return file;
+  try {
+    const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    const k = Math.min(1, SHRINK_EDGE / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bmp, 0, 0, c.width, c.height); bmp.close?.();
+    const blob = await new Promise(ok => c.toBlob(ok, 'image/jpeg', 0.82));
+    if (!blob || blob.size >= file.size) return file;
+    return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+  } catch { return file; }
 }
 async function digestFile(bytes) { return [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(b => b.toString(16).padStart(2, '0')).join(''); }
 async function loadAttachment(m, { priority = true } = {}) {
@@ -65,24 +80,27 @@ async function sendChatPhoto(text) {
   try {
     let next = 0, completed = batch.files.filter(p => p.meta).length, uploadError = null;
     const progress = () => {
-      batch.progress = `${completed} / ${batch.files.length}개 업로드 완료 · 원본 전송 중`;
+      batch.progress = `${completed} / ${batch.files.length}개 보냄${batch.orig ? ' · 원본 전송 중' : ''}`;
       if (thSel === room) { const label = document.querySelector('.attachment-batch-head [role="status"]'); if (label) label.textContent = batch.progress; }
     };
     progress();
     async function worker() {
       while (next < batch.files.length && !uploadError) {
         const photo = batch.files[next++];
-        if (photo.meta) { attachmentCache.set(photo.meta.id, Promise.resolve(photo.url)); continue; }
+        if (photo.meta) { attachmentCache.set(photo.meta.id, Promise.resolve(photo.meta.q ? photo.smallUrl || photo.url : photo.url)); continue; }
         try {
-          const bytes = await photo.file.arrayBuffer(), sha256 = await digestFile(bytes);
-          if (DEMO) photo.meta = { id: 'demo_' + photo.id, name: photo.file.name.slice(0, 240), mime: photo.file.type || 'application/octet-stream', size: photo.file.size, sha256 };
+          if (!batch.orig && !photo.small) photo.small = await shrinkPhoto(photo.file);
+          const f = batch.orig ? photo.file : photo.small, small = f !== photo.file ? { q: 's' } : {};
+          const bytes = await f.arrayBuffer(), sha256 = await digestFile(bytes);
+          if (DEMO) photo.meta = { id: 'demo_' + photo.id, name: f.name.slice(0, 240), mime: f.type || 'application/octet-stream', size: f.size, sha256, ...small };
           else {
-            const result = await post({ type: 'attachmentUpload', uploadId: photo.id, name: photo.file.name, mime: photo.file.type || 'application/octet-stream', b64: await b64(photo.file), sha256 });
-            if (!result.file || result.file.sha256 !== sha256 || result.file.size !== photo.file.size) throw new Error('checksum');
-            photo.meta = result.file;
+            const result = await post({ type: 'attachmentUpload', uploadId: photo.id + (small.q ? 's' : ''), name: f.name, mime: f.type || 'application/octet-stream', b64: await b64(f), sha256 });
+            if (!result.file || result.file.sha256 !== sha256 || result.file.size !== f.size) throw new Error('checksum');
+            photo.meta = { ...result.file, ...small };
           }
-          // The sender already holds the verified original. Never download it again.
-          attachmentCache.set(photo.meta.id, Promise.resolve(photo.url)); await cacheOriginalFile(photo.meta, photo.file); completed++; progress();
+          // The sender already holds the file it sent. Never download it again.
+          if (small.q && !photo.smallUrl) photo.smallUrl = URL.createObjectURL(f);
+          attachmentCache.set(photo.meta.id, Promise.resolve(small.q ? photo.smallUrl : photo.url)); await cacheOriginalFile(photo.meta, f); completed++; progress();
         } catch (e) { uploadError = e; }
       }
     }
@@ -96,7 +114,7 @@ async function sendChatPhoto(text) {
     if (!D.logs.some(l => l.id === log.id)) D.logs.push(log);
     chatPhotos.delete(room);
     if (thSel === room) { const current = $('#cText')?.value || ''; cDraft = current.trim() === text ? '' : current; render(); scrollEnd(); }
-    toast(DEMO ? '예시 화면에 첨부했어요' : `${batch.files.length}개 원본 파일을 보냈어요`);
+    toast(DEMO ? '예시 화면에 첨부했어요' : `${batch.files.length}개 ${batch.orig ? '원본 파일' : '사진'}을 보냈어요`);
   } catch (e) { toast('보내지 못했어요. 첨부한 파일은 그대로 있으니 다시 보내 주세요'); }
   finally { photoSends.delete(room); updatePhotoPreview(); }
 }
@@ -108,7 +126,7 @@ function showAttachment(token, origin) {
   const items = unique.length ? unique.map(meta => ({ meta, getSource: (priority = true) => loadAttachment(meta, { priority }) })) : [{ meta: m, getSource: () => loadAttachment(m) }];
   return openImageReview(m, () => loadAttachment(m), items, Math.max(0, items.findIndex(item => item.meta.id === m.id)));
 }
-document.addEventListener('change', e => { if (e.target.id === 'chatPhotoInput') { selectChatFiles([...e.target.files]); e.target.value = ''; } });
+document.addEventListener('change', e => { if (e.target.matches?.('[data-photo-orig]')) { const batch = chatPhotos.get(thSel); if (batch && !photoSends.has(thSel)) { batch.orig = e.target.checked; batch.files.forEach(p => { p.meta = null; }); updatePhotoPreview(); } return; } if (e.target.id === 'chatPhotoInput') { selectChatFiles([...e.target.files]); e.target.value = ''; } });
 document.addEventListener('paste', e => {
   if (!e.target.closest('.cbox')) return;
   const images = [...(e.clipboardData?.items || [])].filter(i => i.kind === 'file' && i.type.startsWith('image/')).map(i => i.getAsFile()).filter(Boolean);
@@ -118,7 +136,7 @@ document.addEventListener('dragover', e => { if (e.target.closest('.cbox') && e.
 document.addEventListener('drop', e => { if (e.target.closest('.cbox') && e.dataTransfer?.files.length) { e.preventDefault(); selectChatFiles([...e.dataTransfer.files]); } });
 document.addEventListener('click', async e => {
   const remove = e.target.closest('[data-photo-remove]');
-  if (remove && !photoSends.has(thSel)) { const batch = chatPhotos.get(thSel), p = batch?.files.find(p => p.id === remove.dataset.photoRemove); if (p) { if (p.meta) attachmentCache.delete(p.meta.id); URL.revokeObjectURL(p.url); batch.files = batch.files.filter(f => f !== p); if (!batch.files.length) chatPhotos.delete(thSel); } updatePhotoPreview(); }
+  if (remove && !photoSends.has(thSel)) { const batch = chatPhotos.get(thSel), p = batch?.files.find(p => p.id === remove.dataset.photoRemove); if (p) { if (p.meta) attachmentCache.delete(p.meta.id); URL.revokeObjectURL(p.url); if (p.smallUrl) URL.revokeObjectURL(p.smallUrl); batch.files = batch.files.filter(f => f !== p); if (!batch.files.length) chatPhotos.delete(thSel); } updatePhotoPreview(); }
   if (e.target.closest('[data-add-files]') && !photoSends.has(thSel)) $('#chatPhotoInput')?.click();
   const pick = e.target.closest('[data-pick-file]'); if (pick) { closeSheet(); $('#chatPhotoInput')?.click(); }
   const view = e.target.closest('[data-photo-view]'); if (view) return showAttachment(view.dataset.photoView, view);
@@ -143,7 +161,7 @@ let originalLoads = 0; const originalQueue = [];
 async function loadVisibleOriginal(img) {
   const card = img.closest('[data-file-token]'), m = card && decodeAttachment(card.dataset.fileToken); if (!m) return;
   originalQueue.push(async () => {
-    try { const pending = loadAttachment(m); prefetchAttachmentNeighbors(card); const url = await pending; if (img.isConnected) { img.onload = () => { const label = card.querySelector('.attachment-resolution'); if (label) label.textContent = `${img.naturalWidth.toLocaleString()} × ${img.naturalHeight.toLocaleString()} px · ${fileSize(m.size)} · 원본`; }; img.src = url; img.hidden = false; card.querySelector('.photo-loading')?.remove(); } }
+    try { const pending = loadAttachment(m); prefetchAttachmentNeighbors(card); const url = await pending; if (img.isConnected) { img.onload = () => { const label = card.querySelector('.attachment-resolution'); if (label) label.textContent = `${img.naturalWidth.toLocaleString()} × ${img.naturalHeight.toLocaleString()} px · ${fileSize(m.size)} · ${m.q === 's' ? '작게 보냄' : '원본'}`; }; img.src = url; img.hidden = false; card.querySelector('.photo-loading')?.remove(); } }
     catch { if (card.isConnected) card.querySelector('.photo-loading').textContent = '눌러서 원본 보기'; }
   });
   pumpOriginals();

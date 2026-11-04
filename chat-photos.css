@@ -135,3 +135,5 @@
 .image-review .iv-previous:disabled,.image-review .iv-next:disabled{opacity:.35}
 .iv-gallery-count{display:inline-block;margin-left:12px;font-variant-numeric:tabular-nums}
 @media(max-width:599px){.image-review .iv-previous,.image-review .iv-next{width:44px;height:48px}.image-review .iv-previous{left:6px}.image-review .iv-next{right:6px}}
+.orig-toggle{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:14px;font-weight:600;color:var(--ink2);cursor:pointer}
+.orig-toggle input{width:20px;height:20px;accent-color:var(--ac)}
