@@ -1927,6 +1927,7 @@ async function load(key) {
   const r = await (await fetch(`${APPS_URL}?k=${encodeURIComponent(key)}&t=${Date.now()}`, { cache: "no-store" })).json();
   if (!r.ok) throw Object.assign(new Error(r.error), { code: r.error });
   r.notes = r.notes || []; r.recs = r.recs || [];
+  try { localStorage.setItem("ot-snap", JSON.stringify(r)); } catch (e) {} /* 다음에 열 때 바로 보여 줄 마지막 내용 (이 기기에만) */
   return r;
 }
 async function post(body) {
@@ -2893,7 +2894,7 @@ document.addEventListener("click", async (e) => {
   if (d.ldel) { if (confirm("이 기록을 지울까요?\n되돌릴 수 없어요.")) { await del("log", d.ldel); sheetItem(); } return; }
   switch (d.act) {
     case "reload": return reload();
-    case "logout": ls.set("ot-key", null); KEY = ""; D = null; return renderLogin();
+    case "logout": ls.set("ot-key", null); try { localStorage.removeItem("ot-snap"); } catch (e) {} KEY = ""; D = null; return renderLogin();
     case "who": return askWho();
     case "recstart": return recStart();
     case "recsave": { const x = D.recs.find((y) => y.id === recSel); if (!x) return; recCls.dirty = false; await save("rec", { ...x, 분류: JSON.stringify(recCls.rows.map((c, i) => ({ i, ...c }))) }); return toast("분류를 저장했어요"); }
@@ -2982,6 +2983,13 @@ const needWho = () => { if (FULL[who]) { who = FULL[who]; ls.set("ot-who", who);
 (async () => {
   if (DEMO) { D = demoData(); KEY = "demo"; return resumeBoardScreen(); }
   if (!KEY) return renderLogin();
+  /* 빠르게 열기 (11/4): 지난번 받은 내용이 이 기기에 있으면 0초 만에 먼저 보여 주고, 새 내용은 뒤에서 받아 바꿔 끼움 */
+  const snap = (() => { try { const s = JSON.parse(localStorage.getItem("ot-snap") || "null"); return s && s.items && s.meetings ? s : null; } catch (e) { return null; } })();
+  if (snap) {
+    D = snap; D.notes = D.notes || []; D.recs = D.recs || []; resumeBoardScreen();
+    try { D = await load(KEY); if (!$("#dim").classList.contains("on") && !edit) render(); } catch (e) { if (e.code === "key") { KEY = ""; ls.set("ot-key", null); renderLogin("비밀번호가 바뀌었어요. 다시 넣어 주세요"); } else toast("새 내용을 못 불러왔어요. 지난번 내용을 보여 주고 있어요"); }
+    return;
+  }
   try { D = await load(KEY); resumeBoardScreen(); } catch (e) { KEY = ""; ls.set("ot-key", null); renderLogin(e.code === "key" ? "비밀번호가 바뀌었어요. 다시 넣어 주세요" : e.code === "setup" ? "시트 연결 준비 중이에요" : "불러오지 못했어요. 인터넷을 확인해 주세요"); }
 })();
 </script>
