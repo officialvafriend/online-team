@@ -2276,7 +2276,7 @@ function notis() {
   for (const x of D.items) {
     if (!hasP(x.담당자, who)) continue;
     if (x.고친시각 && x.고친시각 > since && my[x.id] !== x.고친시각) add({ key: "i:" + x.id + ":" + x.고친시각, ic: "📌", t: x.제목, s: "새로 맡았거나 바뀐 할 일" + (x.마감 ? ", 마감 " + md(x.마감) : ""), at: x.고친시각, go: { item: x.id } });
-    if (ACTIVE.includes(x.상태) && x.마감 && x.마감 <= tmr) add({ key: "d:" + x.id + ":" + today(), ic: x.마감 < today() ? "🔴" : "⏰", t: x.제목, s: x.마감 < today() ? `마감이 ${-days(x.마감)}일 지났어요` : x.마감 === today() ? "오늘 마감이에요" : "내일 마감이에요", at: today() + " 00:00", go: { item: x.id } });
+    if (ACTIVE.includes(x.상태) && x.마감 && x.마감 <= tmr) add({ key: "d:" + x.id + ":" + x.마감 + ":" + (x.마감 < today() ? "late" : x.마감 === today() ? "today" : "tmr"), ic: x.마감 < today() ? "🔴" : "⏰", t: x.제목, s: x.마감 < today() ? `마감이 ${-days(x.마감)}일 지났어요` : x.마감 === today() ? "오늘 마감이에요" : "내일 마감이에요", at: today() + " 00:00", go: { item: x.id } });
   }
   const myItemIds = D.items.filter((x) => hasP(x.담당자, who)).map((x) => x.id), myIdeas = D.notes.filter((n) => n.종류 === "제안" && n.작성자 === who), myIdeaIds = myIdeas.map((n) => n.id);
   for (const l of D.logs) {
@@ -2295,10 +2295,11 @@ function notis() {
   return out.sort((a, b) => (a.read - b.read) || (pri(a) - pri(b)) || (a.at < b.at ? 1 : -1));
 }
 const notiCount = () => notis().filter((n) => !n.read).length;
-function notiRead(keys) { const st = notiState(); st.read = [...new Set([...st.read, ...keys])].slice(-400); ls.set(NKEY(), JSON.stringify(st)); }
+function notiRead(keys) { const st = notiState(), live = new Set(notis().map((n) => n.key)); st.read = [...new Set([...st.read.filter((k) => live.has(k)), ...keys])]; ls.set(NKEY(), JSON.stringify(st)); }
 function notiSheet() {
-  const l = notis(), un = l.filter((n) => !n.read);
-  openSheet(`<div class="nhead"><h3>알림 ${un.length ? `<small>${un.length}개</small>` : ""}</h3>${un.length ? '<button class="ic" data-act="nall">모두 읽음</button>' : ""}</div>
+  const l = notis(), un = l.filter((n) => !n.read), mu = thUnreadAll();
+  openSheet(`<div class="nhead"><h3>알림 ${un.length + mu ? `<small>${un.length + mu}개</small>` : ""}</h3>${un.length + mu ? '<button class="ic" data-act="nall">모두 읽음</button>' : ""}</div>
+    ${mu ? `<button class="item" data-tab="chat" style="margin-top:10px"><span class="nic">💬</span><div class="tx"><b>메신저에 안 읽은 메시지 ${mu}개</b><span>눌러서 메신저로 가요</span></div><span class="ndot2"></span></button>` : ""}
     <div class="list nlist">${l.length ? l.map((n) => `<button class="item ${n.read ? "nread" : ""}" data-noti="${esc(n.key)}"><span class="nic">${n.ic}</span><div class="tx"><b>${esc(n.t)}</b><span>${esc(n.s)}${n.at && !n.key.startsWith("d:") ? ", " + esc(ago(n.at)) : ""}</span></div>${n.read ? "" : '<span class="ndot2"></span>'}</button>`).join("") : '<div class="empty">새 알림이 없어요</div>'}</div>
     <div class="btns"><button class="btn gray" data-x>닫기</button></div>`);
 }
@@ -2825,7 +2826,7 @@ document.addEventListener("click", async (e) => {
           else { for (let from = 0; from < n; from += C) { t.textContent = `정리하는 중… ${Math.min(from + C, n)}/${n}줄`; const b = { type: "organize", id: recSel, from, to: from + C }; try { await post(b); } catch (e) { if (e.message === "limit") throw e; await post(b); } } t.textContent = "회의록 쓰는 중…"; await post({ type: "organize", id: recSel, sum: true }); }
           D = await load(KEY); } recCls = null; render(); toast("정리했어요"); } catch (e) { t.disabled = false; toast(ASKERR[e.message] || "정리하지 못했어요. 잠시 뒤 다시 해 봐요"); render(); } return; }
     case "noti": return notiSheet();
-    case "nall": notiRead(notis().map((n) => n.key)); render(); return notiSheet();
+    case "nall": { const st = notiState(), keys = notis().map((n) => n.key); st.since = D.at || st.since; st.read = keys.filter((k) => k.startsWith("d:")); ls.set(NKEY(), JSON.stringify(st)); thList().forEach((x) => { if (x.last && x.last > thSeen(x.id)) thSeen(x.id, x.last); }); render(); return notiSheet(); }
     case "qadd": { if (!who) return askWho(); const v = val("#qText"); if (!v) return; const p = parseQuick(v); if (!p.title) return toast("할 일을 적어 주세요");
       const x = { id: uid("i_"), 회의id: "", 순서: "", 제목: p.title, 상태: "확정", 브랜드: "", 분야: "", 담당자: (p.owners.length ? p.owners : [who]).join(", "), 시작: "", 마감: p.due, 메모: "", 확인할것: "" };
       await save("item", x); return toast(`넣었어요: ${x.담당자}${p.due ? ", 마감 " + md(p.due) : ""}`); }
