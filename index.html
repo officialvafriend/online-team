@@ -1680,6 +1680,32 @@ document.addEventListener('click', e => {
   .crm-th .crm-btns{width:100%}
   .crm-th .crm-btns .btn{flex:1}
 }
+/* CRM 칸 두 칸 전환 + 10월 성과 대시보드 */
+.crm-seg{display:inline-flex;gap:4px;padding:4px;border-radius:12px;background:var(--line);margin-bottom:16px}
+.crm-seg button{min-height:40px;padding:0 16px;border-radius:9px;font-size:15px;font-weight:700;color:var(--sub)}
+.crm-seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.crm-rep-head b{display:block;font-size:20px;font-weight:800;letter-spacing:-.02em}
+.crm-rep-head span{display:block;font-size:14px;color:var(--sub);margin:4px 0 16px}
+.crm-bars{padding:8px 16px}
+.crm-bar{display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr) minmax(0,150px);gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.crm-bar:last-child{border-bottom:0}
+.crm-bl b{display:block;font-size:15px;font-variant-numeric:tabular-nums}
+.crm-bl small,.crm-bv small{display:block;font-size:12.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crm-bt{height:12px;border-radius:6px;background:var(--bg);overflow:hidden}
+.crm-bt i{display:block;height:100%;border-radius:6px;background:var(--m4,var(--ac))}
+.crm-bar.best .crm-bt i{background:var(--ac)}
+.crm-bar.best .crm-bv b{color:var(--ac)}
+.crm-bv{text-align:right}
+.crm-bv b{display:block;font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
+.crm-note{font-size:14px;color:var(--ink2);margin:10px 2px 0}
+.crm-note.sub{color:var(--sub);font-size:13px;margin-top:20px}
+.crm-lag{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;padding:16px;align-items:end}
+.crm-lagc{display:flex;flex-direction:column;align-items:center;gap:6px}
+.crm-lagv{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.crm-lagb{width:100%;max-width:36px;height:120px;display:flex;align-items:flex-end}
+.crm-lagb i{display:block;width:100%;border-radius:6px 6px 0 0;background:var(--ac)}
+.crm-lagl{font-size:12.5px;color:var(--sub)}
+@media (max-width:760px){.crm-bar{grid-template-columns:52px minmax(0,1fr) 112px;gap:8px}.crm-bl small{display:none}.crm-bv small{white-space:normal}.crm-lagb{height:90px}}
 
 </style>
 <!-- /bundled:crm-board.css -->
@@ -1689,7 +1715,7 @@ document.addEventListener('click', e => {
    CRM 시트의 '할 일 목록', '발송 목록'만 받아서 오늘 할 일, 요약, 결과 목록, 달력으로 보여 줌.
    이름, 전화번호 명단은 서버(Apps Script crmGet)가 아예 보내지 않음.
    상태(F)와 결과(H~L: 보낸시간, 구매, 적립금사용, 회수, 메모)는 클로드 액상덕후 세션이 시트에 적음 */
-const CRM = { d: null, busy: false, err: "", open: "", month: "", kind: {} };
+const CRM = { d: null, busy: false, err: "", open: "", month: "", kind: {}, view: "now" };
 const crmMD = (s) => String(s || "").slice(0, 5).replace("/", "-"); // '11/04(수)' → '11-04'
 const crmNum = (v) => { const n = Number(String(v || "").replace(/[^\d.]/g, "")); return String(v || "").trim() && !isNaN(n) ? n : null; };
 const crmWon = (n) => (n >= 10000 ? (Math.round(n / 1000) / 10).toLocaleString() + "만원" : n.toLocaleString() + "원");
@@ -1711,6 +1737,11 @@ async function crmLoad() {
   if (tab === "crm") render();
 }
 function crmHtml() {
+  const seg = `<div class="crm-seg" role="tablist"><button role="tab" data-crm-view="now" aria-selected="${CRM.view === "now"}" class="${CRM.view === "now" ? "on" : ""}">이번 달 진행</button><button role="tab" data-crm-view="r10" aria-selected="${CRM.view === "r10"}" class="${CRM.view === "r10" ? "on" : ""}">10월 성과</button></div>`;
+  if (CRM.view === "r10") return seg + crmReportHtml();
+  return seg + crmNowHtml();
+}
+function crmNowHtml() {
   if (!CRM.d) {
     if (!CRM.busy && !CRM.err) setTimeout(crmLoad, 0); // 그리는 중에 다시 그리지 않게 한 박자 뒤에
     return CRM.err ? `<div class="empty">CRM 시트를 못 불러왔어요<br><small>${esc(CRM.err)}</small><br><button class="btn" data-crm="reload" style="margin-top:10px">다시 불러오기</button></div>` : `<div class="empty">CRM 시트를 불러오는 중이에요…</div>`;
@@ -1777,7 +1808,8 @@ function crmCal(mon, list) {
 }
 
 document.addEventListener("click", (e) => {
-  const el = e.target.closest("[data-crm],[data-crm-mon],[data-crm-open],[data-crm-kind]"); if (!el) return;
+  const el = e.target.closest("[data-crm],[data-crm-mon],[data-crm-open],[data-crm-kind],[data-crm-view]"); if (!el) return;
+  if (el.dataset.crmView) { CRM.view = el.dataset.crmView; render(); return; }
   const ds = el.dataset, row = (v) => (CRM.d?.todo || []).find((x) => String(x.r) === String(v).split("|")[0]);
   if (ds.crm === "reload") { CRM.d = null; CRM.err = ""; render(); return; }
   if (ds.crmMon) { const c = CRM.month || today(), b = new Date(+c.slice(0, 4), +c.slice(5, 7) - 1 + +ds.crmMon, 1); CRM.month = `${b.getFullYear()}-${String(b.getMonth() + 1).padStart(2, "0")}`; render(); return; }
@@ -1797,6 +1829,44 @@ function crmDemo() {
     R(0, "생애주기", "생애주기 문자", 1482, "예정", "이탈 방지(1회) 707, 첫구매 유도 380 / 적립금 최대 7,531,800원"), R(1, "신규액상", "신규액상 1 (과일멘솔)", 3741, "예정", "신규액상 3741 / 적립금 최대 0원"), R(3, "액상 추천", "액상 추천 (브랜드별)", 1182, "예정", "액상 추천 1182 / 적립금 최대 0원"), R(5, "적립금", "적립금 데이 10% 지급", "", "예정", "결제 주문 확인 → 결제금액 10% 적립")].map((x, i) => ({ ...x, r: i + 2 }));
   const sends = [{ 날짜: t, 종류: "신규 2회차", 인원: "34", 문자: "[액상덕후] {이름}님, 첫 주문 감사합니다! 받아보신 덕후 액상은 입에 잘 맞으셨나요? 두 번째 주문에 쓰시라고 5,000원 넣어뒀어요." }, { 날짜: t, 종류: "이탈 방지(1회)", 인원: "274", 문자: "[액상덕후] {이름}님, 지난번 주문하신 덕후 액상은 입에 잘 맞으셨을까요? 5,000원 적립금 넣어뒀어요." }, { 날짜: t, 종류: "첫구매 유도", 인원: "380", 문자: "[액상덕후] {이름}님, 액상덕후 가입 감사해요! 첫 주문에 쓰시라고 5,000원 넣어뒀어요." }];
   return { ok: true, todo, sends };
+}
+
+/* ── 10월 CRM 성과 대시보드 (CRM 칸 "10월 성과") ──
+   출처: 월말보고서 자료_20261030\03_CRM\액상덕후_CRM_성과_20261030_정리본.xlsx (10/30 14:19 추출본)
+   합계 숫자만 넣음. 전화번호, 주문번호는 넣지 않음(공개 저장소)
+   구매 = 문자 성공 뒤 7일 안 주문(입금확인, 배송준비중, 배송완료, 환불 뺌)을 가장 최근 문자 하나에 배정 */
+const CRM_R10 = {
+  at: "10/30 14:19 추출본", total: { sent: 5726, ok: 5624, people: 2373, cost: 171780, buyers: 164, orders: 172, sales: 12099641 },
+  /* [발송일, 이름(폴더 있는 것만), 성공 수신자, 구매자, 주문, 연결 매출, 문자비, 7일 다 지났는지] */
+  rows: [["10-08", "적립금 문자", 567, 25, 25, 2610540, 17250, 1], ["10-12", "", 2, 0, 0, 0, 150, 1], ["10-13", "적립금 문자", 931, 21, 21, 975363, 28380, 1], ["10-14", "", 973, 29, 29, 1537302, 29910, 1], ["10-15", "", 284, 12, 12, 723120, 8610, 1], ["10-16", "", 100, 8, 8, 812899, 3060, 1], ["10-19", "", 371, 13, 13, 643670, 11340, 1], ["10-20", "", 436, 24, 25, 2258634, 13560, 1], ["10-21", "", 57, 1, 1, 53985, 1770, 1], ["10-22", "", 214, 7, 7, 980063, 6630, 1], ["10-23", "기기구매 감사 적립금", 1528, 27, 27, 1394872, 46860, 1], ["10-27", "", 140, 4, 4, 109193, 4260, 0]],
+  /* 문자 받고 며칠 만에 샀나: 0일(그날) ~ 7일, 주문 수 */
+  lag: [58, 37, 19, 14, 19, 12, 8, 5],
+};
+function crmReportHtml() {
+  const R = CRM_R10, T = R.total, pct = (a, b) => (b ? (a / b * 100).toFixed(1) : "0.0") + "%";
+  const man = (n) => (n >= 10000 ? (Math.round(n / 1000) / 10).toLocaleString() + "만원" : n.toLocaleString() + "원");
+  const rows = R.rows.filter((r) => r[2] >= 50), maxRate = Math.max(...rows.map((r) => r[3] / r[2])), maxLag = Math.max(...R.lag);
+  const best = rows.filter((r) => r[7]).reduce((a, r) => (r[3] / r[2] > a[3] / a[2] ? r : a));
+  const early = R.lag[0] + R.lag[1], allLag = R.lag.reduce((a, b) => a + b, 0);
+  return `<div class="crm crm-rep">
+    <div class="crm-rep-head"><b>10월 CRM 문자 성과</b><span>${R.at}, 문자 받고 7일 안에 산 사람 기준</span></div>
+    <div class="crm-sum">
+      <div><small>문자 받은 사람</small><b>${T.people.toLocaleString()}명</b><em>보낸 문자 ${T.sent.toLocaleString()}건</em></div>
+      <div><small>산 사람</small><b>${T.buyers.toLocaleString()}명</b><em>주문 ${T.orders}건</em></div>
+      <div><small>구매율</small><b>${pct(T.buyers, T.people)}</b><em>산 사람 ÷ 받은 사람</em></div>
+      <div><small>연결 매출</small><b>${man(T.sales)}</b><em>문자비 ${man(T.cost)}, ${Math.round(T.sales / T.cost)}배</em></div>
+    </div>
+    <div class="crm-sec">문자별 구매율 <small>막대가 길수록 많이 샀어요. 50명 미만 발송은 뺐어요</small></div>
+    <div class="crm-card crm-bars">${rows.map((r) => { const rate = r[3] / r[2]; return `<div class="crm-bar ${r === best ? "best" : ""}">
+      <span class="crm-bl"><b>${+r[0].slice(0, 2)}/${+r[0].slice(3)}</b>${r[1] ? `<small>${esc(r[1])}</small>` : ""}</span>
+      <span class="crm-bt" aria-hidden="true"><i style="width:${Math.max(2, rate / maxRate * 100).toFixed(1)}%"></i></span>
+      <span class="crm-bv"><b>${pct(r[3], r[2])}</b><small>${r[3]}명, ${man(r[5])}${r[7] ? "" : ", 집계 중"}</small></span></div>`; }).join("")}</div>
+    <p class="crm-note">가장 잘 된 문자: ${+best[0].slice(0, 2)}/${+best[0].slice(3)} (${pct(best[3], best[2])}, ${best[2].toLocaleString()}명 중 ${best[3]}명)</p>
+    <div class="crm-sec">문자 받고 며칠 만에 샀나 <small>주문 ${allLag}건</small></div>
+    <div class="crm-card crm-lag">${R.lag.map((n, i) => `<div class="crm-lagc"><span class="crm-lagv">${n}</span><span class="crm-lagb"><i style="height:${(n / maxLag * 100).toFixed(1)}%"></i></span><span class="crm-lagl">${i ? i + "일" : "그날"}</span></div>`).join("")}</div>
+    <p class="crm-note">${Math.round(early / allLag * 100)}%가 문자 받은 날이나 다음 날 샀어요.</p>
+    <p class="crm-note sub">문자를 받은 뒤 산 실적이고, 문자 때문에 늘어난 매출이라는 뜻은 아니에요. 10/27은 7일이 다 안 지나 집계 중이에요.</p>
+  </div>`;
 }
 
 </script>
