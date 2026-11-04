@@ -10,7 +10,7 @@ const TEAM = [
 const ACTIVE = ["확인필요", "시도", "확정"];
 const S = { me: null, tab: "today", page: "", room: "", items: [], logs: [], notes: [], meetings: [], pick: "", err: "", loading: false, at: "" };
 const $ = (s) => document.querySelector(s);
-const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const pad = (n) => String(n).padStart(2, "0");
 const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const today = () => ymd(new Date());
@@ -86,12 +86,40 @@ async function loadAll() {
   if (bad) toast("불러오지 못했어요: " + bad.error.message);
   S.items = it.data || []; S.logs = lg.data || []; S.notes = nt.data || []; S.meetings = mt.data || []; S.loading = false; S.at = stamp();
 }
+/* ── 알림음 "물방울 뽁": 파일 없이 Web Audio로 만듦 ──
+   사인파 하나, 600Hz→1400Hz(0.08초), 볼륨 0→0.3(0.008초)→0.0001(0.18초), 전체 약 0.2초
+   남이 보낸 메시지만, 보고 있는 방은 절반 볼륨, 1초 안에 여러 개 오면 한 번만, 설정에서 끔(기본 켜짐) */
+const SOUND = { ctx: null, last: 0 };
+const soundOn = () => ls.get("nb-sound-" + (S.me?.name || "")) !== "off";
+function audioReady() { try { SOUND.ctx = SOUND.ctx || new (window.AudioContext || window.webkitAudioContext)(); if (SOUND.ctx.state === "suspended") SOUND.ctx.resume(); } catch (e) {} }
+document.addEventListener("pointerdown", audioReady, { once: true }); /* 브라우저는 한 번 눌러야 소리를 냄: 첫 터치 때 준비 */
+document.addEventListener("keydown", audioReady, { once: true });
+function pop(scale = 1, force = false) {
+  if (!force && !soundOn()) return;
+  const now = Date.now(); if (!force && now - SOUND.last < 1000) return; SOUND.last = now;
+  try {
+    audioReady(); const c = SOUND.ctx; if (!c) return;
+    const t = c.currentTime, o = c.createOscillator(), g = c.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(600, t); o.frequency.exponentialRampToValueAtTime(1400, t + 0.08);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.3 * scale, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t + 0.2);
+  } catch (e) {}
+}
+/* 지금 화면에 그 방이 열려 있는지: 폰은 메신저 탭의 그 방, 넓은 화면은 옆 메신저 칸에 보이는 방 */
+const viewingRoom = (id) => document.visibilityState === "visible" && ((S.tab === "chat" && S.room === id) || (wide() && (S.room || rooms()[0]?.id) === id));
+
 let chan = null;
 function live() {
   if (chan) return;
   chan = sb.channel("logs-live").on("postgres_changes", { event: "INSERT", schema: "public", table: "logs" }, (p) => {
     if (S.logs.some((l) => l.id === p.new.id)) return;
-    S.logs.push(p.new); if (p.new.author !== S.me.name && S.room !== p.new.target_id) toast(`${who(p.new.author)}: ${plain(p.new.body).slice(0, 30)}`);
+    S.logs.push(p.new);
+    if (p.new.author !== S.me.name && !PIN.test(p.new.body)) {
+      const seeing = viewingRoom(p.new.target_id);
+      pop(seeing ? 0.5 : 1);
+      if (!seeing) toast(`${who(p.new.author)}: ${plain(p.new.body).slice(0, 30)}`);
+    }
     render();
   }).subscribe();
   document.addEventListener("visibilitychange", async () => { if (document.visibilityState === "visible") { await loadAll(); render(); } });
@@ -137,7 +165,7 @@ function render() {
   document.querySelectorAll(".chat.live").forEach((c) => (c.scrollTop = c.scrollHeight));
 }
 function rowItem(x, chip) {
-  return `<button class="row" data-item="${x.id}"><div class="tx"><b>${esc(x.title)}</b><span>${esc([teamOf(x.owners).map((p) => p.name).join(", "), x.due_date ? "마감 " + md(x.due_date) + (x.due_time ? " " + x.due_time.replace(/^'/, "") : "") : ""].filter(Boolean).join(", "))}</span></div>${chip ? `<span class="chip ${chip[0]}">${esc(chip[1])}</span>` : ""}</button>`;
+  return `<button class="row" data-item="${esc(x.id)}"><div class="tx"><b>${esc(x.title)}</b><span>${esc([teamOf(x.owners).map((p) => p.name).join(", "), x.due_date ? "마감 " + md(x.due_date) + (x.due_time ? " " + x.due_time.replace(/^'/, "") : "") : ""].filter(Boolean).join(", "))}</span></div>${chip ? `<span class="chip ${chip[0]}">${esc(chip[1])}</span>` : ""}</button>`;
 }
 function dueChip(x) {
   const t = today();
@@ -162,16 +190,16 @@ function todayHtml(rs) {
   const doneWeek = S.items.filter((x) => x.status === "완료" && hasMe(x.owners) && (x.updated_at || "") >= addDays(t, -7)).length;
   const head = now.length + week.length;
   const d = new Date(), wd = "일월화수목금토"[d.getDay()];
-  return `<div class="head"><div><h1>${head ? `오늘 볼 일 ${head}개예요` : "급한 일은 없어요"}</h1><p>${d.getMonth() + 1}월 ${d.getDate()}일 ${wd}요일, ${esc(S.me.label)}님</p></div><button class="link-btn" data-act="logout">나가기</button></div>
+  return `<div class="head"><div><h1>${head ? `오늘 볼 일 ${head}개예요` : "급한 일은 없어요"}</h1><p>${d.getMonth() + 1}월 ${d.getDate()}일 ${wd}요일, ${esc(S.me.label)}님</p></div><button class="link-btn" data-act="settings">설정</button></div>
     ${sec("지금 할 것", now, "hot")}
-    ${calls.length ? `<section class="sec"><h2>나를 기다리는 메시지<em>${calls.length}</em></h2><div class="group">${calls.map(({ r, l }) => `<button class="row" data-room="${r.id}"><div class="av">${esc(r.av)}</div><div class="tx"><b class="sm one">${esc(plain(l.body) || "사진")}</b><span>${esc(r.dm ? who(l.author) : who(l.author) + ", " + r.name)}, ${esc(l.at.slice(11))}</span></div><span class="badge">${unreadOf(r)}</span></button>`).join("")}</div></section>` : ""}
+    ${calls.length ? `<section class="sec"><h2>나를 기다리는 메시지<em>${calls.length}</em></h2><div class="group">${calls.map(({ r, l }) => `<button class="row" data-room="${esc(r.id)}"><div class="av">${esc(r.av)}</div><div class="tx"><b class="sm one">${esc(plain(l.body) || "사진")}</b><span>${esc(r.dm ? who(l.author) : who(l.author) + ", " + r.name)}, ${esc(l.at.slice(11))}</span></div><span class="badge">${unreadOf(r)}</span></button>`).join("")}</div></section>` : ""}
     ${sec("이번 주", week)}
     ${sec("다른 사람 마감 임박", wait)}
     ${sec("날짜 없거나 나중", later)}
     <section class="sec"><div class="group"><button class="row sm" data-go="todo"><div class="tx"><b>이번 주 끝낸 일</b></div><span class="chip done">${doneWeek}개</span>${IC.chev}</button></div></section>`;
 }
 function roomsHtml(rs) {
-  return `<div class="head"><div><h1>메신저</h1></div></div><div class="group">${rs.map((r) => { const u = unreadOf(r); return `<button class="row" data-room="${r.id}"><div class="av">${esc(r.av)}</div><div class="tx"><b class="sm">${esc(r.name)}</b><span class="one">${r.last ? esc(who(r.last.author) + ": " + (plain(r.last.body) || "사진")) : "아직 메시지가 없어요"}</span></div>${u ? `<span class="badge">${u}</span>` : r.last ? `<span class="tm">${esc(r.last.at.slice(5, 10).replace("-", "/"))}</span>` : ""}</button>`; }).join("")}</div>`;
+  return `<div class="head"><div><h1>메신저</h1></div></div><div class="group">${rs.map((r) => { const u = unreadOf(r); return `<button class="row" data-room="${esc(r.id)}"><div class="av">${esc(r.av)}</div><div class="tx"><b class="sm">${esc(r.name)}</b><span class="one">${r.last ? esc(who(r.last.author) + ": " + (plain(r.last.body) || "사진")) : "아직 메시지가 없어요"}</span></div>${u ? `<span class="badge">${u}</span>` : r.last ? `<span class="tm">${esc(r.last.at.slice(5, 10).replace("-", "/"))}</span>` : ""}</button>`; }).join("")}</div>`;
 }
 function roomBody(id, side) {
   const r = rooms().find((x) => x.id === id); if (!r) return '<p class="empty">방을 찾지 못했어요</p>';
@@ -186,7 +214,7 @@ function roomBody(id, side) {
     return `${day}<div class="msg ${mine ? "me" : /클로드/.test(l.author) ? "cl" : ""} ${first ? "" : "cont"}">${!mine && first ? `<small>${esc(who(l.author))}</small>` : ""}<div class="bub">${bodyHtml(l.body)}</div>${last ? `<small>${esc(l.at.slice(11))}</small>` : ""}</div>`;
   }).join("");
   return `<div class="chat ${side ? "live" : ""}">${msgs || '<p class="empty">첫 메시지를 보내 보세요</p>'}</div>
-    <form class="compose" data-send="${id}"><input name="m" aria-label="메시지" placeholder="메시지" autocomplete="off"><button class="btn" aria-label="보내기">${IC.send}</button></form>`;
+    <form class="compose" data-send="${esc(id)}"><input name="m" aria-label="메시지" placeholder="메시지" autocomplete="off"><button class="btn" aria-label="보내기">${IC.send}</button></form>`;
 }
 function roomHtml(id) {
   const r = rooms().find((x) => x.id === id);
@@ -206,19 +234,28 @@ function allTodoHtml() {
     ${sec("끝낸 일", S.items.filter((x) => x.status === "완료").sort((a, b) => ((a.updated_at || "") < (b.updated_at || "") ? 1 : -1)).slice(0, 20), "", (x) => rowItem(x, ["done", "완료"]))}`;
 }
 function meetHtml() {
-  return `<div class="head"><div><button class="back" data-back="all">${IC.back}전체</button><h1>회의</h1></div></div><div class="group">${S.meetings.map((m) => { const n = S.items.filter((x) => x.meeting_id === m.id).length; return `<button class="row" data-meet="${m.id}"><div class="tx"><b>${esc(m.title)}</b><span>${esc([md(m.date), m.brand, "안건 " + n + "개"].filter(Boolean).join(", "))}</span></div>${IC.chev}</button>`; }).join("") || '<p class="empty">회의가 없어요</p>'}</div>`;
+  return `<div class="head"><div><button class="back" data-back="all">${IC.back}전체</button><h1>회의</h1></div></div><div class="group">${S.meetings.map((m) => { const n = S.items.filter((x) => x.meeting_id === m.id).length; return `<button class="row" data-meet="${esc(m.id)}"><div class="tx"><b>${esc(m.title)}</b><span>${esc([md(m.date), m.brand, "안건 " + n + "개"].filter(Boolean).join(", "))}</span></div>${IC.chev}</button>`; }).join("") || '<p class="empty">회의가 없어요</p>'}</div>`;
 }
 
 /* ── 창, 알림 ── */
 function openSheet(html) { $("#sheet").innerHTML = '<div class="grab"></div>' + html; $("#dim").classList.add("on"); $("#sheet").classList.add("on"); }
 function closeSheet() { $("#dim").classList.remove("on"); $("#sheet").classList.remove("on"); }
 function toast(t) { const el = $("#toast"); el.textContent = t; el.classList.add("on"); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("on"), 2200); }
+/* 내 보드 설정: 메뉴 대신 오늘 화면 오른쪽 위 "설정"에서 열림 */
+function settingsSheet() {
+  const on = soundOn();
+  openSheet(`<h3>${esc(S.me.label)}님 설정</h3>
+    <div class="group" style="margin-top:var(--s4);box-shadow:none;background:var(--bg)">
+      <button class="row" data-act="sound" role="switch" aria-checked="${on}"><div class="tx"><b class="sm">메시지 알림음</b><span>남이 보낸 메시지가 오면 "뽁" 소리</span></div><span class="toggle ${on ? "on" : ""}" aria-hidden="true"></span></button>
+    </div>
+    <div class="btns"><button class="btn gray" data-act="logout">이 기기에서 나가기</button><button class="btn" data-x>닫기</button></div>`);
+}
 function itemSheet(x) {
   const logs = S.logs.filter((l) => l.target_id === x.id && !PIN.test(l.body));
   openSheet(`<h3>${esc(x.title)}</h3><p>${esc([teamOf(x.owners).map((p) => p.label).join(", ") || "담당 없음", x.due_date ? "마감 " + md(x.due_date) : "", x.status].filter(Boolean).join(", "))}</p>${x.memo ? `<p>${esc(x.memo)}</p>` : ""}
     ${logs.length ? `<div class="logs">${logs.map((l) => `<div class="msg ${l.author === S.me.name ? "me" : ""}"><small>${esc(who(l.author))}, ${esc(l.at.slice(5))}</small><div class="bub">${bodyHtml(l.body)}</div></div>`).join("")}</div>` : ""}
-    <form data-comment="${x.id}"><textarea name="c" aria-label="댓글" placeholder="댓글 남기기"></textarea></form>
-    <div class="btns"><button class="btn gray" data-comment-send="${x.id}">댓글 보내기</button>${x.status === "완료" ? `<button class="btn gray" data-x>닫기</button>` : `<button class="btn" data-done="${x.id}">완료</button>`}</div>`);
+    <form data-comment="${esc(x.id)}"><textarea name="c" aria-label="댓글" placeholder="댓글 남기기"></textarea></form>
+    <div class="btns"><button class="btn gray" data-comment-send="${esc(x.id)}">댓글 보내기</button>${x.status === "완료" ? `<button class="btn gray" data-x>닫기</button>` : `<button class="btn" data-done="${esc(x.id)}">완료</button>`}</div>`);
 }
 
 /* ── 누르기 ── */
@@ -227,6 +264,8 @@ document.addEventListener("click", async (e) => {
   const d = t.dataset;
   if (d.pick) return pick(d.pick);
   if (t.id === "dim" || "x" in d) return closeSheet();
+  if (d.act === "settings") return settingsSheet();
+  if (d.act === "sound") { ls.set("nb-sound-" + S.me.name, soundOn() ? "off" : "on"); if (soundOn()) pop(1, true); return settingsSheet(); }
   if (d.act === "logout") { if (!confirm("이 기기에서 나갈까요?")) return; await sb.auth.signOut(); S.me = null; S.pick = ""; return renderLogin(); }
   if (d.tab) { S.tab = d.tab; S.page = ""; if (d.tab === "chat" && !wide()) S.room = ""; window.scrollTo(0, 0); return render(); }
   if (d.back) { if (d.back === "chat") S.room = ""; else S.page = ""; window.scrollTo(0, 0); return render(); }
@@ -236,13 +275,13 @@ document.addEventListener("click", async (e) => {
   if (d.item) { const x = S.items.find((y) => y.id === d.item); if (x) itemSheet(x); return; }
   if (d.done) {
     const x = S.items.find((y) => y.id === d.done); closeSheet();
-    const row = document.querySelector(`[data-item="${d.done}"]`); if (row) row.classList.add("leave");
+    const row = document.querySelector(`[data-item="${esc(d.done)}"]`); if (row) row.classList.add("leave");
     const { error } = await sb.from("items").update({ status: "완료", updated_at: stamp() }).eq("id", x.id);
     if (error) { toast("완료로 못 바꿨어요: " + error.message); row?.classList.remove("leave"); return; }
     x.status = "완료"; x.updated_at = stamp(); setTimeout(() => { render(); toast("완료했어요"); }, 280); return;
   }
   if (d.commentSend) {
-    const ta = document.querySelector(`[data-comment="${d.commentSend}"] textarea`), v = ta.value.trim(); if (!v) return ta.focus();
+    const ta = document.querySelector(`[data-comment="${esc(d.commentSend)}"] textarea`), v = ta.value.trim(); if (!v) return ta.focus();
     const row = { id: uid("l_"), target_id: d.commentSend, at: stamp(), author: S.me.name, body: v };
     const { error } = await sb.from("logs").insert(row); if (error) return toast("못 보냈어요: " + error.message);
     if (!S.logs.some((l) => l.id === row.id)) S.logs.push(row); itemSheet(S.items.find((y) => y.id === d.commentSend)); toast("댓글을 남겼어요");
