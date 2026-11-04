@@ -1,0 +1,77 @@
+/* 액상덕후 CRM 칸 (crm-board.js). 보드 색 토큰만 씀 */
+.crm{max-width:1080px}
+.crm .chip{min-height:44px;padding:0 8px;border-radius:10px;border:1px solid var(--line2);background:var(--card);color:var(--ink);font-size:14.5px;font-weight:600;white-space:nowrap;transition:transform .12s ease-out}
+.crm .chip.on{background:var(--ink);border-color:var(--ink);color:var(--card)}
+.crm .chip:active,.crm .btn:active{transform:scale(.96)}
+.crm .btn{width:auto;height:auto;min-height:44px;padding:0 18px;font-size:15px;border-radius:10px;transition:transform .12s ease-out}
+.crm .btn.red{background:var(--red);color:#fff}
+.crm-today{background:var(--card);border:1.5px solid var(--ac);border-radius:16px;padding:18px 20px;margin-bottom:14px}
+.crm-th{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.crm-th b{display:block;font-size:18px;font-weight:700;letter-spacing:-.02em;text-wrap:balance}
+.crm-th span{display:block;font-size:14px;color:var(--sub);margin-top:2px}
+.crm-btns{display:flex;gap:8px;flex:none}
+.crm-tb{max-width:440px}
+.crm-row{margin-top:14px}
+.crm-lb{display:block;font-size:14px;font-weight:700;color:var(--sub);margin-bottom:8px}
+.crm-lb.need{color:var(--red)}
+.crm-chs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.crm-chs.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.crm-chs.crm-flow{display:flex;flex-wrap:wrap}
+.crm-chs.crm-flow .chip{padding:0 14px}
+.crm-bub{margin-top:12px;background:var(--bg);border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.6;white-space:pre-wrap;color:var(--ink)}
+.crm .crm-mhead{display:flex;align-items:center;gap:4px;margin:22px 0 12px}
+.crm-mhead b{font-size:19px;font-weight:700;margin:0 6px}
+.crm-mhead button{min-width:44px;height:44px;border-radius:10px;font-size:20px;color:var(--ink2)}
+.crm-mhead .crm-re{margin-left:auto;font-size:14px;font-weight:600;padding:0 12px;color:var(--sub)}
+.crm-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.crm-sum div{background:var(--card);border:1px solid var(--line2);border-radius:14px;padding:14px 16px}
+.crm-sum small{display:block;font-size:13px;color:var(--sub);font-weight:600}
+.crm-sum b{display:block;font-size:22px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.crm-sum b.later{font-size:15px;color:var(--sub);font-weight:600;margin-top:8px}
+.crm-sum em{font-style:normal;font-size:13px;color:var(--sub)}
+.crm-sec{font-size:16px;font-weight:700;margin:24px 2px 10px}
+.crm-sec small{font-size:13px;font-weight:500;color:var(--sub);margin-left:8px}
+.crm-card{background:var(--card);border:1px solid var(--line2);border-radius:14px;margin-bottom:10px;overflow:hidden}
+.crm-card:hover,.crm-card.open{border-color:var(--ac)}
+.crm-ch{display:block;width:100%;text-align:left;padding:14px 18px;min-height:44px;color:var(--ink)}
+.crm-top{display:flex;align-items:center;gap:10px}
+.crm-d{flex:none;font-size:13.5px;font-weight:700;color:var(--sub);min-width:58px;font-variant-numeric:tabular-nums}
+.crm-tt{font-size:16px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crm-st{margin-left:auto;flex:none;font-size:13px;font-weight:700;color:var(--sub)}
+.crm-st.ok{color:var(--green)}
+.crm-st.ing{color:var(--amber)}
+.crm-chev{flex:none;font-size:20px;color:var(--sub);line-height:1;transition:transform .15s ease-out}
+.crm-card.open .crm-chev{transform:rotate(90deg)}
+.crm-line{display:block;margin-top:6px;padding-left:68px;font-size:14px;color:var(--sub)}
+.crm-line b{color:var(--ink);font-weight:700;margin-left:4px}
+.crm-sep{display:inline-block;width:1px;height:12px;background:var(--line2);margin:0 10px;vertical-align:-1px}
+.crm-more{padding:0 18px 16px 86px}
+.crm-dim{color:var(--sub)}
+.crm-memo{font-size:14px;color:var(--ink2);line-height:1.55;margin-bottom:6px}
+.crm-cal{background:var(--card);border:1px solid var(--line2);border-radius:14px;overflow:hidden}
+.crm-wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.crm-wk.h div{font-size:12.5px;font-weight:700;color:var(--sub);padding:8px 10px;border-bottom:1px solid var(--line)}
+.crm-day{min-height:72px;border-left:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px 6px 8px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.crm-day:nth-child(7n+1){border-left:0}
+.crm-day .n{font-size:13px;font-weight:700;color:var(--ink2);padding:0 2px}
+.crm-day.out .n{color:var(--line2)}
+.crm-day.today{box-shadow:inset 0 3px 0 var(--ac)}
+.crm-day.today .n{color:var(--ac)}
+.crm-ev{display:block;width:100%;text-align:left;border-radius:6px;padding:4px 6px;font-size:12.5px;font-weight:600;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--ac-soft);color:var(--ac)}
+.crm-sh{display:none}
+.crm-ev.done{background:var(--bg);color:var(--sub)}
+.crm-ev.ing{background:var(--amber-soft);color:var(--amber)}
+.crm-ev.wait{background:var(--card);border:1px dashed var(--ac)}
+@media (max-width:760px){
+  .crm-tb{max-width:none}
+  .crm-sum{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .crm-day{min-height:52px}
+  .crm-ev{font-size:11px;padding:3px 3px}
+  .crm-nm{display:none}
+  .crm-sh{display:inline}
+  .crm-ev{text-overflow:clip;text-align:center}
+  .crm-line{padding-left:0}
+  .crm-more{padding:0 18px 16px}
+  .crm-th .crm-btns{width:100%}
+  .crm-th .crm-btns .btn{flex:1}
+}
