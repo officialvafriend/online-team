@@ -130,7 +130,7 @@ const CRM_R10 = {
   lag: [58, 37, 19, 14, 19, 12, 8, 5],
 };
 /* 11월 진행 중 성과: 요청할 때 (보혜)\CRM성과\CRM성과_갱신.py --write 로 아래 한 줄만 바뀜 (합계만, 전화번호 없음) */
-/*R11*/ const CRM_R11 = {"at": "11/04 20:13 기준", "total": {"people": 1427, "buyers": 7, "orders": 7, "sales": 282131}, "rows": [["11-04", "생애주기 문자", 1427, 7, 7, 282131, 0, 0]], "lag": [7, 0, 0, 0, 0, 0, 0, 0]}; /*R11 끝*/
+/*R11*/ const CRM_R11 = {"at": "11/05 14:41 기준", "total": {"people": 1427, "buyers": 16, "orders": 16, "sales": 706742}, "rows": [["11-04", "생애주기 문자", 1427, 16, 16, 706742, 0, 0]], "lag": [8, 8, 0, 0, 0, 0, 0, 0]}; /*R11 끝*/
 function crmReportHtml() {
   return `<div class="crm crm-rep">${crmReportBlock(CRM_R11, "11월 CRM 문자 성과", true)}<div class="crm-rep-gap"></div>${crmReportBlock(CRM_R10, "10월 CRM 문자 성과 (확정)", false)}
     <p class="crm-note sub">문자를 받은 뒤 7일 안에 산 실적이고, 문자 때문에 늘어난 매출이라는 뜻은 아니에요.</p></div>`;
