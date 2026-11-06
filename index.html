@@ -261,6 +261,8 @@
     .navb{display:flex;align-items:center;gap:12px;height:48px;padding:0 14px;border-radius:14px;font-size:15px;font-weight:600;color:var(--ink2);width:100%;text-align:left;transition:background .15s}
     .navb svg{width:22px;height:22px;flex:none} .navb:hover{background:var(--press)} .navb.on{background:var(--ac-soft);color:var(--ac)}
     .side .foot{margin-top:auto;display:flex;flex-direction:column;gap:4px} .side .foot .navb{font-size:14px;height:42px}
+    .side .logorow{display:flex;align-items:center;justify-content:space-between;padding:0 4px 26px 0}
+    .side .logorow .logo{padding-bottom:0} .side .logorow .bell{width:44px;height:44px;font-size:20px;flex:none} .side .logorow .bell:hover{background:var(--press)} .side .logorow .bell .ndot{top:2px;right:0}
     .main{padding:38px 44px 80px;max-width:1320px;width:100%;min-width:0} .narrow{max-width:760px} .narrow.mid{margin:0 auto}
     .pchead{display:flex;align-items:baseline;gap:14px;margin-bottom:22px;flex-wrap:wrap} .pchead h1{font-size:30px;font-weight:800;letter-spacing:-.9px} .pchead .caption{margin:0} .pchead .rt{margin-left:auto}
     .kpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:24px}
@@ -494,6 +496,43 @@ body{letter-spacing:-.01em;font-feature-settings:"tnum" 1}
 .orig-toggle{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:14px;font-weight:600;color:var(--ink2);cursor:pointer}
 .orig-toggle input{width:20px;height:20px;accent-color:var(--ac)}
 
+/* PDF 뷰어 */
+.pdf-viewer{position:fixed;inset:0;width:100vw;max-width:none;height:100vh;height:100dvh;max-height:none;margin:0;border:0;padding:0;background:#151819;color:#f4f5f5;overflow:hidden}
+.pdf-viewer[open]{display:grid;grid-template-rows:auto minmax(0,1fr)}
+.pdf-viewer::backdrop{background:#151819}
+.pv-header{display:flex;align-items:center;gap:4px;padding:8px 10px;border-bottom:1px solid #2b3234}
+.pv-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px}
+.pv-info{font-size:13px;color:#b9c0c2;flex:none;max-width:40%;text-align:right}
+.pdf-viewer button{min-height:44px;min-width:44px;padding:8px 12px;color:inherit;border-radius:8px;font-size:15px;flex:none}
+.pdf-viewer button:hover{background:#374143}
+.pv-stage{overflow-y:scroll;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.pv-pages{display:flex;flex-direction:column;align-items:center;gap:12px;padding:12px;width:max-content;min-width:100%;box-sizing:border-box}
+.pv-pages canvas{background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.4);max-width:none}
+
+/* 회의 자료: 한 줄 목록, 누르면 그 자리에서 뷰어와 메모 */
+.mathead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.mathead .eyebrow{margin:0} .matcard .eyebrow small{margin-left:6px;color:var(--sub);font-weight:600}
+.matadd{position:relative;display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border-radius:12px;background:var(--ac-soft);color:var(--ac);font-weight:700;font-size:15px;cursor:pointer;flex:none}
+.mat-input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer} .matadd:focus-within{outline:2px solid var(--ac);outline-offset:2px}
+.matrow{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:6px 8px;border-radius:12px;text-align:left} .matrow:hover{background:var(--press)} .matrow.on{background:var(--ac-soft)}
+.mat-ic{font-size:22px;flex:none} .mat-tx{flex:1;min-width:0;display:flex;flex-direction:column} .mat-tx b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .mat-tx small{font-size:13px;color:var(--sub)}
+.matview{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin-top:10px}
+.matdoc{border:1px solid var(--line2);border-radius:12px;overflow:hidden;background:#fff}
+.matbar{display:flex;align-items:center;gap:2px;padding:4px 6px 4px 12px;background:var(--card);border-bottom:1px solid var(--line2)}
+.matname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.matbar .pv-info{color:var(--sub);font-size:13px;margin:0 4px;max-width:36%}
+.matbar button{min-height:44px;min-width:44px;padding:0 10px;font-size:14px;border-radius:8px;color:var(--ink2);flex:none} .matbar button:hover{background:var(--press)}
+.matstage{height:min(70vh,720px);overflow:auto;background:#e9ecea;-webkit-overflow-scrolling:touch}
+.matstage .pv-pages{padding:10px} .mat-img{display:block;max-width:none;margin:0 auto}
+.matmemo .memo{padding:8px 0;border-top:1px solid var(--line2)} .matmemo .memo p{margin:2px 0 0;white-space:pre-wrap;font-size:15px}
+.matmemo .memo small{display:flex;align-items:center;justify-content:space-between;color:var(--sub);font-size:13px}
+.memo-del{min-height:44px;min-width:44px;font-size:13px;color:var(--sub);border-radius:8px}
+.matmemo textarea{width:100%;box-sizing:border-box;margin:8px 0;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font:inherit;font-size:16px;resize:vertical}
+@media(min-width:1700px){.matview{grid-template-columns:minmax(0,1.7fr) minmax(300px,1fr);align-items:start}}
+/* 녹음 버튼 두 곳이 화면을 크게 차지해서 작게 */
+.recbig{padding:10px 14px;border-radius:14px} .recbig small{display:none}
+.recbtn{width:auto;height:40px;margin-top:12px;padding:0 16px;font-size:15px}
+
 </style>
 <!-- /bundled:chat-photos.css -->
 <!-- bundled:drive-gallery.css -->
@@ -627,7 +666,7 @@ function decodeAttachment(token) {
 }
 function attachmentHtml(token) {
   const m = decodeAttachment(token); if (!m) return esc('첨부파일 정보를 읽을 수 없어요');
-  return `<div class="attachment ${previewableImage(m.mime) ? "attachment-image" : ""}" data-file-token="${token}">${previewableImage(m.mime) ? `<button class="chat-photo" data-photo-view="${token}" aria-label="사진 크게 보기"><span class="photo-loading">사진 불러오는 중…</span><img data-file-image="${m.id}" alt="${esc(m.name)}" hidden></button>` : '<span class="file-icon" aria-hidden="true">📄</span>'}<span class="file-name">${esc(m.name)}</span><small class="attachment-resolution">${fileSize(m.size)} · ${m.q === 's' ? '작게 보냄' : '원본'}</small>${previewableImage(m.mime) ? `<button class="image-open" data-photo-view="${token}">확대해서 자세히 보기</button>` : ""}<button class="file-download" data-file-download="${token}">${m.q === 's' ? '사진 저장' : '원본 다운로드'}</button></div>`;
+  return `<div class="attachment ${previewableImage(m.mime) ? "attachment-image" : ""}" data-file-token="${token}">${previewableImage(m.mime) ? `<button class="chat-photo" data-photo-view="${token}" aria-label="사진 크게 보기"><span class="photo-loading">사진 불러오는 중…</span><img data-file-image="${m.id}" alt="${esc(m.name)}" hidden></button>` : '<span class="file-icon" aria-hidden="true">📄</span>'}<span class="file-name">${esc(m.name)}</span><small class="attachment-resolution">${fileSize(m.size)} · ${m.q === 's' ? '작게 보냄' : '원본'}</small>${previewableImage(m.mime) ? `<button class="image-open" data-photo-view="${token}">확대해서 자세히 보기</button>` : ""}${m.mime === 'application/pdf' ? `<button class="image-open" data-pdf-view="${token}">PDF 바로 보기</button>` : ""}<button class="file-download" data-file-download="${token}">${m.q === 's' ? '사진 저장' : '원본 다운로드'}</button></div>`;
 }
 function photoPreview() {
   const batch = chatPhotos.get(thSel), busy = photoSends.has(thSel);
@@ -753,6 +792,7 @@ document.addEventListener('click', async e => {
   if (e.target.closest('[data-add-files]') && !photoSends.has(thSel)) $('#chatPhotoInput')?.click();
   const pick = e.target.closest('[data-pick-file]'); if (pick) { closeSheet(); $('#chatPhotoInput')?.click(); }
   const view = e.target.closest('[data-photo-view]'); if (view) return showAttachment(view.dataset.photoView, view);
+  const pdfBtn = e.target.closest('[data-pdf-view]'); if (pdfBtn) { const pm = decodeAttachment(pdfBtn.dataset.pdfView); if (pm) openPdfViewer(pm); return; }
   const draftView = e.target.closest('[data-draft-view]');
   if (draftView) {
     const files = chatPhotos.get(thSel)?.files.filter(p => previewableImage(p.file.type)) || [];
@@ -788,6 +828,174 @@ const attachmentObserver = new MutationObserver(() => {
 });
 attachmentObserver.observe(document.querySelector('#app'), { childList: true, subtree: true });
 attachmentObserver.observe(document.querySelector('#sheet'), { childList: true, subtree: true });
+
+// PDF 그리기 (pdf.js 4.2.67 이상만 씀: 그 아래는 악성 PDF가 글꼴로 코드를 실행하는 보안 구멍 CVE-2024-4367이 있음)
+const PDFJS_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/';
+let pdfjsPromise = null, pdfViewer = null;
+function loadPdfjs() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  return pdfjsPromise ||= import(PDFJS_BASE + 'pdf.min.mjs').then(lib => {
+    lib.GlobalWorkerOptions.workerSrc = PDFJS_BASE + 'pdf.worker.min.mjs'; window.pdfjsLib = lib; return lib;
+  }).catch(err => { pdfjsPromise = null; throw err; });
+}
+const pdfDocs = new Map();
+function pdfDocFor(m) {
+  if (!pdfDocs.has(m.id)) pdfDocs.set(m.id, (async () => {
+    const url = await loadAttachment(m), lib = await loadPdfjs();
+    return lib.getDocument({ url, isEvalSupported: false }).promise;
+  })().catch(err => { pdfDocs.delete(m.id); throw err; }));
+  return pdfDocs.get(m.id);
+}
+// 쪽마다 캔버스에 그림. 화면이 다시 그려지면 stale()이 true가 되어 멈춤
+async function drawPdfPages(doc, pagesEl, stageEl, zoom, stale) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2), width = Math.max(240, stageEl.clientWidth - 24) * zoom, last = Math.min(doc.numPages, 40);
+  pagesEl.innerHTML = '';
+  for (let n = 1; n <= last; n++) {
+    if (stale()) return false;
+    const page = await doc.getPage(n), base = page.getViewport({ scale: 1 }), vp = page.getViewport({ scale: (width / base.width) * dpr });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.floor(vp.width); canvas.height = Math.floor(vp.height);
+    canvas.style.width = width + 'px'; canvas.style.height = (vp.height / dpr) + 'px'; canvas.setAttribute('role', 'img'); canvas.setAttribute('aria-label', `${n}쪽`);
+    pagesEl.append(canvas);
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+  }
+  return !stale();
+}
+const pdfPagesNote = doc => doc.numPages > 40 ? `처음 40쪽만 보여요 (전체 ${doc.numPages}쪽, 저장해서 보세요)` : `${doc.numPages}쪽`;
+// 폰 뒤로 가기는 전체 화면 뷰어만 닫음 (이미지 뷰어와 같은 방식)
+window.addEventListener('popstate', e => { if (pdfViewer) { e.stopImmediatePropagation(); pdfViewer.closeViewer(true); } }, true);
+// 메신저 PDF: 전체 화면 뷰어
+async function openPdfViewer(m) {
+  if (pdfViewer) pdfViewer.closeViewer(false);
+  const dialog = document.createElement('dialog');
+  dialog.className = 'pdf-viewer'; dialog.setAttribute('aria-label', 'PDF 보기');
+  dialog.innerHTML = `<header class="pv-header"><strong class="pv-title">${esc(m.name)}</strong><span class="pv-info" role="status">불러오는 중…</span><button class="pv-out" aria-label="작게">−</button><button class="pv-in" aria-label="크게">＋</button><button class="pv-down" aria-label="PDF 저장">저장</button><button class="pv-close" aria-label="닫기">✕</button></header><div class="pv-stage"><div class="pv-pages"></div></div>`;
+  document.body.append(dialog); dialog.showModal(); pdfViewer = dialog;
+  const stage = dialog.querySelector('.pv-stage'), pages = dialog.querySelector('.pv-pages'), info = dialog.querySelector('.pv-info');
+  const historyId = 'pdf_' + Date.now(), previousOverflow = document.documentElement.style.overflow;
+  try { history.pushState({ ...history.state, pdfViewer: historyId }, ''); } catch {}
+  document.documentElement.style.overflow = 'hidden';
+  let zoom = 1, doc = null, token = 0, url = '';
+  dialog.closeViewer = (fromPop) => {
+    token++; if (pdfViewer === dialog) pdfViewer = null;
+    document.documentElement.style.overflow = previousOverflow; try { dialog.close(); } catch {} dialog.remove();
+    if (!fromPop && history.state?.pdfViewer === historyId) { try { history.back(); } catch {} }
+  };
+  dialog.addEventListener('cancel', e => { e.preventDefault(); dialog.closeViewer(false); });
+  const render = async () => { const mine = ++token; if (await drawPdfPages(doc, pages, stage, zoom, () => mine !== token) && mine === token) info.textContent = pdfPagesNote(doc); };
+  dialog.addEventListener('click', e => {
+    if (e.target.closest('.pv-close')) return dialog.closeViewer(false);
+    if (e.target.closest('.pv-down') && url) { const a = document.createElement('a'); a.href = url; a.download = m.name; a.click(); return; }
+    const step = e.target.closest('.pv-in') ? 1 : e.target.closest('.pv-out') ? -1 : 0;
+    if (step && doc) { const next = Math.max(0.6, Math.min(3, +(zoom + step * 0.4).toFixed(2))); if (next !== zoom) { zoom = next; render(); } }
+  });
+  try {
+    url = await loadAttachment(m); doc = await pdfDocFor(m);
+    if (pdfViewer !== dialog) return;
+    await render();
+  } catch (err) { if (pdfViewer === dialog) info.textContent = 'PDF를 열지 못했어요. 저장해서 봐 주세요'; }
+}
+
+// 회의 자료: 회의(예정 포함)에 PDF, 사진, 파일을 올려 두고, 회의 화면에서 눌러 그 자리에서 보고 메모함
+// 시트 구조는 그대로: 자료는 기록(logs)에 안건id=회의id, 내용=[[파일:...]] 로 저장, 파일 자체는 드라이브.
+// 자료에 단 메모는 기록(logs)에 안건id=자료 기록 id, 내용=메모 글 로 저장
+const isFileLog = l => /\[\[파일:[A-Za-z0-9+/=]+\]\]/.test(l.내용 || '');
+const meetingMaterials = meetingId => D.logs.filter(l => l.안건id === meetingId && isFileLog(l)).sort((a, b) => (a.시각 < b.시각 ? 1 : -1));
+const materialMeta = l => { const t = String(l.내용 || '').match(/\[\[파일:([A-Za-z0-9+/=]+)\]\]/); return t ? decodeAttachment(t[1]) : null; };
+const isMaterialLog = l => D.meetings.some(m => m.id === l.안건id) || D.logs.some(x => x.id === l.안건id && D.meetings.some(m => m.id === x.안건id));
+const canEditLog = l => l.작성자 === who || isBoss();
+let matSel = '', matZoom = 1, matDraft = '', matScroll = 0, matToken = 0, materialBusy = false;
+const matIcon = mime => mime === 'application/pdf' ? '📄' : previewableImage(mime) ? '🖼' : '📎';
+function meetingMaterialsHtml(m) {
+  const logs = meetingMaterials(m.id);
+  if (matSel && !logs.some(l => l.id === matSel)) matSel = '';
+  const rows = logs.map(l => {
+    const meta = materialMeta(l); if (!meta) return '';
+    const n = D.logs.filter(x => x.안건id === l.id).length;
+    return `<button type="button" class="matrow ${l.id === matSel ? 'on' : ''}" data-matopen="${esc(l.id)}" aria-pressed="${l.id === matSel}"><span class="mat-ic" aria-hidden="true">${matIcon(meta.mime)}</span><span class="mat-tx"><b>${esc(meta.name)}</b><small>${esc(logWho(l))}, ${esc(String(l.시각 || '').slice(5))}${n ? `, 메모 ${n}개` : ''}</small></span><span class="chev">›</span></button>`;
+  }).join('');
+  const sel = logs.find(l => l.id === matSel), meta = sel && materialMeta(sel);
+  let viewer = '';
+  if (sel && meta) {
+    const memos = D.logs.filter(x => x.안건id === sel.id).sort((a, b) => (a.시각 < b.시각 ? -1 : 1));
+    const zoomable = meta.mime === 'application/pdf' || previewableImage(meta.mime);
+    viewer = `<div class="matview"><div class="matdoc"><div class="matbar"><b class="matname">${esc(meta.name)}</b><span id="matInfo" class="pv-info" role="status"></span>${zoomable ? '<button type="button" data-matzoom="-1" aria-label="작게">−</button><button type="button" data-matzoom="1" aria-label="크게">＋</button>' : ''}<button type="button" data-matsave="${esc(sel.id)}">저장</button>${canEditLog(sel) ? `<button type="button" data-matdel="${esc(sel.id)}">지우기</button>` : ''}<button type="button" data-matclose aria-label="닫기">✕</button></div><div class="matstage" id="matStage"></div></div>
+      <div class="matmemo"><div class="eyebrow">메모 <small>${memos.length}개</small></div>${memos.map(x => `<div class="memo"><small>${esc(logWho(x))}, ${esc(String(x.시각 || '').slice(5))}${canEditLog(x) ? `<button type="button" class="memo-del" data-memodel="${esc(x.id)}">지우기</button>` : ''}</small><p>${esc(x.내용)}</p></div>`).join('') || '<div class="caption">보면서 적을 말을 남겨요</div>'}
+      <textarea id="matMemo" rows="3" maxlength="4000" placeholder="이 자료에 대한 메모">${esc(matDraft)}</textarea><button type="button" class="btn sec2" data-matmemo="${esc(sel.id)}" style="height:44px;font-size:15px">메모 저장</button></div></div>`;
+  }
+  return `<div class="card matcard"><div class="mathead"><div class="eyebrow">회의 자료 <small>${logs.length}개</small></div><label class="matadd"><input type="file" id="meetFileInput" multiple class="mat-input">＋ 올리기</label></div>${rows || `<div class="caption">${m.날짜 > today() ? '예정된 회의예요. 미리 자료를 올려 두면 회의 때 눌러서 바로 봐요' : '아직 자료가 없어요'}</div>`}${viewer}</div>`;
+}
+// 화면이 다시 그려진 뒤 열려 있는 자료를 그 자리에 그림 (render가 queueMicrotask로 부름)
+function mountMaterialViewer() {
+  const host = document.getElementById('matStage'); if (!host) return;
+  const l = D.logs.find(x => x.id === matSel), m = l && materialMeta(l); if (!m) return;
+  const mine = ++matToken, stale = () => mine !== matToken || !host.isConnected, info = document.getElementById('matInfo');
+  if (m.mime === 'application/pdf') {
+    host.innerHTML = '<div class="pv-pages"></div>'; info.textContent = '불러오는 중…';
+    pdfDocFor(m).then(async doc => { if (stale()) return; if (await drawPdfPages(doc, host.firstChild, host, matZoom, stale)) { info.textContent = pdfPagesNote(doc); host.scrollTop = matScroll; } })
+      .catch(() => { if (!stale()) info.textContent = 'PDF를 열지 못했어요. 저장해서 봐 주세요'; });
+  } else if (previewableImage(m.mime)) {
+    host.innerHTML = '<img class="mat-img" alt="">'; info.textContent = '불러오는 중…';
+    loadAttachment(m).then(src => { if (stale()) return; const img = host.querySelector('img'); img.alt = m.name; img.style.width = (100 * matZoom) + '%'; img.onload = () => { host.scrollTop = matScroll; }; img.src = src; info.textContent = ''; })
+      .catch(() => { if (!stale()) info.textContent = '사진을 열지 못했어요. 저장해서 봐 주세요'; });
+  } else host.innerHTML = '<div class="caption" style="padding:16px">이 파일은 여기서 미리 볼 수 없어요. 위의 저장을 눌러 받아 주세요</div>';
+}
+async function uploadMeetingMaterials(files) {
+  const mid = meetSel; if (!mid || !files.length || materialBusy) return;
+  if (!who) return askWho();
+  materialBusy = true; let ok = 0, rejected = 0, lastId = '';
+  try {
+    for (const file of files) {
+      if (!file.size || file.size > 20 * 1024 * 1024) { rejected++; continue; }
+      try {
+        const f = await shrinkPhoto(file), small = f !== file ? { q: 's' } : {}, bytes = await f.arrayBuffer(), sha256 = await digestFile(bytes), uploadId = uid('l_mfile_') + (small.q ? 's' : '');
+        toast(`올리는 중… ${ok + 1} / ${files.length}`);
+        let meta;
+        if (DEMO) meta = { id: 'demo_' + uploadId, name: f.name.slice(0, 240), mime: f.type || 'application/octet-stream', size: f.size, sha256, ...small };
+        else {
+          const result = await post({ type: 'attachmentUpload', uploadId, name: f.name, mime: f.type || 'application/octet-stream', b64: await b64(f), sha256 });
+          if (!result.file || result.file.sha256 !== sha256 || result.file.size !== f.size) throw new Error('checksum');
+          meta = { ...result.file, ...small };
+        }
+        attachmentCache.set(meta.id, Promise.resolve(URL.createObjectURL(f))); await cacheOriginalFile(meta, f);
+        const token = encodeAttachment(meta); if (!decodeAttachment(token)) throw new Error('file');
+        const log = { id: uid('l_mat_'), 안건id: mid, 시각: stamp(), 작성자: who, 내용: '[[파일:' + token + ']]' };
+        if (!DEMO) await post({ type: 'save', kind: 'log', data: log });
+        D.logs.push(log); ok++; lastId = log.id;
+      } catch (e) { rejected++; }
+    }
+  } finally { materialBusy = false; }
+  if (ok && meetSel === mid) { matSel = lastId; matZoom = 1; matScroll = 0; matDraft = ''; render(); }
+  toast(ok ? `회의 자료 ${ok}개를 올렸어요${rejected ? `, ${rejected}개는 못 올렸어요 (20MB까지)` : ''}` : '자료를 올리지 못했어요. 파일은 20MB까지, 다시 눌러 주세요');
+}
+document.addEventListener('change', e => { if (e.target.id === 'meetFileInput') { const files = [...e.target.files]; e.target.value = ''; uploadMeetingMaterials(files); } });
+document.addEventListener('input', e => { if (e.target.id === 'matMemo') matDraft = e.target.value; });
+document.addEventListener('scroll', e => { if (e.target.id === 'matStage') matScroll = e.target.scrollTop; }, true);
+document.addEventListener('click', async e => {
+  const open = e.target.closest('[data-matopen]');
+  if (open) { const id = open.dataset.matopen; matSel = matSel === id ? '' : id; matZoom = 1; matScroll = 0; matDraft = ''; render(); return; }
+  if (e.target.closest('[data-matclose]')) { matSel = ''; matDraft = ''; render(); return; }
+  const zoom = e.target.closest('[data-matzoom]');
+  if (zoom) { matZoom = Math.max(0.6, Math.min(3, +(matZoom + (+zoom.dataset.matzoom) * 0.4).toFixed(2))); mountMaterialViewer(); return; }
+  const save = e.target.closest('[data-matsave]');
+  if (save) { const l = D.logs.find(x => x.id === save.dataset.matsave), m = l && materialMeta(l); if (!m) return; try { const a = document.createElement('a'); a.href = await loadAttachment(m); a.download = m.name; a.click(); } catch { toast('저장하지 못했어요. 다시 눌러 주세요'); } return; }
+  const memo = e.target.closest('[data-matmemo]');
+  if (memo) {
+    const text = (document.getElementById('matMemo')?.value || '').trim(); if (!text) return toast('메모를 적어 주세요');
+    if (!who) return askWho();
+    const log = { id: uid('l_memo_'), 안건id: memo.dataset.matmemo, 시각: stamp(), 작성자: who, 내용: text };
+    try { if (!DEMO) await post({ type: 'save', kind: 'log', data: log }); D.logs.push(log); matDraft = ''; render(); toast('메모를 남겼어요'); } catch { toast('메모를 남기지 못했어요. 다시 눌러 주세요'); }
+    return;
+  }
+  const memoDel = e.target.closest('[data-memodel]');
+  if (memoDel) { const l = D.logs.find(x => x.id === memoDel.dataset.memodel); if (!l || !canEditLog(l) || !confirm('이 메모를 지울까요?')) return; try { await del('log', l.id); render(); } catch { toast('지우지 못했어요. 다시 눌러 주세요'); } return; }
+  const del1 = e.target.closest('[data-matdel]');
+  if (del1) {
+    const id = del1.dataset.matdel, l = D.logs.find(x => x.id === id); if (!l || !canEditLog(l)) return;
+    if (!confirm('이 회의 자료와 달린 메모를 지울까요?')) return;
+    try { for (const x of D.logs.filter(x => x.안건id === id)) await del('log', x.id); await del('log', id); matSel = ''; matDraft = ''; render(); toast('지웠어요'); } catch { toast('지우지 못했어요. 다시 눌러 주세요'); }
+  }
+});
 
 </script>
 <!-- /bundled:chat-photos.js -->
@@ -1947,7 +2155,7 @@ async function save(kind, data) { // 화면 먼저 바꾸고 시트에 씀, 실�
   try { await post({ type: "save", kind, data }); } catch (e) { toast("저장하지 못했어요. 다시 불러올게요"); reload(true); }
 }
 async function del(kind, id) {
-  if (kind === "meeting") { const ids = D.items.filter((x) => x.회의id === id).map((x) => x.id); D.items = D.items.filter((x) => x.회의id !== id); D.logs = D.logs.filter((l) => !ids.includes(l.안건id)); D.meetings = D.meetings.filter((m) => m.id !== id); if (meetSel === id) meetSel = ""; }
+  if (kind === "meeting") { const ids = D.items.filter((x) => x.회의id === id).map((x) => x.id); D.items = D.items.filter((x) => x.회의id !== id); D.logs = D.logs.filter((l) => !ids.includes(l.안건id) && l.안건id !== id); D.meetings = D.meetings.filter((m) => m.id !== id); if (meetSel === id) meetSel = ""; }
   if (kind === "item") { D.items = D.items.filter((x) => x.id !== id); D.logs = D.logs.filter((l) => l.안건id !== id); }
   if (kind === "log") D.logs = D.logs.filter((l) => l.id !== id);
   if (kind === "note") { D.notes = D.notes.filter((n) => n.id !== id); D.logs = D.logs.filter((l) => l.안건id !== id); }
@@ -2069,7 +2277,7 @@ function ownersHtml() {
   return `<div class="sec">담당자 한눈에 <small>줄을 누르면 그 사람 할 일</small></div><div class="opsw"><table class="ops"><thead><tr><th>담당자</th><th>진행 중</th><th>이번 주 마감</th><th>늦음</th><th>완료</th></tr></thead><tbody>${names.map(row).join("")}</tbody></table></div>`;
 }
 function recentHtml() {
-  const list = [...D.logs].sort((a, b) => (a.시각 < b.시각 ? 1 : -1)).slice(0, 6);
+  const list = D.logs.filter((l) => !isMaterialLog(l)).sort((a, b) => (a.시각 < b.시각 ? 1 : -1)).slice(0, 6); /* 회의 자료 올린 기록은 제외 */
   if (!list.length) return "";
   return `<div class="sec">최근 기록</div><div class="list">${list.map((l) => { const x = D.items.find((i) => i.id === l.안건id); return `<button class="item" data-item="${l.안건id}"><div class="tx"><b>${esc(l.내용)}</b><span>${esc([x ? x.제목 : "", l.작성자, l.시각].filter(Boolean).join(", "))}</span></div><span class="chev">›</span></button>`; }).join("")}</div>`;
 }
@@ -2089,7 +2297,7 @@ function meetHtml() {
   if (meetSel && !D.meetings.some((m) => m.id === meetSel)) meetSel = "";
   const sel = meetSel ? meetOf(meetSel) : null;
   const side = `${REC ? "" : `<button class="recbig" data-act="recnow"><span class="rdot"></span><b>오늘 회의 녹음 시작</b><small>${D.meetings.some((x) => x.날짜 === today()) ? "오늘 회의에 녹음해요" : "오늘 회의를 만들고 바로 녹음해요"}</small></button>`}<div class="btns" style="margin:0 0 14px"><button class="btn sec2" data-act="mnew" style="height:48px;font-size:16px">＋ 새 회의</button></div>
-    ${brandChips()}<div class="list">${ms.length ? ms.map((m) => { const its = D.items.filter((x) => x.회의id === m.id); return `<button class="item" data-msel="${m.id}" style="${m.id === meetSel ? "background:var(--ac-soft)" : ""}"><div class="av ${m.id === meetSel ? "ac" : ""}" style="font-size:13px;line-height:1.1">${md(m.날짜)}</div><div class="tx"><b>${esc(m.제목)}</b><span>${esc(m.브랜드 || "공통")}, 안건 ${its.length}개, 확정 ${its.filter((x) => x.상태 === "확정" || x.상태 === "완료").length}개</span></div><span class="chev">›</span></button>`; }).join("") : '<div class="empty">아직 회의가 없어요. 위 ＋ 새 회의로 만들어요</div>'}</div>`;
+    ${brandChips()}<div class="list">${ms.length ? ms.map((m) => { const its = D.items.filter((x) => x.회의id === m.id); return `<button class="item" data-msel="${m.id}" style="${m.id === meetSel ? "background:var(--ac-soft)" : ""}"><div class="av ${m.id === meetSel ? "ac" : ""}" style="font-size:13px;line-height:1.1">${md(m.날짜)}</div><div class="tx"><b>${esc(m.제목)}</b><span>${m.날짜 > today() ? "예정, " : ""}${esc(m.브랜드 || "공통")}, 안건 ${its.length}개, 확정 ${its.filter((x) => x.상태 === "확정" || x.상태 === "완료").length}개${meetingMaterials(m.id).length ? `, 자료 ${meetingMaterials(m.id).length}개` : ""}</span></div><span class="chev">›</span></button>`; }).join("") : '<div class="empty">아직 회의가 없어요. 위 ＋ 새 회의로 만들어요</div>'}</div>`;
   if (!sel) return `<div class="gwrap"><div class="gside">${side}</div><div class="gmain">${isPC() ? '<div class="card"><div class="caption" style="margin:0">왼쪽에서 회의를 고르거나 새 회의를 만들어요</div></div>' : ""}</div></div>`;
   const its = D.items.filter((x) => x.회의id === sel.id).sort((a, b) => (+a.순서 || 0) - (+b.순서 || 0));
   const cnt = STATUS.map((s) => [s, its.filter((x) => x.상태 === s).length]).filter(([, n]) => n);
@@ -2102,7 +2310,7 @@ function meetHtml() {
   const ideas = mlogs.filter(isIdea);
   const byPerson = `<div class="board ppl4">${PEOPLE.map(pcol).join("")}</div>
     ${ideas.length ? `<div class="sec">💡 클로드 제안 <small>${ideas.length}개</small></div><div class="list">${ideas.map((g) => `<button class="item" data-item="${g.안건id}"><div class="tx"><b style="white-space:normal">${linkify(g.내용)}</b><span>${esc(title(g))}</span></div><span class="chev">›</span></button>`).join("")}</div>` : ""}`;
-  const main = `<div class="card"><div class="mhead"><div class="tx"><div class="eyebrow">${esc(sel.날짜)}</div><div class="headline">${esc(sel.제목)}</div>
+  const main = `<div class="card"><div class="mhead"><div class="tx"><div class="eyebrow">${esc(sel.날짜)}${sel.날짜 > today() ? " (예정)" : ""}</div><div class="headline">${esc(sel.제목)}</div>
       ${peopleOf(sel.참석).length ? `<div class="ppl" style="justify-content:flex-start;margin-top:8px">${peopleOf(sel.참석).map((n) => `<i class="${n === who ? "me" : ""}">${esc(n)}</i>`).join("")}</div>` : ""}
       <div class="caption">${sel.브랜드 ? `<span class="tag">${esc(sel.브랜드)}</span>` : ""}${sel.메모 ? esc(sel.메모) : "메모 없음"}</div>
       <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${cnt.map(([s, n]) => `<span class="st ${s}">${s} ${n}</span>`).join("")}</div></div>
@@ -2110,6 +2318,7 @@ function meetHtml() {
         return r0 ? `<button class="ic" data-mnroom="${r0.id}">회의록 보기</button><button class="ic" data-mnpdfid="${r0.id}">PDF 받기</button>` : ""; })()}</div></div>
       ${D.recs.filter((x) => x.회의id === sel.id).map((x) => `<button class="recln" data-tab="rec" data-recgo="${x.id}">🎙 ${esc(sessTxt(x.세션))} 녹음, ${esc(RST[x.상태] || x.상태)} ›</button>`).join("")}
       ${REC && REC.meet === sel.id ? "" : `<button class="recbtn" data-act="recstart" ${REC ? "disabled" : ""}><span class="rdot"></span>${REC ? "다른 회의 녹음 중" : "녹음 시작"}</button>`}</div>
+    ${meetingMaterialsHtml(sel)}
     ${seg}${meetView === "person" ? byPerson : byItem}
     <div class="card"><div class="eyebrow">안건 넣기</div>
       <div class="btns" style="margin-top:0"><button class="btn sec2" data-act="inew" style="height:50px;font-size:16px">＋ 안건 하나</button><button class="btn gray" data-act="ibulk" style="height:50px;font-size:16px">여러 줄 한번에</button></div></div>`;
@@ -2793,6 +3002,7 @@ document.addEventListener("input", (e) => { if (e.target.id === "cText") { cDraf
 function render() {
   if (!D) return;
   queueMicrotask(refreshMessagePanels);
+  queueMicrotask(mountMaterialViewer);
   queueMicrotask(scheduleBoardViewSave);
   { const k = (tab === "chat" && thSel) || (tab === "rec" && recSel) || ""; if (k && !navKey) navPush(); else if (!k && navKey) navBack(); navKey = k; }
   const pc = isPC();
@@ -2805,9 +3015,9 @@ function render() {
   const demo = (DEMO ? `<div class="demo">예시 화면이에요. 눌러 봐도 시트에는 저장되지 않아요</div>` : "") + recBar();
   if (!pc) { $("#app").innerHTML = `${demo}<div class="top"><div class="logo">온라인팀 <b>보드</b></div><div class="r">${bellHtml("bell")}<button class="ic" data-act="reload" aria-label="새로고침">${at ? at + " " : ""}↻</button><button class="topme" data-act="${who ? "prof" : "who"}" aria-label="내 프로필">${who ? avHtml(who, "sm") : "나는?"}</button></div></div>${!(tab === "chat" && thSel) ? `<div class="mobile-help"><button class="ic" data-board-prefs>☆ 즐겨찾기</button>${boardHelpButton()}</div>` : ""}${body}`; setBadge(thUnreadAll() + (who ? notiCount() : 0)); return; }
   const title = (tab === "chat" && thSel) || (tab === "rec" && recSel) || (tab === "gal" && galInAlbum()) ? "" : tab === "me" ? "나의 보드" : MAIN.find(([g]) => g === groupOf(tab))[1];
-  $("#app").innerHTML = `<div class="shell"><aside class="side"><div class="logo">온라인팀 <b>보드</b></div>
+  $("#app").innerHTML = `<div class="shell"><aside class="side"><div class="logorow"><div class="logo">온라인팀 <b>보드</b></div>${bellHtml("bell")}</div>
       ${MAIN.map(([g, n, go]) => `<button class="navb ${tab !== "me" && groupOf(tab) === g ? "on" : ""}" data-tab="${go}">${ICON[g]}${n}${g === "chat" ? dot : ""}</button>`).join("")}
-      ${favoriteLinks()}<div class="foot">${(() => { const c = notiCount(); return `<button class="navb" data-act="noti">🔔 알림${c ? `<span class="ndot">${c}</span>` : ""}</button>`; })()}<button class="navb me-btn pfoot" data-act="${who ? "prof" : "who"}">${who ? `${avHtml(who, "sm")}<span class="pft"><b>${esc(PNAME(who))}</b><small>${esc(profOf(who).s || "프로필 꾸미기")}</small></span>` : "👤 나는 누구?"}</button><button class="navb" data-act="reload">↻ ${at ? at + " 기준" : "새로고침"}</button><button class="navb" data-act="logout">🔒 잠그기</button></div></aside>
+      ${favoriteLinks()}<div class="foot"><button class="navb me-btn pfoot" data-act="${who ? "prof" : "who"}">${who ? `${avHtml(who, "sm")}<span class="pft"><b>${esc(PNAME(who))}</b><small>${esc(profOf(who).s || "프로필 꾸미기")}</small></span>` : "👤 나는 누구?"}</button><button class="navb" data-act="reload">↻ ${at ? at + " 기준" : "새로고침"}</button><button class="navb" data-act="logout">🔒 잠그기</button></div></aside>
     <main class="main">${demo}${tab === "home" ? body : `${groupOf(tab) === "chat" ? `<div class="narrow mid">${title ? `<div class="pchead"><h1>${title}</h1>${boardHelpButton()}</div>` : ""}${body}</div>` : `${title ? `<div class="pchead"><h1>${title}</h1>${boardHelpButton()}</div>` : ""}<div class="${["fix", "idea", "ho", "rec"].includes(tab) ? "narrow" : ""}">${body}</div>`}`}</main></div>`;
   if (tab === "home") $("#panel").innerHTML = panelKeep || panelDefault();
   setBadge(thUnreadAll() + (who ? notiCount() : 0));

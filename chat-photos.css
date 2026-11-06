@@ -137,3 +137,40 @@
 @media(max-width:599px){.image-review .iv-previous,.image-review .iv-next{width:44px;height:48px}.image-review .iv-previous{left:6px}.image-review .iv-next{right:6px}}
 .orig-toggle{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-size:14px;font-weight:600;color:var(--ink2);cursor:pointer}
 .orig-toggle input{width:20px;height:20px;accent-color:var(--ac)}
+
+/* PDF 뷰어 */
+.pdf-viewer{position:fixed;inset:0;width:100vw;max-width:none;height:100vh;height:100dvh;max-height:none;margin:0;border:0;padding:0;background:#151819;color:#f4f5f5;overflow:hidden}
+.pdf-viewer[open]{display:grid;grid-template-rows:auto minmax(0,1fr)}
+.pdf-viewer::backdrop{background:#151819}
+.pv-header{display:flex;align-items:center;gap:4px;padding:8px 10px;border-bottom:1px solid #2b3234}
+.pv-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px}
+.pv-info{font-size:13px;color:#b9c0c2;flex:none;max-width:40%;text-align:right}
+.pdf-viewer button{min-height:44px;min-width:44px;padding:8px 12px;color:inherit;border-radius:8px;font-size:15px;flex:none}
+.pdf-viewer button:hover{background:#374143}
+.pv-stage{overflow-y:scroll;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.pv-pages{display:flex;flex-direction:column;align-items:center;gap:12px;padding:12px;width:max-content;min-width:100%;box-sizing:border-box}
+.pv-pages canvas{background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.4);max-width:none}
+
+/* 회의 자료: 한 줄 목록, 누르면 그 자리에서 뷰어와 메모 */
+.mathead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.mathead .eyebrow{margin:0} .matcard .eyebrow small{margin-left:6px;color:var(--sub);font-weight:600}
+.matadd{position:relative;display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border-radius:12px;background:var(--ac-soft);color:var(--ac);font-weight:700;font-size:15px;cursor:pointer;flex:none}
+.mat-input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer} .matadd:focus-within{outline:2px solid var(--ac);outline-offset:2px}
+.matrow{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:6px 8px;border-radius:12px;text-align:left} .matrow:hover{background:var(--press)} .matrow.on{background:var(--ac-soft)}
+.mat-ic{font-size:22px;flex:none} .mat-tx{flex:1;min-width:0;display:flex;flex-direction:column} .mat-tx b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .mat-tx small{font-size:13px;color:var(--sub)}
+.matview{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin-top:10px}
+.matdoc{border:1px solid var(--line2);border-radius:12px;overflow:hidden;background:#fff}
+.matbar{display:flex;align-items:center;gap:2px;padding:4px 6px 4px 12px;background:var(--card);border-bottom:1px solid var(--line2)}
+.matname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.matbar .pv-info{color:var(--sub);font-size:13px;margin:0 4px;max-width:36%}
+.matbar button{min-height:44px;min-width:44px;padding:0 10px;font-size:14px;border-radius:8px;color:var(--ink2);flex:none} .matbar button:hover{background:var(--press)}
+.matstage{height:min(70vh,720px);overflow:auto;background:#e9ecea;-webkit-overflow-scrolling:touch}
+.matstage .pv-pages{padding:10px} .mat-img{display:block;max-width:none;margin:0 auto}
+.matmemo .memo{padding:8px 0;border-top:1px solid var(--line2)} .matmemo .memo p{margin:2px 0 0;white-space:pre-wrap;font-size:15px}
+.matmemo .memo small{display:flex;align-items:center;justify-content:space-between;color:var(--sub);font-size:13px}
+.memo-del{min-height:44px;min-width:44px;font-size:13px;color:var(--sub);border-radius:8px}
+.matmemo textarea{width:100%;box-sizing:border-box;margin:8px 0;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font:inherit;font-size:16px;resize:vertical}
+@media(min-width:1700px){.matview{grid-template-columns:minmax(0,1.7fr) minmax(300px,1fr);align-items:start}}
+/* 녹음 버튼 두 곳이 화면을 크게 차지해서 작게 */
+.recbig{padding:10px 14px;border-radius:14px} .recbig small{display:none}
+.recbtn{width:auto;height:40px;margin-top:12px;padding:0 16px;font-size:15px}
