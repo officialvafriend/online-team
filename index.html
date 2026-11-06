@@ -354,6 +354,31 @@ body{letter-spacing:-.01em;font-feature-settings:"tnum" 1}
     #app > .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px} #app > .chips::-webkit-scrollbar{display:none} #app > .chips .chip{flex:none}
   }
 </style>
+<!-- bundled:ui-parts.css -->
+<style>
+/* 진행 막대 */
+.prog{height:6px;border-radius:999px;background:var(--line);overflow:hidden;margin-top:6px}
+.prog i{display:block;height:100%;border-radius:999px;background:var(--ac)}
+.mprog{display:flex;align-items:center;gap:10px;margin-top:10px} .mprog .prog{flex:1;margin:0} .mprog small{font-size:13px;color:var(--sub);flex:none}
+/* 접었다 펴는 칸 */
+.acc-head{display:flex;align-items:center;gap:6px;min-height:44px;padding:0;text-align:left;flex:1;min-width:0} .acc-head .eyebrow{margin:0}
+.acc-head .acc-chev{margin-left:auto;margin-right:6px;color:var(--sub);font-size:14px;transition:transform .15s} .acc-head[aria-expanded="true"] .acc-chev{transform:rotate(180deg)}
+/* 날짜 고르기 */
+.dp{position:relative}
+.dp-btn{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;cursor:pointer;min-height:48px;font-size:16px}
+.dp-btn::after{content:"▾";color:var(--sub);font-size:13px;margin-left:8px}
+.dp-btn[aria-expanded="true"]::after{content:"▴"}
+.dp-pop{margin-top:8px;padding:12px 12px 14px;border:1px solid var(--line2);border-radius:18px;background:var(--card);box-shadow:0 8px 28px rgba(0,0,0,.10)} .dp-pop[hidden]{display:none}
+.dp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px} .dp-head b{font-size:16px;letter-spacing:-.2px}
+.dp-head button{width:44px;height:44px;font-size:22px;line-height:1;border-radius:50%;color:var(--ink2);background:var(--line)} .dp-head button:hover{background:var(--press)}
+.dp-dow,.dp-grid{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;row-gap:2px}
+.dp-dow span{font-size:13px;font-weight:600;color:var(--sub);padding:6px 0} .dp-dow .sun,.dp-d.sun{color:var(--red)} .dp-dow .sat,.dp-d.sat{color:#2f6fdd}
+.dp-d{width:100%;max-width:48px;aspect-ratio:1;margin:0 auto;display:grid;place-items:center;font-size:16px;border-radius:50%;color:var(--ink2);transition:background .12s} .dp-d:hover{background:var(--press)}
+.dp-d.today{box-shadow:inset 0 0 0 1.5px var(--ac);font-weight:700} .dp-d.on{background:var(--ac);color:#fff;font-weight:700;box-shadow:none}
+.dp-quick{display:flex;gap:8px;margin-top:12px} .dp-quick button{flex:1;min-height:44px;border-radius:999px;background:var(--ac-soft);color:var(--ac);font-weight:700;font-size:15px} .dp-quick button:hover{filter:brightness(.97)}
+
+</style>
+<!-- /bundled:ui-parts.css -->
 <!-- bundled:chat-photos.css -->
 <style>
 .cbox{flex-wrap:wrap}
@@ -648,6 +673,55 @@ body{letter-spacing:-.01em;font-feature-settings:"tnum" 1}
 </div></nav>
 <div class="dim" id="dim"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast"></div>
+<!-- bundled:ui-parts.js -->
+<script>
+// 화면 부품: 진행 막대, 날짜 고르기(달력). 접었다 펴는 칸(아코디언)은 chat-photos.js의 회의 자료에서 씀
+
+// 진행 막대: done / total
+const progressHtml = (done, total, label) => {
+  if (!total) return '';
+  const pct = Math.round((done / total) * 100);
+  return `<div class="prog" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done}" aria-label="${esc(label || '진행')}"><i style="width:${pct}%"></i></div>`;
+};
+
+// 날짜 고르기: 눌러서 달력이 펴지고 날짜를 누르면 값이 들어감. 값은 숨은 input(id)에 YYYY-MM-DD로 저장
+const DP_DOW = ['일', '월', '화', '수', '목', '금', '토'];
+const dpDay = (s, n) => ymd(new Date(new Date(s + 'T00:00:00').getTime() + n * 86400000));
+const dpLabel = v => { const d = new Date(v + 'T00:00:00'); return /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(d) ? `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${DP_DOW[d.getDay()]})` : '날짜 고르기'; };
+function dpGrid(ym, value) {
+  const [y, m] = ym.split('-').map(Number), first = new Date(y, m - 1, 1), days = new Date(y, m, 0).getDate(), t = today();
+  let cells = ''; for (let i = 0; i < first.getDay(); i++) cells += '<span></span>';
+  for (let d = 1; d <= days; d++) {
+    const s = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const wk = new Date(y, m - 1, d).getDay();
+    cells += `<button type="button" class="dp-d ${s === value ? 'on' : ''} ${s === t ? 'today' : ''} ${wk === 0 ? 'sun' : wk === 6 ? 'sat' : ''}" data-dp-day="${s}" aria-label="${m}월 ${d}일" aria-pressed="${s === value}">${d}</button>`;
+  }
+  return `<div class="dp-head"><button type="button" data-dp-nav="-1" aria-label="이전 달">‹</button><b>${y}년 ${m}월</b><button type="button" data-dp-nav="1" aria-label="다음 달">›</button></div><div class="dp-dow">${DP_DOW.map((d, i) => `<span class="${i === 0 ? 'sun' : i === 6 ? 'sat' : ''}">${d}</span>`).join('')}</div><div class="dp-grid">${cells}</div><div class="dp-quick"><button type="button" data-dp-day="${t}">오늘</button><button type="button" data-dp-day="${dpDay(t, 1)}">내일</button><button type="button" data-dp-day="${dpDay(t, 7)}">다음 주</button></div>`;
+}
+function datePickerHtml(id, value) {
+  const ok = /^\d{4}-\d{2}-\d{2}$/.test(value || ''), base = ok ? value : today();
+  return `<div class="dp" data-dp data-month="${base.slice(0, 7)}"><input type="hidden" id="${id}" value="${esc(ok ? value : '')}"><button type="button" class="in dp-btn" data-dp-toggle aria-expanded="false">${dpLabel(ok ? value : '')}</button><div class="dp-pop" hidden>${dpGrid(base.slice(0, 7), ok ? value : '')}</div></div>`;
+}
+document.addEventListener('click', e => {
+  const toggle = e.target.closest('[data-dp-toggle]');
+  if (toggle) { const pop = toggle.parentElement.querySelector('.dp-pop'); pop.hidden = !pop.hidden; toggle.setAttribute('aria-expanded', String(!pop.hidden)); return; }
+  const nav = e.target.closest('[data-dp-nav]');
+  if (nav) {
+    const dp = nav.closest('[data-dp]'), [y, m] = dp.dataset.month.split('-').map(Number), n = new Date(y, m - 1 + Number(nav.dataset.dpNav), 1);
+    dp.dataset.month = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}`;
+    dp.querySelector('.dp-pop').innerHTML = dpGrid(dp.dataset.month, dp.querySelector('input').value); return;
+  }
+  const day = e.target.closest('[data-dp-day]');
+  if (day) {
+    const dp = day.closest('[data-dp]'), v = day.dataset.dpDay, input = dp.querySelector('input'), pop = dp.querySelector('.dp-pop'), btn = dp.querySelector('[data-dp-toggle]');
+    input.value = v; btn.textContent = dpLabel(v); btn.setAttribute('aria-expanded', 'false');
+    dp.dataset.month = v.slice(0, 7); pop.innerHTML = dpGrid(dp.dataset.month, v); pop.hidden = true;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+});
+
+</script>
+<!-- /bundled:ui-parts.js -->
 <!-- bundled:chat-photos.js -->
 <script>
 // Original bytes live privately in Drive. Messages contain only validated metadata.
@@ -904,7 +978,7 @@ const meetingMaterials = meetingId => D.logs.filter(l => l.안건id === meetingI
 const materialMeta = l => { const t = String(l.내용 || '').match(/\[\[파일:([A-Za-z0-9+/=]+)\]\]/); return t ? decodeAttachment(t[1]) : null; };
 const isMaterialLog = l => D.meetings.some(m => m.id === l.안건id) || D.logs.some(x => x.id === l.안건id && D.meetings.some(m => m.id === x.안건id));
 const canEditLog = l => l.작성자 === who || isBoss();
-let matSel = '', matZoom = 1, matDraft = '', matScroll = 0, matToken = 0, materialBusy = false;
+let matSel = '', matZoom = 1, matDraft = '', matScroll = 0, matToken = 0, materialBusy = false, matFold = null; // matFold: null이면 자료가 있거나 예정 회의일 때만 펴 둠
 const matIcon = mime => mime === 'application/pdf' ? '📄' : previewableImage(mime) ? '🖼' : '📎';
 function meetingMaterialsHtml(m) {
   const logs = meetingMaterials(m.id);
@@ -923,7 +997,8 @@ function meetingMaterialsHtml(m) {
       <div class="matmemo"><div class="eyebrow">메모 <small>${memos.length}개</small></div>${memos.map(x => `<div class="memo"><small>${esc(logWho(x))}, ${esc(String(x.시각 || '').slice(5))}${canEditLog(x) ? `<button type="button" class="memo-del" data-memodel="${esc(x.id)}">지우기</button>` : ''}</small><p>${esc(x.내용)}</p></div>`).join('') || '<div class="caption">보면서 적을 말을 남겨요</div>'}
       <textarea id="matMemo" rows="3" maxlength="4000" placeholder="이 자료에 대한 메모">${esc(matDraft)}</textarea><button type="button" class="btn sec2" data-matmemo="${esc(sel.id)}" style="height:44px;font-size:15px">메모 저장</button></div></div>`;
   }
-  return `<div class="card matcard"><div class="mathead"><div class="eyebrow">회의 자료 <small>${logs.length}개</small></div><label class="matadd"><input type="file" id="meetFileInput" multiple class="mat-input">＋ 올리기</label></div>${rows || `<div class="caption">${m.날짜 > today() ? '예정된 회의예요. 미리 자료를 올려 두면 회의 때 눌러서 바로 봐요' : '아직 자료가 없어요'}</div>`}${viewer}</div>`;
+  const open = matFold === null ? (logs.length > 0 || m.날짜 > today()) : matFold;
+  return `<div class="card matcard"><div class="mathead"><button type="button" class="acc-head" data-acc="mat" aria-expanded="${open}"><span class="eyebrow">회의 자료 <small>${logs.length}개</small></span><span class="acc-chev" aria-hidden="true">⌄</span></button><label class="matadd"><input type="file" id="meetFileInput" multiple class="mat-input">＋ 올리기</label></div>${open ? `${rows || `<div class="caption">${m.날짜 > today() ? '예정된 회의예요. 미리 자료를 올려 두면 회의 때 눌러서 바로 봐요' : '아직 자료가 없어요'}</div>`}${viewer}` : ''}</div>`;
 }
 // 화면이 다시 그려진 뒤 열려 있는 자료를 그 자리에 그림 (render가 queueMicrotask로 부름)
 function mountMaterialViewer() {
@@ -972,6 +1047,8 @@ document.addEventListener('change', e => { if (e.target.id === 'meetFileInput') 
 document.addEventListener('input', e => { if (e.target.id === 'matMemo') matDraft = e.target.value; });
 document.addEventListener('scroll', e => { if (e.target.id === 'matStage') matScroll = e.target.scrollTop; }, true);
 document.addEventListener('click', async e => {
+  const acc = e.target.closest('[data-acc="mat"]');
+  if (acc) { matFold = acc.getAttribute('aria-expanded') !== 'true'; render(); return; }
   const open = e.target.closest('[data-matopen]');
   if (open) { const id = open.dataset.matopen; matSel = matSel === id ? '' : id; matZoom = 1; matScroll = 0; matDraft = ''; render(); return; }
   if (e.target.closest('[data-matclose]')) { matSel = ''; matDraft = ''; render(); return; }
@@ -993,7 +1070,8 @@ document.addEventListener('click', async e => {
   if (del1) {
     const id = del1.dataset.matdel, l = D.logs.find(x => x.id === id); if (!l || !canEditLog(l)) return;
     if (!confirm('이 회의 자료와 달린 메모를 지울까요?')) return;
-    try { for (const x of D.logs.filter(x => x.안건id === id)) await del('log', x.id); await del('log', id); matSel = ''; matDraft = ''; render(); toast('지웠어요'); } catch { toast('지우지 못했어요. 다시 눌러 주세요'); }
+    const gone = materialMeta(l);
+    try { for (const x of D.logs.filter(x => x.안건id === id)) await del('log', x.id); await del('log', id); if (gone) { attachmentCache.delete(gone.id); pdfDocs.delete(gone.id); } matSel = ''; matDraft = ''; render(); toast('지웠어요'); } catch { toast('지우지 못했어요. 다시 눌러 주세요'); }
   }
 });
 
@@ -2297,7 +2375,7 @@ function meetHtml() {
   if (meetSel && !D.meetings.some((m) => m.id === meetSel)) meetSel = "";
   const sel = meetSel ? meetOf(meetSel) : null;
   const side = `${REC ? "" : `<button class="recbig" data-act="recnow"><span class="rdot"></span><b>오늘 회의 녹음 시작</b><small>${D.meetings.some((x) => x.날짜 === today()) ? "오늘 회의에 녹음해요" : "오늘 회의를 만들고 바로 녹음해요"}</small></button>`}<div class="btns" style="margin:0 0 14px"><button class="btn sec2" data-act="mnew" style="height:48px;font-size:16px">＋ 새 회의</button></div>
-    ${brandChips()}<div class="list">${ms.length ? ms.map((m) => { const its = D.items.filter((x) => x.회의id === m.id); return `<button class="item" data-msel="${m.id}" style="${m.id === meetSel ? "background:var(--ac-soft)" : ""}"><div class="av ${m.id === meetSel ? "ac" : ""}" style="font-size:13px;line-height:1.1">${md(m.날짜)}</div><div class="tx"><b>${esc(m.제목)}</b><span>${m.날짜 > today() ? "예정, " : ""}${esc(m.브랜드 || "공통")}, 안건 ${its.length}개, 확정 ${its.filter((x) => x.상태 === "확정" || x.상태 === "완료").length}개${meetingMaterials(m.id).length ? `, 자료 ${meetingMaterials(m.id).length}개` : ""}</span></div><span class="chev">›</span></button>`; }).join("") : '<div class="empty">아직 회의가 없어요. 위 ＋ 새 회의로 만들어요</div>'}</div>`;
+    ${brandChips()}<div class="list">${ms.length ? ms.map((m) => { const its = D.items.filter((x) => x.회의id === m.id), dn = its.filter((x) => x.상태 === "확정" || x.상태 === "완료").length; return `<button class="item" data-msel="${m.id}" style="${m.id === meetSel ? "background:var(--ac-soft)" : ""}"><div class="av ${m.id === meetSel ? "ac" : ""}" style="font-size:13px;line-height:1.1">${md(m.날짜)}</div><div class="tx"><b>${esc(m.제목)}</b><span>${m.날짜 > today() ? "예정, " : ""}${esc(m.브랜드 || "공통")}, 확정 ${dn}/${its.length}${meetingMaterials(m.id).length ? `, 자료 ${meetingMaterials(m.id).length}개` : ""}</span>${progressHtml(dn, its.length, "확정")}</div><span class="chev">›</span></button>`; }).join("") : '<div class="empty">아직 회의가 없어요. 위 ＋ 새 회의로 만들어요</div>'}</div>`;
   if (!sel) return `<div class="gwrap"><div class="gside">${side}</div><div class="gmain">${isPC() ? '<div class="card"><div class="caption" style="margin:0">왼쪽에서 회의를 고르거나 새 회의를 만들어요</div></div>' : ""}</div></div>`;
   const its = D.items.filter((x) => x.회의id === sel.id).sort((a, b) => (+a.순서 || 0) - (+b.순서 || 0));
   const cnt = STATUS.map((s) => [s, its.filter((x) => x.상태 === s).length]).filter(([, n]) => n);
@@ -2310,7 +2388,7 @@ function meetHtml() {
   const ideas = mlogs.filter(isIdea);
   const byPerson = `<div class="board ppl4">${PEOPLE.map(pcol).join("")}</div>
     ${ideas.length ? `<div class="sec">💡 클로드 제안 <small>${ideas.length}개</small></div><div class="list">${ideas.map((g) => `<button class="item" data-item="${g.안건id}"><div class="tx"><b style="white-space:normal">${linkify(g.내용)}</b><span>${esc(title(g))}</span></div><span class="chev">›</span></button>`).join("")}</div>` : ""}`;
-  const main = `<div class="card"><div class="mhead"><div class="tx"><div class="eyebrow">${esc(sel.날짜)}${sel.날짜 > today() ? " (예정)" : ""}</div><div class="headline">${esc(sel.제목)}</div>
+  const main = `<div class="card"><div class="mhead"><div class="tx"><div class="eyebrow">${esc(sel.날짜)}${sel.날짜 > today() ? " (예정)" : ""}</div><div class="headline">${esc(sel.제목)}</div>${its.length ? `<div class="mprog">${progressHtml(its.filter((x) => x.상태 === "확정" || x.상태 === "완료").length, its.length, "확정")}<small>확정 ${its.filter((x) => x.상태 === "확정" || x.상태 === "완료").length} / ${its.length}</small></div>` : ""}
       ${peopleOf(sel.참석).length ? `<div class="ppl" style="justify-content:flex-start;margin-top:8px">${peopleOf(sel.참석).map((n) => `<i class="${n === who ? "me" : ""}">${esc(n)}</i>`).join("")}</div>` : ""}
       <div class="caption">${sel.브랜드 ? `<span class="tag">${esc(sel.브랜드)}</span>` : ""}${sel.메모 ? esc(sel.메모) : "메모 없음"}</div>
       <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px">${cnt.map(([s, n]) => `<span class="st ${s}">${s} ${n}</span>`).join("")}</div></div>
@@ -2328,7 +2406,7 @@ function sheetMeeting() {
   const m = edit, isNew = !D.meetings.some((x) => x.id === m.id);
   openSheet(`<h3>${isNew ? "새 회의" : "회의 고치기"}</h3>
     <div class="lbl">제목</div><input class="in" id="mTitle" maxlength="60" placeholder="예) 버프 광고 채널 선정" value="${esc(m.제목)}">
-    <div class="row2"><div><div class="lbl">날짜</div><input class="in" type="date" id="mDate" value="${esc(m.날짜)}"></div><div></div></div>
+    <div class="lbl">날짜</div>${datePickerHtml("mDate", m.날짜)}
     <div class="lbl">참석 <small>(여러 명 고를 수 있어요)</small></div>${pickHtml(m._who, "mwho")}
     <div class="lbl">브랜드</div><div class="chips">${BRANDS.map((b) => `<button class="chip ${m.브랜드 === b ? "on" : ""}" data-mbrand="${b}">${b}</button>`).join("")}</div>
     <div class="lbl">메모 <small>(선택)</small></div><textarea class="in" id="mMemo" maxlength="500" placeholder="회의 배경이나 결론 한 줄">${esc(m.메모)}</textarea>

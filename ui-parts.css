@@ -1,0 +1,20 @@
+/* 진행 막대 */
+.prog{height:6px;border-radius:999px;background:var(--line);overflow:hidden;margin-top:6px}
+.prog i{display:block;height:100%;border-radius:999px;background:var(--ac)}
+.mprog{display:flex;align-items:center;gap:10px;margin-top:10px} .mprog .prog{flex:1;margin:0} .mprog small{font-size:13px;color:var(--sub);flex:none}
+/* 접었다 펴는 칸 */
+.acc-head{display:flex;align-items:center;gap:6px;min-height:44px;padding:0;text-align:left;flex:1;min-width:0} .acc-head .eyebrow{margin:0}
+.acc-head .acc-chev{margin-left:auto;margin-right:6px;color:var(--sub);font-size:14px;transition:transform .15s} .acc-head[aria-expanded="true"] .acc-chev{transform:rotate(180deg)}
+/* 날짜 고르기 */
+.dp{position:relative}
+.dp-btn{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;cursor:pointer;min-height:48px;font-size:16px}
+.dp-btn::after{content:"▾";color:var(--sub);font-size:13px;margin-left:8px}
+.dp-btn[aria-expanded="true"]::after{content:"▴"}
+.dp-pop{margin-top:8px;padding:12px 12px 14px;border:1px solid var(--line2);border-radius:18px;background:var(--card);box-shadow:0 8px 28px rgba(0,0,0,.10)} .dp-pop[hidden]{display:none}
+.dp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px} .dp-head b{font-size:16px;letter-spacing:-.2px}
+.dp-head button{width:44px;height:44px;font-size:22px;line-height:1;border-radius:50%;color:var(--ink2);background:var(--line)} .dp-head button:hover{background:var(--press)}
+.dp-dow,.dp-grid{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;row-gap:2px}
+.dp-dow span{font-size:13px;font-weight:600;color:var(--sub);padding:6px 0} .dp-dow .sun,.dp-d.sun{color:var(--red)} .dp-dow .sat,.dp-d.sat{color:#2f6fdd}
+.dp-d{width:100%;max-width:48px;aspect-ratio:1;margin:0 auto;display:grid;place-items:center;font-size:16px;border-radius:50%;color:var(--ink2);transition:background .12s} .dp-d:hover{background:var(--press)}
+.dp-d.today{box-shadow:inset 0 0 0 1.5px var(--ac);font-weight:700} .dp-d.on{background:var(--ac);color:#fff;font-weight:700;box-shadow:none}
+.dp-quick{display:flex;gap:8px;margin-top:12px} .dp-quick button{flex:1;min-height:44px;border-radius:999px;background:var(--ac-soft);color:var(--ac);font-weight:700;font-size:15px} .dp-quick button:hover{filter:brightness(.97)}

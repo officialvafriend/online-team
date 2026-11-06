@@ -252,7 +252,7 @@ const meetingMaterials = meetingId => D.logs.filter(l => l.안건id === meetingI
 const materialMeta = l => { const t = String(l.내용 || '').match(/\[\[파일:([A-Za-z0-9+/=]+)\]\]/); return t ? decodeAttachment(t[1]) : null; };
 const isMaterialLog = l => D.meetings.some(m => m.id === l.안건id) || D.logs.some(x => x.id === l.안건id && D.meetings.some(m => m.id === x.안건id));
 const canEditLog = l => l.작성자 === who || isBoss();
-let matSel = '', matZoom = 1, matDraft = '', matScroll = 0, matToken = 0, materialBusy = false;
+let matSel = '', matZoom = 1, matDraft = '', matScroll = 0, matToken = 0, materialBusy = false, matFold = null; // matFold: null이면 자료가 있거나 예정 회의일 때만 펴 둠
 const matIcon = mime => mime === 'application/pdf' ? '📄' : previewableImage(mime) ? '🖼' : '📎';
 function meetingMaterialsHtml(m) {
   const logs = meetingMaterials(m.id);
@@ -271,7 +271,8 @@ function meetingMaterialsHtml(m) {
       <div class="matmemo"><div class="eyebrow">메모 <small>${memos.length}개</small></div>${memos.map(x => `<div class="memo"><small>${esc(logWho(x))}, ${esc(String(x.시각 || '').slice(5))}${canEditLog(x) ? `<button type="button" class="memo-del" data-memodel="${esc(x.id)}">지우기</button>` : ''}</small><p>${esc(x.내용)}</p></div>`).join('') || '<div class="caption">보면서 적을 말을 남겨요</div>'}
       <textarea id="matMemo" rows="3" maxlength="4000" placeholder="이 자료에 대한 메모">${esc(matDraft)}</textarea><button type="button" class="btn sec2" data-matmemo="${esc(sel.id)}" style="height:44px;font-size:15px">메모 저장</button></div></div>`;
   }
-  return `<div class="card matcard"><div class="mathead"><div class="eyebrow">회의 자료 <small>${logs.length}개</small></div><label class="matadd"><input type="file" id="meetFileInput" multiple class="mat-input">＋ 올리기</label></div>${rows || `<div class="caption">${m.날짜 > today() ? '예정된 회의예요. 미리 자료를 올려 두면 회의 때 눌러서 바로 봐요' : '아직 자료가 없어요'}</div>`}${viewer}</div>`;
+  const open = matFold === null ? (logs.length > 0 || m.날짜 > today()) : matFold;
+  return `<div class="card matcard"><div class="mathead"><button type="button" class="acc-head" data-acc="mat" aria-expanded="${open}"><span class="eyebrow">회의 자료 <small>${logs.length}개</small></span><span class="acc-chev" aria-hidden="true">⌄</span></button><label class="matadd"><input type="file" id="meetFileInput" multiple class="mat-input">＋ 올리기</label></div>${open ? `${rows || `<div class="caption">${m.날짜 > today() ? '예정된 회의예요. 미리 자료를 올려 두면 회의 때 눌러서 바로 봐요' : '아직 자료가 없어요'}</div>`}${viewer}` : ''}</div>`;
 }
 // 화면이 다시 그려진 뒤 열려 있는 자료를 그 자리에 그림 (render가 queueMicrotask로 부름)
 function mountMaterialViewer() {
@@ -320,6 +321,8 @@ document.addEventListener('change', e => { if (e.target.id === 'meetFileInput') 
 document.addEventListener('input', e => { if (e.target.id === 'matMemo') matDraft = e.target.value; });
 document.addEventListener('scroll', e => { if (e.target.id === 'matStage') matScroll = e.target.scrollTop; }, true);
 document.addEventListener('click', async e => {
+  const acc = e.target.closest('[data-acc="mat"]');
+  if (acc) { matFold = acc.getAttribute('aria-expanded') !== 'true'; render(); return; }
   const open = e.target.closest('[data-matopen]');
   if (open) { const id = open.dataset.matopen; matSel = matSel === id ? '' : id; matZoom = 1; matScroll = 0; matDraft = ''; render(); return; }
   if (e.target.closest('[data-matclose]')) { matSel = ''; matDraft = ''; render(); return; }
@@ -341,6 +344,7 @@ document.addEventListener('click', async e => {
   if (del1) {
     const id = del1.dataset.matdel, l = D.logs.find(x => x.id === id); if (!l || !canEditLog(l)) return;
     if (!confirm('이 회의 자료와 달린 메모를 지울까요?')) return;
-    try { for (const x of D.logs.filter(x => x.안건id === id)) await del('log', x.id); await del('log', id); matSel = ''; matDraft = ''; render(); toast('지웠어요'); } catch { toast('지우지 못했어요. 다시 눌러 주세요'); }
+    const gone = materialMeta(l);
+    try { for (const x of D.logs.filter(x => x.안건id === id)) await del('log', x.id); await del('log', id); if (gone) { attachmentCache.delete(gone.id); pdfDocs.delete(gone.id); } matSel = ''; matDraft = ''; render(); toast('지웠어요'); } catch { toast('지우지 못했어요. 다시 눌러 주세요'); }
   }
 });
