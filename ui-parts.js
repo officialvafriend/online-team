@@ -4,7 +4,7 @@
 const progressHtml = (done, total, label) => {
   if (!total) return '';
   const pct = Math.round((done / total) * 100);
-  return `<div class="prog" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done}" aria-label="${esc(label || '진행')}"><i style="width:${pct}%"></i></div>`;
+  return `<div class="pbar" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done}" aria-label="${esc(label || '진행')}"><i style="width:${pct}%"></i></div>`;
 };
 
 // 날짜 고르기: 눌러서 달력이 펴지고 날짜를 누르면 값이 들어감. 값은 숨은 input(id)에 YYYY-MM-DD로 저장

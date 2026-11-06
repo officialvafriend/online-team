@@ -1,7 +1,15 @@
+/* 회의 화면 배치: 폭이 1240px보다 좁으면 왼쪽 목록과 오른쪽 내용을 나란히 두지 않고 위아래로.
+   회의를 고르면 그 회의 내용이 위, 회의 목록은 아래 (좁은 칸에서 글자가 한 글자씩 꺾이던 것 고침) */
+@media(max-width:1239px){
+  .gwrap{grid-template-columns:minmax(0,1fr)!important;gap:16px}
+  .gside{position:static!important}
+  .gwrap.sel .gmain{order:-1}
+}
+.mhead{flex-wrap:wrap} .mhead .tx{flex:1 1 260px}
 /* 진행 막대 */
-.prog{height:6px;border-radius:999px;background:var(--line);overflow:hidden;margin-top:6px}
-.prog i{display:block;height:100%;border-radius:999px;background:var(--ac)}
-.mprog{display:flex;align-items:center;gap:10px;margin-top:10px} .mprog .prog{flex:1;margin:0} .mprog small{font-size:13px;color:var(--sub);flex:none}
+.pbar{height:6px;border-radius:999px;background:var(--line);overflow:hidden;margin-top:6px}
+.pbar i{display:block;height:100%;border-radius:999px;background:var(--ac)}
+.mprog{display:flex;align-items:center;gap:10px;margin-top:10px} .mprog .pbar{flex:1;margin:0} .mprog small{font-size:13px;color:var(--sub);flex:none}
 /* 접었다 펴는 칸 */
 .acc-head{display:flex;align-items:center;gap:6px;min-height:44px;padding:0;text-align:left;flex:1;min-width:0} .acc-head .eyebrow{margin:0}
 .acc-head .acc-chev{margin-left:auto;margin-right:6px;color:var(--sub);font-size:14px;transition:transform .15s} .acc-head[aria-expanded="true"] .acc-chev{transform:rotate(180deg)}
