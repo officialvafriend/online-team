@@ -252,7 +252,7 @@ const meetingMaterials = meetingId => D.logs.filter(l => l.안건id === meetingI
 const materialMeta = l => { const t = String(l.내용 || '').match(/\[\[파일:([A-Za-z0-9+/=]+)\]\]/); return t ? decodeAttachment(t[1]) : null; };
 const isMaterialLog = l => D.meetings.some(m => m.id === l.안건id) || D.logs.some(x => x.id === l.안건id && D.meetings.some(m => m.id === x.안건id));
 const canEditLog = l => l.작성자 === who || isBoss();
-let matSel = '', matZoom = 1, matDraft = '', matScroll = 0, matToken = 0, materialBusy = false, matFold = null, matReader = null; // matFold: null이면 자료가 있거나 예정 회의일 때만 펴 둠
+let matSel = '', matZoom = 1, matDraft = '', matScroll = 0, matToken = 0, materialBusy = false, matFold = null, matReader = null, matPending = new Set(); // matFold: null이면 자료가 있거나 예정 회의일 때만 펴 둠
 const matIcon = mime => mime === 'application/pdf' ? '📄' : previewableImage(mime) ? '🖼' : '📎';
 const matTime = l => String(l.시각 || '').slice(5);
 function meetingMaterialsHtml(m) {
@@ -260,7 +260,7 @@ function meetingMaterialsHtml(m) {
   const rows = logs.map(l => {
     const meta = materialMeta(l); if (!meta) return '';
     const n = D.logs.filter(x => x.안건id === l.id).length;
-    return `<button type="button" class="matrow ${l.id === matSel ? 'on' : ''}" data-matopen="${esc(l.id)}"><span class="mat-ic" aria-hidden="true">${matIcon(meta.mime)}</span><span class="mat-tx"><b>${esc(meta.name)}</b><small>${esc(logWho(l))}, ${esc(matTime(l))}${n ? `, 메모 ${n}개` : ''}</small></span><span class="chev">›</span></button>`;
+    return `<button type="button" class="matrow ${l.id === matSel ? 'on' : ''}" data-matopen="${esc(l.id)}"><span class="mat-ic" aria-hidden="true">${matIcon(meta.mime)}</span><span class="mat-tx"><b>${esc(meta.name)}</b><small>${esc(logWho(l))}, ${matPending.has(l.id) ? '올리는 중…' : esc(matTime(l))}${n ? `, 메모 ${n}개` : ''}</small></span><span class="chev">›</span></button>`;
   }).join('');
   const open = matFold === null ? (logs.length > 0 || m.날짜 > today()) : matFold;
   return `<div class="card matcard"><div class="mathead"><button type="button" class="acc-head" data-acc="mat" aria-expanded="${open}"><span class="eyebrow">회의 자료 <small>${logs.length}개</small></span><span class="acc-chev" aria-hidden="true">⌄</span></button><label class="matadd"><input type="file" id="meetFileInput" multiple class="mat-input">＋ 올리기</label></div>${open ? (rows || `<div class="caption">${m.날짜 > today() ? '예정된 회의예요. 미리 자료를 올려 두면 회의 때 눌러서 바로 봐요' : '아직 자료가 없어요'}</div>`) : ''}</div>`;
@@ -278,7 +278,7 @@ function openMaterialReader(id) {
   const dlg = document.createElement('dialog');
   dlg.className = 'mat-reader'; dlg.setAttribute('aria-label', '회의 자료 보기');
   const zoomable = meta.mime === 'application/pdf' || previewableImage(meta.mime);
-  dlg.innerHTML = `<header class="mr-bar"><button type="button" class="mr-close" data-matclose aria-label="닫기">‹ 닫기</button><b class="matname">${esc(meta.name)}</b><span id="matInfo" class="pv-info" role="status"></span>${zoomable ? '<button type="button" data-matzoom="-1" aria-label="작게">−</button><button type="button" data-matzoom="1" aria-label="크게">＋</button>' : ''}<button type="button" data-matsave="${esc(id)}">저장</button>${canEditLog(l) ? `<button type="button" data-matdel="${esc(id)}">지우기</button>` : ''}</header><div class="mr-body"><div class="matstage" id="matStage"></div><aside class="matmemo">${matMemoHtml(l)}</aside></div>`;
+  dlg.innerHTML = `<header class="mr-bar"><button type="button" class="mr-close" data-matclose aria-label="닫기">‹ 닫기</button><b class="matname">${esc(meta.name)}</b><span id="matInfo" class="pv-info" role="status"></span>${zoomable ? '<button type="button" data-matzoom="-1" aria-label="작게">−</button><button type="button" data-matzoom="1" aria-label="크게">＋</button>' : ''}<button type="button" data-matsave="${esc(id)}">저장</button>${canEditLog(l) && !matPending.has(id) ? `<button type="button" data-matdel="${esc(id)}">지우기</button>` : ''}</header><div class="mr-body"><div class="matstage" id="matStage"></div><aside class="matmemo">${matMemoHtml(l)}</aside></div>`;
   document.body.append(dlg); dlg.showModal(); matReader = dlg;
   dlg.addEventListener('cancel', e => { e.preventDefault(); closeMaterialReader(false); });
   try { history.pushState({ ...history.state, matReader: id }, ''); } catch {}
@@ -298,7 +298,7 @@ function refreshReaderMemos() { const l = matReader && D.logs.find(x => x.id ===
 function mountMaterialViewer(force) {
   const host = document.getElementById('matStage'); if (!host || !matReader) return;
   const l = D.logs.find(x => x.id === matSel), m = l && materialMeta(l); if (!m) return;
-  const key = m.id + '|' + matZoom; if (!force && host.dataset.key === key && host.firstChild) return;
+  const key = l.id + '|' + matZoom; if (!force && host.dataset.key === key && host.firstChild) return;
   host.dataset.key = key;
   const mine = ++matToken, stale = () => mine !== matToken || !host.isConnected, info = document.getElementById('matInfo');
   if (m.mime === 'application/pdf') {
@@ -311,34 +311,47 @@ function mountMaterialViewer(force) {
       .catch(() => { if (!stale()) info.textContent = '사진을 열지 못했어요. 저장해서 봐 주세요'; });
   } else host.innerHTML = '<div class="caption" style="padding:16px">이 파일은 여기서 미리 볼 수 없어요. 위의 저장을 눌러 받아 주세요</div>';
 }
+// 올리는 순서: 고른 파일을 화면에 바로 올려 보여 주고(눌러서 볼 수 있음), 서버에는 뒤에서 올림. 실패하면 줄을 지우고 알림
 async function uploadMeetingMaterials(files) {
   const mid = meetSel; if (!mid || !files.length || materialBusy) return;
   if (!who) return askWho();
-  materialBusy = true; let ok = 0, rejected = 0;
+  materialBusy = true; let ok = 0, rejected = 0; const jobs = [];
   try {
     for (const file of files) {
       if (!file.size || file.size > 20 * 1024 * 1024) { rejected++; continue; }
       try {
         // 서버가 올리기 이름을 l_file_로 시작하는 것만 받음
-        const f = await shrinkPhoto(file), small = f !== file ? { q: 's' } : {}, bytes = await f.arrayBuffer(), sha256 = await digestFile(bytes), uploadId = uid('l_file_') + (small.q ? 's' : '');
-        toast(`올리는 중… ${ok + 1} / ${files.length}`);
+        const f = await shrinkPhoto(file), small = f !== file ? { q: 's' } : {}, sha256 = await digestFile(await f.arrayBuffer()), uploadId = uid('l_file_') + (small.q ? 's' : '');
+        const tmp = { id: 'tmp_' + uploadId, name: f.name.slice(0, 240), mime: f.type || 'application/octet-stream', size: f.size, sha256, ...small };
+        const blobUrl = URL.createObjectURL(f); attachmentCache.set(tmp.id, Promise.resolve(blobUrl));
+        const log = { id: uid('l_mat_'), 안건id: mid, 시각: stamp(), 작성자: who, 내용: '[[파일:' + encodeAttachment(tmp) + ']]' };
+        D.logs.push(log); matPending.add(log.id); jobs.push({ f, small, uploadId, sha256, tmp, blobUrl, log });
+      } catch (e) { rejected++; console.warn('회의 자료 준비 실패', e); }
+    }
+    if (jobs.length) { if (matFold === false) matFold = null; render(); toast(jobs.length > 1 ? '올리는 중이에요. 바로 눌러서 볼 수 있어요' : '올리는 중이에요. 바로 눌러서 볼 수 있어요'); }
+    for (const j of jobs) {
+      try {
         let meta;
-        if (DEMO) meta = { id: 'demo_' + uploadId, name: f.name.slice(0, 240), mime: f.type || 'application/octet-stream', size: f.size, sha256, ...small };
+        if (DEMO) meta = { ...j.tmp, id: 'demo_' + j.uploadId };
         else {
-          const result = await post({ type: 'attachmentUpload', uploadId, name: f.name, mime: f.type || 'application/octet-stream', b64: await b64(f), sha256 });
-          if (!result.file || result.file.sha256 !== sha256 || result.file.size !== f.size) throw new Error(result.error || 'checksum');
-          meta = { ...result.file, ...small };
+          const result = await post({ type: 'attachmentUpload', uploadId: j.uploadId, name: j.f.name, mime: j.f.type || 'application/octet-stream', b64: await b64(j.f), sha256: j.sha256 });
+          if (!result.file || result.file.sha256 !== j.sha256 || result.file.size !== j.f.size) throw new Error(result.error || 'checksum');
+          meta = { ...result.file, ...j.small };
         }
-        attachmentCache.set(meta.id, Promise.resolve(URL.createObjectURL(f))); await cacheOriginalFile(meta, f);
+        attachmentCache.set(meta.id, Promise.resolve(j.blobUrl)); await cacheOriginalFile(meta, j.f);
         const token = encodeAttachment(meta); if (!decodeAttachment(token)) throw new Error('file');
-        const log = { id: uid('l_mat_'), 안건id: mid, 시각: stamp(), 작성자: who, 내용: '[[파일:' + token + ']]' };
-        if (!DEMO) await post({ type: 'save', kind: 'log', data: log });
-        D.logs.push(log); ok++;
-      } catch (e) { rejected++; console.warn('회의 자료 올리기 실패', e); }
+        j.log.내용 = '[[파일:' + token + ']]';
+        if (!DEMO) await post({ type: 'save', kind: 'log', data: j.log });
+        attachmentCache.delete(j.tmp.id); matPending.delete(j.log.id); ok++;
+      } catch (e) {
+        console.warn('회의 자료 올리기 실패', e);
+        D.logs = D.logs.filter(l => l !== j.log); matPending.delete(j.log.id); attachmentCache.delete(j.tmp.id); rejected++;
+        if (matSel === j.log.id) closeMaterialReader(false);
+      }
+      render();
     }
   } finally { materialBusy = false; }
-  if (ok) { if (matFold === false) matFold = null; render(); }
-  toast(ok ? `회의 자료 ${ok}개를 올렸어요${rejected ? `, ${rejected}개는 못 올렸어요 (20MB까지)` : ''}` : '자료를 올리지 못했어요. 파일은 20MB까지, 다시 눌러 주세요');
+  toast(ok ? `회의 자료 ${ok}개를 올렸어요${rejected ? `, ${rejected}개는 못 올렸어요 (20MB까지)` : ''}` : (jobs.length || rejected ? '자료를 올리지 못했어요. 파일은 20MB까지, 다시 눌러 주세요' : ''));
 }
 document.addEventListener('change', e => { if (e.target.id === 'meetFileInput') { const files = [...e.target.files]; e.target.value = ''; uploadMeetingMaterials(files); } });
 document.addEventListener('input', e => { if (e.target.id === 'matMemo') matDraft = e.target.value; });
@@ -356,6 +369,7 @@ document.addEventListener('click', async e => {
   const memo = e.target.closest('[data-matmemo]');
   if (memo) {
     const text = (document.getElementById('matMemo')?.value || '').trim(); if (!text) return toast('메모를 적어 주세요');
+    if (matPending.has(memo.dataset.matmemo)) return toast('올리는 중이에요. 끝나면 메모를 남길 수 있어요');
     if (!who) return askWho();
     const log = { id: uid('l_memo_'), 안건id: memo.dataset.matmemo, 시각: stamp(), 작성자: who, 내용: text };
     try { if (!DEMO) await post({ type: 'save', kind: 'log', data: log }); D.logs.push(log); matDraft = ''; refreshReaderMemos(); render(); toast('메모를 남겼어요'); } catch { toast('메모를 남기지 못했어요. 다시 눌러 주세요'); }
