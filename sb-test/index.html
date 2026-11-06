@@ -2257,82 +2257,55 @@ const weekRange = () => { const t = new Date(today() + "T00:00:00"), dow = (t.ge
 let D = null, KEY = ls.get("ot-key") || "", tab = initialBoardTab(), brandF = ls.get("ot-brand") || "", who = ls.get("ot-who") || "", meetSel = ls.get("ot-meet") || "", todoF = ls.get("ot-todof") || "", ideaF = ls.get("ot-idf") || "", ideaTo = "이사님", hoBrand = ls.get("ot-hob") || "", meetView = ls.get("ot-mview") || "item", edit = null, panelKeep = "", DEMO = /[?&]demo=1/.test(location.search) || !!window.PREVIEW_DATA;
 
 // ── 시트 ──
-const SB_URL = "https://bjjlmnkyhedtutogzliq.supabase.co", SB_ANON = "sb_publishable_i8rfcm_zAnwV75joN58FCw_8tHgFUKr";
+const SB_URL = "https://bjjlmnkyhedtutogzliq.supabase.co", SB_ANON = "sb_publishable_i8rfcm_zAnwV75joN58FCw_8tHgFUKr", SB_EDGE = SB_URL + "/functions/v1/board-api";
 async function sbRpc(fn, body) {
   const r = await fetch(SB_URL + "/rest/v1/rpc/" + fn, { method: "POST", headers: { apikey: SB_ANON, "Content-Type": "application/json" }, body: JSON.stringify(body) });
   if (!r.ok) throw new Error("sb " + r.status);
   return r.json();
 }
-async function appsGet(key) { return (await fetch(APPS_URL + "?k=" + encodeURIComponent(key) + "&t=" + Date.now(), { cache: "no-store" })).json(); }
-async function appsPost(body) {
-  const r = await (await fetch(APPS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ k: KEY, ...body }) })).json();
+async function sbEdge(body) {
+  const r = await (await fetch(SB_EDGE, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ k: KEY, ...body }) })).json();
   if (!r.ok) throw new Error(r.error || "fail");
   return r;
 }
 async function load(key) {
   if (DEMO) { const d = demoData(); d.notes = d.notes || []; d.recs = d.recs || []; return d; }
-  let r; try { r = await sbRpc("board_load", { p_k: key }); } catch (e) { console.warn("슈파베이스 읽기 실패, 시트로 읽음", e); r = await appsGet(key); }
+  const r = await sbRpc("board_load", { p_k: key });
   if (!r.ok) throw Object.assign(new Error(r.error), { code: r.error });
   r.notes = r.notes || []; r.recs = r.recs || [];
   try { if (ls.get("ot-key")) localStorage.setItem("ot-snap", JSON.stringify({ ...r, _saved: Date.now() })); else localStorage.removeItem("ot-snap"); } catch (e) {}
   return r;
 }
-/* 시트에도 뒤에서 같이 저장. 탭을 닫아도 다음에 열 때 이어서 보냄 */
-let mirrorQ = []; try { mirrorQ = JSON.parse(localStorage.getItem("ot-mirror") || "[]"); } catch (e) {}
-let mirrorBusy = false;
-const mirrorKeep = () => { try { localStorage.setItem("ot-mirror", JSON.stringify(mirrorQ)); } catch (e) {} };
-function mirrorPush(body) { mirrorQ.push(body); mirrorKeep(); mirrorRun(); }
-async function mirrorRun() {
-  if (mirrorBusy || !KEY) return; mirrorBusy = true;
-  try {
-    while (mirrorQ.length) {
-      try { await appsPost(mirrorQ[0]); } catch (e) { if (e.message === "key") { mirrorQ = []; mirrorKeep(); break; } console.warn("시트 저장 재시도", e); setTimeout(mirrorRun, 8000); break; }
-      mirrorQ.shift(); mirrorKeep();
-    }
-  } finally { mirrorBusy = false; }
-}
-async function mirrorDrain() { const end = Date.now() + 20000; mirrorRun(); while (mirrorQ.length && Date.now() < end) await new Promise((r) => setTimeout(r, 200)); }
-/* 클로드, 받아쓰기처럼 시트에 직접 쓴 내용을 슈파베이스로 가져옴. 시트가 더 오래된 줄은 건드리지 않음 */
-let syncBusy = false;
-async function sheetSync() {
-  if (DEMO || !KEY || syncBusy) return 0; syncBusy = true;
-  try {
-    await mirrorDrain();
-    const [s, c] = await Promise.all([appsGet(KEY), sbRpc("board_load", { p_k: KEY })]);
-    if (!s.ok || !c.ok) return 0;
-    let n = 0;
-    for (const [list, kind] of [["meetings", "meeting"], ["items", "item"], ["logs", "log"], ["notes", "note"], ["recs", "rec"]]) {
-      const cur = new Map(c[list].map((x) => [x.id, x]));
-      const rows = (s[list] || []).filter((x) => {
-        const y = cur.get(x.id); if (!y) return true;
-        if (kind === "meeting" || kind === "log") return false;
-        return String(x.고친시각 || "") >= String(y.고친시각 || "") && Object.keys(y).some((k) => k !== "고친시각" && String(x[k] ?? "") !== String(y[k] ?? ""));
-      });
-      for (let i = 0; i < rows.length; i += 200) { await sbRpc("board_bulk", { p_k: KEY, p_kind: kind, p_rows: rows.slice(i, i + 200) }); }
-      n += rows.length;
-    }
-    return n;
-  } catch (e) { console.warn("시트 가져오기 실패", e); return 0; } finally { syncBusy = false; }
-}
-setTimeout(async () => { mirrorRun(); if (await sheetSync()) reload(true); }, 3000);
-setInterval(async () => { if (document.visibilityState === "visible" && await sheetSync()) reload(true); }, 180000);
+const b64Bytes = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 async function post(body) {
   if (DEMO) return { ok: true };
   const t = body.type;
   if (t === "typing") { sbRpc("board_typing_set", { p_k: KEY, p_th: body.th, p_who: body.who }).catch(() => {}); return { ok: true }; }
   if (t === "save" || t === "del") {
-    let r;
-    try { r = t === "save" ? await sbRpc("board_save", { p_k: KEY, p_kind: body.kind, p_data: body.data }) : await sbRpc("board_del", { p_k: KEY, p_kind: body.kind, p_id: body.id }); }
-    catch (e) { console.warn("슈파베이스 저장 실패, 시트로 저장", e); return appsPost(body); }
+    const r = t === "save" ? await sbRpc("board_save", { p_k: KEY, p_kind: body.kind, p_data: body.data }) : await sbRpc("board_del", { p_k: KEY, p_kind: body.kind, p_id: body.id });
     if (!r.ok) throw new Error(r.error || "fail");
-    mirrorPush(body);
     return r;
   }
-  const ai = t === "ask" || t === "chat" || t === "organize";
-  if (ai) await mirrorDrain();
-  const r = await appsPost(body);
-  if (ai) await sheetSync();
-  return r;
+  if (t === "attachmentUpload") {
+    const bytes = b64Bytes(body.b64), mime = body.mime || "application/octet-stream";
+    if (bytes.length > 50 * 1024 * 1024) throw new Error("file_size");
+    const u = await sbEdge({ type: "fileUploadUrl", id: body.uploadId });
+    const put = await fetch(u.url, { method: "PUT", headers: { "Content-Type": mime, "x-upsert": "true" }, body: bytes });
+    if (!put.ok) throw new Error("upload " + put.status);
+    return { ok: true, file: { id: body.uploadId, name: String(body.name || "첨부파일").slice(0, 240), mime, size: bytes.length, sha256: body.sha256 } };
+  }
+  if (t === "attachmentRead") {
+    const u = await sbEdge({ type: "attachmentRead", id: body.id });
+    const blob = await (await fetch(u.url)).blob();
+    const b = await new Promise((ok, no) => { const f = new FileReader(); f.onload = () => ok(String(f.result).split(",")[1]); f.onerror = no; f.readAsDataURL(blob); });
+    return { ok: true, mime: blob.type, b64: b };
+  }
+  if (t === "driveFolder" || t === "crmSave") {
+    const r = await (await fetch(APPS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ k: KEY, ...body }) })).json();
+    if (!r.ok) throw new Error(r.error || "fail");
+    return r;
+  }
+  return sbEdge(body);
 }
 async function save(kind, data) { // 화면 먼저 바꾸고 시트에 씀, 실패하면 다시 불러옴
   const list = { meeting: D.meetings, item: D.items, log: D.logs, note: D.notes, rec: D.recs }[kind];
