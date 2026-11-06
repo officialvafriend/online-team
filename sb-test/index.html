@@ -2290,8 +2290,8 @@ async function post(body) {
     const bytes = b64Bytes(body.b64), mime = body.mime || "application/octet-stream";
     if (bytes.length > 50 * 1024 * 1024) throw new Error("file_size");
     const u = await sbEdge({ type: "fileUploadUrl", id: body.uploadId });
-    const put = await fetch(u.url, { method: "PUT", headers: { "Content-Type": mime, "x-upsert": "true" }, body: bytes });
-    if (!put.ok) throw new Error("upload " + put.status);
+    const put = await fetch(u.url, { method: "PUT", headers: { "Content-Type": mime }, body: bytes });
+    if (!put.ok && put.status !== 400 && put.status !== 409) throw new Error("upload " + put.status);
     return { ok: true, file: { id: body.uploadId, name: String(body.name || "첨부파일").slice(0, 240), mime, size: bytes.length, sha256: body.sha256 } };
   }
   if (t === "attachmentRead") {
